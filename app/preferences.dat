@@ -1,0 +1,4 @@
+language=en-US
+domain=technology
+context=current_events
+data_source=internal_database

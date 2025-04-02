@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AI聊天</string>
+    <string name="bottom_sheet_behavior">com.google.android.material.bottomsheet.BottomSheetBehavior</string>
+</resources>
