@@ -11,7 +11,6 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:background="#FFF"
-
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/rightLayout"
         app:layout_constraintStart_toStartOf="parent"
@@ -141,7 +140,6 @@
         android:id="@+id/rightLayout"
         android:layout_width="650dp"
         android:layout_height="match_parent"
-        android:layout_margin="10dp"
         android:background="#41FFFFFF"
         android:orientation="vertical"
         android:padding="16dp"
@@ -172,13 +170,16 @@
                     android:layout_height="match_parent"
                     android:layout_marginRight="10dp"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -194,7 +195,7 @@
                             android:layout_marginStart="10dp"
                             android:text="路线规划"
                             android:textColor="#000000"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -211,7 +212,7 @@
                             android:background="@drawable/backduncoloi"
                             android:text="导航到最近的加油站。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t2"
@@ -221,7 +222,26 @@
                             android:background="@drawable/backduncoloi"
                             android:text="避开拥堵，重新规划路线。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="导航到世界之窗。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="我想去深圳北站。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -231,13 +251,16 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -253,7 +276,7 @@
                             android:layout_marginStart="10dp"
                             android:text="音乐播放"
                             android:textColor="#000000"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -268,9 +291,9 @@
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="10dp"
                             android:background="@drawable/backduncoloi"
-                            android:text="播放音乐"
+                            android:text="播放音乐。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t4"
@@ -280,7 +303,25 @@
                             android:background="@drawable/backduncoloi"
                             android:text="调频到交通广播。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="我想听刘德华的歌。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="播放稻香。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -301,13 +342,16 @@
                     android:layout_height="match_parent"
                     android:layout_marginRight="10dp"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -340,7 +384,7 @@
                             android:background="@drawable/backduncoloi"
                             android:text="拨打给家人。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t6"
@@ -350,7 +394,26 @@
                             android:background="@drawable/backduncoloi"
                             android:text="接听来电。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="打电话给10086。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="查看通讯录。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
                     </LinearLayout>
                 </LinearLayout>
 
@@ -360,13 +423,16 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -399,7 +465,7 @@
                             android:background="@drawable/backduncoloi"
                             android:text="检查胎压状态。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t8"
@@ -409,7 +475,26 @@
                             android:background="@drawable/backduncoloi"
                             android:text="剩余油量还能开多远？"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="查看里程数？"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="查看车辆信息？"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -430,13 +515,16 @@
                     android:layout_height="match_parent"
                     android:layout_marginRight="10dp"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -469,7 +557,7 @@
                             android:background="@drawable/backduncoloi"
                             android:text="打开空调，调到 22 度。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t10"
@@ -479,7 +567,26 @@
                             android:background="@drawable/backduncoloi"
                             android:text="打开座椅加热。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="打开内循环。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="切换成制热。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
                     </LinearLayout>
                 </LinearLayout>
 
@@ -489,13 +596,16 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:background="#FFFFFF"
+                    android:background="@drawable/right_ll_bg"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:paddingStart="16dp"
+                    android:paddingTop="5dp"
+                    android:paddingEnd="16dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingBottom="10dp">
 
@@ -529,7 +639,7 @@
                             android:background="@drawable/backduncoloi"
                             android:text="附近的停车场"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
 
                         <TextView
                             android:id="@+id/t12"
@@ -539,7 +649,26 @@
                             android:background="@drawable/backduncoloi"
                             android:text="推荐一家评分高的餐厅。"
                             android:textColor="#000000"
-                            android:textSize="20sp" />
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="附近的酒店。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="10dp"
+                            android:background="@drawable/backduncoloi"
+                            android:text="附近的美食。"
+                            android:textColor="#000000"
+                            android:textSize="18sp" />
+
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
