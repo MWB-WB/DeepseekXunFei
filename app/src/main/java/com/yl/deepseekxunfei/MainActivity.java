@@ -114,7 +114,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String API_URL = "http://192.168.0.117:11434/api/chat  ";
+    private static final String API_URL = "http://120.79.250.21:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -292,7 +292,7 @@ public class MainActivity extends AppCompatActivity {
             txt.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-
+                    //设置为点击无反应，避免跳转到讯飞平台
                 }
             });
         });
@@ -380,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     Toast.makeText(getApplicationContext(), "请不要频繁点击", Toast.LENGTH_SHORT).show();
                 }
-            } else if (!currentTitle.isEmpty() || chatMessages.size() == 0) {
+            } else if (currentTitle.isEmpty()) {
                 Toast.makeText(MainActivity.this, "当前没有对话记录", Toast.LENGTH_SHORT).show();
             } else {
                 Toast.makeText(getApplicationContext(), "请等待输出完成，或者点击停止输出在新建对话 ", Toast.LENGTH_SHORT).show();
@@ -535,6 +535,7 @@ public class MainActivity extends AppCompatActivity {
             switch (n) {
                 // 附近搜索
                 case NEARBY: {
+                    isStopRequested = true;
                     // 先让机器人回复固定内容
                     String botResponse = "好的，以下是搜索结果";
                     TTS(botResponse);
@@ -562,6 +563,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 // 关键字导航
                 case KEYWORD: {
+                    isStopRequested = true;
                     // 先让机器人回复固定内容
                     String botResponse = "好的，以下是搜索结果";
                     TTS(botResponse);
@@ -588,6 +590,7 @@ public class MainActivity extends AppCompatActivity {
                     // 搜索本地知识库
                     for (KnowledgeEntry entry : knowledgeBase) {
                         if (entry.getTitle().equals(input)) {
+                            isStopRequested = true;
                             String content = filterSensitiveContent(entry.getContent()); // 过滤敏感词
                             updateContext(input, content); // 更新上下文
                             chatMessages.add(new ChatMessage(entry.getContent(), false));
@@ -722,6 +725,7 @@ public class MainActivity extends AppCompatActivity {
 
         // 使用最终拼接的完整文本判断
         if (finalText.contains("导航") || finalText.contains("去") || finalText.contains("到")) {
+
             String location = extractLocation(finalText);
             chatMessages.add(new ChatMessage(finalText, true));
             chatMessages.add(new ChatMessage("好的，以下是搜索结果，请选择路线开始导航", false));
@@ -857,7 +861,7 @@ public class MainActivity extends AppCompatActivity {
         mTts.stopSpeaking();
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
-        requestBody.put("model", "deepseek-r1:1.5b");
+        requestBody.put("model", "deepseek-r1:70b");
 
         JSONArray messages = new JSONArray();
 
@@ -888,7 +892,7 @@ public class MainActivity extends AppCompatActivity {
 
         RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
         Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
-
+        Log.d(TAG, "请求: "+API_URL);
         // 异步执行请求
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -904,6 +908,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call call, IOException e) {
+                Log.d(TAG, "错误: "+e.getMessage());
                 e.printStackTrace();
             }
 
@@ -937,11 +942,11 @@ public class MainActivity extends AppCompatActivity {
                                                 final String result;
                                                 int startIndex = fullResponseRound1.toString().indexOf(startTag);
                                                 int endIndex = fullResponseRound1.toString().indexOf(endTag);
-                                                if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
-                                                } else {
-                                                    result = "正在思考....";
-                                                }
+//                                                if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+//                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
+//                                                } else {
+//                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
+//                                                }
                                                 Log.d(TAG, "onResponse: " + jsonResponse);
                                                 // 拼接部分结果
                                                 fullResponseRound1.append(partialResponse);
@@ -954,8 +959,8 @@ public class MainActivity extends AppCompatActivity {
                                                 // 更新 UI
                                                 runOnUiThread(() -> {
                                                     //缩进
-                                                    String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(result));
-                                                    String hh = TextLineBreaker.breakTextByPunctuation(result);
+                                                    String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
+//                                                    String hh = TextLineBreaker.breakTextByPunctuation(result);
                                                     // 更新机器人消息记录的内容
                                                     chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                     chatAdapter.notifyDataSetChanged();
