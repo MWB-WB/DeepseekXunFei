@@ -3,6 +3,7 @@ package com.yl.deepseekxunfei;
 
 import static com.yl.deepseekxunfei.searchIn.searchInAmap;
 
+import com.iflytek.speech.SpeechSynthesizerAidl;
 import com.kugou.opensdk.commomtransformer.ErrorCodes;
 import com.kugou.opensdk.kgmusicaidlcop.KGCommonSdk;
 
@@ -101,11 +102,13 @@ import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.utlis.JudgmentNavigation;
 import com.yl.deepseekxunfei.utlis.NavigationType;
 import com.yl.deepseekxunfei.utlis.SearchResultAdapterMusical;
+import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.positioning;
 
 import kotlin.collections.MapsKt;
 import okhttp3.*;
 import okio.BufferedSource;
+import x861x.z102z;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -114,7 +117,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String API_URL = "http://120.79.250.21:11434/api/chat ";
+    private static final String API_URL = "http://192.168.0.117:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -188,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
         AMapLocationClient.updatePrivacyAgree(this, true);
         enableImmersiveMode();
         setContentView(R.layout.activity_main);
-        adjustRecyclerViewWhenKeyboardAppears(260);
+//        adjustRecyclerViewWhenKeyboardAppears(260);
         ContextHolder.init(this); // 保存全局 Context
         textFig = false;
         Display display = getWindowManager().getDefaultDisplay();
@@ -196,8 +199,8 @@ public class MainActivity extends AppCompatActivity {
         display.getSize(size);
         int width = size.x;
         int height = size.y;
-        Log.d(TAG, "屏幕宽: "+width);
-        Log.d(TAG, "屏幕高: "+height);
+        Log.d(TAG, "屏幕宽: " + width);
+        Log.d(TAG, "屏幕高: " + height);
 //        initial(MainActivity.this);
 
         // 初始化视图
@@ -261,6 +264,7 @@ public class MainActivity extends AppCompatActivity {
                     // 获取输入框内容
                     button.setOnClickListener(v -> {
                         try {
+                            restoreDefaultRightLayout();
                             sendMessage();
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
@@ -404,7 +408,7 @@ public class MainActivity extends AppCompatActivity {
             textView.setOnClickListener(v -> {
                 if (!textFig) {
                     inputEditText.setText(textView.getText());
-                    if (inputEditText.getText().toString().trim().equals("播放音乐")) {
+                    if (inputEditText.getText().toString().trim().equals("播放音乐。")) {
                         chatMessages.add(new ChatMessage(inputEditText.getText().toString().trim(), true)); // 添加到聊天界面
                         inputEditText.setText("");
                         String botResponse = "好的，请稍后，正在为您打开应用";
@@ -412,26 +416,18 @@ public class MainActivity extends AppCompatActivity {
                         chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                         chatAdapter.notifyDataSetChanged();
                         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                        // 调用酷狗音乐播放方法
+//                         调用酷狗音乐播放方法
 //                        playMusicWithKugou("小孩"); // 这里可以替换为您想播放的歌曲名
-                         // 打开酷狗
-//                        Intent kugou = new Intent();
-//                        kugou.setComponent(new ComponentName(
-//                                "com.kugou.android.auto",
-//                                "com.kugou.android.auto.ui.activity.SplashPureActivity"));
-//                        // 传递播放参数（需参考酷狗官方文档）
-//                         kugou.putExtra("command", "play");
-//                        kugou.putExtra("keyword", "周杰伦");
-//                        startActivity(kugou);
-                        Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setData(Uri.parse("kugouauto://play?hash=728d5893f566420b41eaacc76bf50741")); // 替换为实际歌曲HASH
-                        intent.setPackage("com.kugou.android.auto");
-                        try {
-                            startActivity(intent);
-                        } catch (ActivityNotFoundException e) {
-                            Log.d(TAG, "错误: "+e);
-                            Toast.makeText(this, "车机版酷狗未安装或版本过低", Toast.LENGTH_SHORT).show();
-                        }
+//                          打开酷狗
+//                        Intent intent = new Intent(Intent.ACTION_VIEW);
+//                        intent.setData(Uri.parse("kugouauto://play?hash=728d5893f566420b41eaacc76bf50741")); // 替换为实际歌曲HASH
+//                        intent.setPackage("com.kugou.android.auto");
+//                        try {
+//                            startActivity(intent);
+//                        } catch (ActivityNotFoundException e) {
+//                            Log.d(TAG, "错误: "+e);
+//                            Toast.makeText(this, "车机版酷狗未安装或版本过低", Toast.LENGTH_SHORT).show();
+//                        }
                         KwmusiccarApi.musiccar(MainActivity.this, "小孩", new OnPoiSearchListenerMusccar() {
                             @Override
                             public void onSuccess(List<LocationMusccarResult> results) {
@@ -516,8 +512,6 @@ public class MainActivity extends AppCompatActivity {
 
     //添加到对话列表
     private void sendMessage() throws JSONException {
-        JudgmentNavigation judgmentNavigation = new JudgmentNavigation();
-
         found = false;
         String input = inputEditText.getText().toString().trim();
         if (!input.isEmpty()) {
@@ -531,83 +525,7 @@ public class MainActivity extends AppCompatActivity {
             chatAdapter.notifyDataSetChanged();
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
             inputEditText.setText("");
-            NavigationType n = judgmentNavigation.judgeNavigationType(input);
-            switch (n) {
-                // 附近搜索
-                case NEARBY: {
-                    isStopRequested = true;
-                    // 先让机器人回复固定内容
-                    String botResponse = "好的，以下是搜索结果";
-                    TTS(botResponse);
-                    chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
-                    chatAdapter.notifyDataSetChanged();
-                    chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                    String address = extractLocation(input);
-                    NeighborhoodSearch.search(address, 5000, new OnPoiSearchListener() {
-                        @Override
-                        public void onSuccess(List<LocationResult> results) {
-                            runOnUiThread(() -> showSearchResults(results));
-                            if (results != null && !results.isEmpty()) {
-                                Log.d("附近搜索", "onSuccess: ");
-                            } else {
-                                runOnUiThread(() -> Toast.makeText(MainActivity.this, "未查询到相关内容", Toast.LENGTH_SHORT).show());
-                            }
-                        }
-
-                        @Override
-                        public void onError(String error) {
-                            Log.d("搜索失败", error);
-                        }
-                    }, MainActivity.this);
-                    break;
-                }
-                // 关键字导航
-                case KEYWORD: {
-                    isStopRequested = true;
-                    // 先让机器人回复固定内容
-                    String botResponse = "好的，以下是搜索结果";
-                    TTS(botResponse);
-                    chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
-                    chatAdapter.notifyDataSetChanged();
-                    chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                    String address = extractLocation(input);
-                    searchIn.searchInAmap(MainActivity.this, address, new OnPoiSearchListener() {
-                        @Override
-                        public void onSuccess(List<LocationResult> results) {
-                            runOnUiThread(() -> showSearchResults(results));
-                            Log.d("关键字导航", "onSuccess: ");
-                        }
-
-                        @Override
-                        public void onError(String error) {
-                            Log.d(TAG, "onError: " + error);
-                        }
-                    });
-                    break;
-                }
-                //非导航
-                case NON_NAV: {
-                    // 搜索本地知识库
-                    for (KnowledgeEntry entry : knowledgeBase) {
-                        if (entry.getTitle().equals(input)) {
-                            isStopRequested = true;
-                            String content = filterSensitiveContent(entry.getContent()); // 过滤敏感词
-                            updateContext(input, content); // 更新上下文
-                            chatMessages.add(new ChatMessage(entry.getContent(), false));
-                            chatAdapter.notifyDataSetChanged();
-                            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                            //停止播放文本
-                            TTS(entry.getContent());
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        isStopRequested = false;
-                        callGenerateApi(input);
-                    }
-                }
-            }
+            Search(input, MainActivity.this, null);
         }
     }
 
@@ -684,8 +602,8 @@ public class MainActivity extends AppCompatActivity {
         mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "1"));
 
         // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
-        mIat.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
-        mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/iat.wav");
+//        mIat.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
+//        mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/iat.wav");
     }
 
     /**
@@ -693,7 +611,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param results
      */
-    private void printResult(RecognizerResult results, boolean isLast) {
+    private void printResult(RecognizerResult results, boolean isLast) throws JSONException {
         String text = JsonParser.parseIatResult(results.getResultString());
         Log.d("识别内容", "printResult: " + text);
 
@@ -722,39 +640,60 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "您还没开始说话", Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // 使用最终拼接的完整文本判断
-        if (finalText.contains("导航") || finalText.contains("去") || finalText.contains("到")) {
-
-            String location = extractLocation(finalText);
-            chatMessages.add(new ChatMessage(finalText, true));
-            chatMessages.add(new ChatMessage("好的，以下是搜索结果，请选择路线开始导航", false));
-            chatAdapter.notifyDataSetChanged();
-            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-
-            searchInAmap(MainActivity.this, location, new OnPoiSearchListener() {
-                @Override
-                public void onSuccess(List<LocationResult> results) {
-                    runOnUiThread(() -> showSearchResults(results));
-                }
-
-                @Override
-                public void onError(String error) {
-                    Log.d(TAG, "onError: 搜索失败" + error);
-                }
-            });
-        } else {
-            runOnUiThread(() -> {
-                try {
-                    callGenerateApi(finalText);
-                } catch (JSONException e) {
-                    throw new RuntimeException(e);
-                }
-                chatMessages.add(new ChatMessage(finalText, true));
-                chatAdapter.notifyDataSetChanged();
-                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-            });
-        }
+        Search(finalText, MainActivity.this, finalText);
+//        NavigationType n = judgmentNavigation.judgeNavigationType(finalText);
+//        if (n.equals("NEARBY")) {
+//            chatMessages.add(new ChatMessage(finalText, true));
+//            chatMessages.add(new ChatMessage("好的，以下是搜索结果，请选择路线开始导航", false));
+//            chatAdapter.notifyDataSetChanged();
+//            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+//            TTS("好的，以下是搜索结果，请选择路线开始导航");
+//            Log.d(TAG, "printResult: 附近搜索");
+//            String address = extractLocation(finalText);
+//            NeighborhoodSearch.search(address, 1000, new OnPoiSearchListener() {
+//                @Override
+//                public void onSuccess(List<LocationResult> results) {
+//                    runOnUiThread(() -> showSearchResults(results));
+//                }
+//
+//                @Override
+//                public void onError(String error) {
+//                    Log.d(TAG, "onError: 搜索失败" + error);
+//                }
+//            }, MainActivity.this);
+//        } else if (n.equals("KEYWORD")) {
+//            Log.d(TAG, "printResult: 关键字搜索");
+//            chatMessages.add(new ChatMessage(finalText, true));
+//            chatMessages.add(new ChatMessage("好的，以下是搜索结果，请选择路线开始导航", false));
+//            chatAdapter.notifyDataSetChanged();
+//            chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+//            TTS("好的，以下是搜索结果，请选择路线开始导航");
+//            Log.d(TAG, "printResult: 附近搜索");
+//            String address = extractLocation(finalText);
+//            searchIn.searchInAmap(MainActivity.this, address, new OnPoiSearchListener() {
+//                @Override
+//                public void onSuccess(List<LocationResult> results) {
+//                    runOnUiThread(() -> showSearchResults(results));
+//                }
+//
+//                @Override
+//                public void onError(String error) {
+//                    Log.d(TAG, "onError: 搜索失败" + error);
+//                }
+//            });
+//        } else {
+//            Log.d(TAG, "printResult: 非导航");
+//            runOnUiThread(() -> {
+//                try {
+//                    callGenerateApi(finalText);
+//                } catch (JSONException e) {
+//                    throw new RuntimeException(e);
+//                }
+//                chatMessages.add(new ChatMessage(finalText, true));
+//                chatAdapter.notifyDataSetChanged();
+//                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+//            });
+//        }
     }
 
     /**
@@ -762,7 +701,11 @@ public class MainActivity extends AppCompatActivity {
      */
     private final RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
         public void onResult(RecognizerResult results, boolean isLast) {
-            printResult(results, isLast);//结果数据解析
+            try {
+                printResult(results, isLast);//结果数据解析
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         /**
@@ -791,7 +734,11 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onResult(RecognizerResult recognizerResult, boolean b) {
-            printResult(recognizerResult, b);//结果数据解析
+            try {
+                printResult(recognizerResult, b);//结果数据解析
+            } catch (JSONException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         @Override
@@ -808,7 +755,10 @@ public class MainActivity extends AppCompatActivity {
     private SynthesizerListener mSynListener = new SynthesizerListener() {
         //会话结束回调接口，没有错误时，error为null
         public void onCompleted(SpeechError error) {
-
+            Log.d(TAG, "播放完毕");
+            if (error == null) {
+                button.setImageResource(R.drawable.jzfason);
+            }
         }
 
         //缓冲进度回调
@@ -819,6 +769,11 @@ public class MainActivity extends AppCompatActivity {
         //开始播放
         public void onSpeakBegin() {
             Log.d("SpeechSynthesizer", "开始播放");
+            button.setImageResource(R.drawable.tingzhi);
+            button.setOnClickListener(v -> {
+                mTts.stopSpeaking();
+                button.setImageResource(R.drawable.jzfason);
+            });
         }
 
         //暂停播放
@@ -829,6 +784,7 @@ public class MainActivity extends AppCompatActivity {
         //播放进度回调
         //percent为播放进度0~100,beginPos为播放音频在文本中开始位置，endPos表示播放音频在文本中结束位置.
         public void onSpeakProgress(int percent, int beginPos, int endPos) {
+
         }
 
         //恢复播放回调接口
@@ -861,7 +817,7 @@ public class MainActivity extends AppCompatActivity {
         mTts.stopSpeaking();
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
-        requestBody.put("model", "deepseek-r1:70b");
+        requestBody.put("model", "deepseek-r1:1.5b");
 
         JSONArray messages = new JSONArray();
 
@@ -892,7 +848,7 @@ public class MainActivity extends AppCompatActivity {
 
         RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
         Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
-        Log.d(TAG, "请求: "+API_URL);
+        Log.d(TAG, "请求: " + API_URL);
         // 异步执行请求
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
@@ -908,7 +864,9 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call call, IOException e) {
-                Log.d(TAG, "错误: "+e.getMessage());
+                Log.d(TAG, "错误: " + e.getMessage());
+                button.setImageResource(R.drawable.jzfason);
+                Toast.makeText(MainActivity.this, "网络波动较大，请稍后再试", Toast.LENGTH_SHORT).show();
                 e.printStackTrace();
             }
 
@@ -942,11 +900,11 @@ public class MainActivity extends AppCompatActivity {
                                                 final String result;
                                                 int startIndex = fullResponseRound1.toString().indexOf(startTag);
                                                 int endIndex = fullResponseRound1.toString().indexOf(endTag);
-//                                                if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
-//                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
-//                                                } else {
-//                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
-//                                                }
+                                                if (startIndex != -1 && endIndex != -1 && startIndex < endIndex) {
+                                                    result = fullResponseRound1.toString().substring(0, startIndex) + fullResponseRound1.toString().substring(endIndex + endTag.length());
+                                                } else {
+                                                    result = "正在思考......";
+                                                }
                                                 Log.d(TAG, "onResponse: " + jsonResponse);
                                                 // 拼接部分结果
                                                 fullResponseRound1.append(partialResponse);
@@ -960,18 +918,20 @@ public class MainActivity extends AppCompatActivity {
                                                 runOnUiThread(() -> {
                                                     //缩进
                                                     String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
+//                                                    String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
 //                                                    String hh = TextLineBreaker.breakTextByPunctuation(result);
                                                     // 更新机器人消息记录的内容
                                                     chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                     chatAdapter.notifyDataSetChanged();
-                                                    chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
+//                                                    chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
                                                     button.setOnClickListener(v -> {
                                                         isStopRequested = true;
                                                         textFig = false;
+                                                        mTts.stopSpeaking();
                                                     });
                                                     // 如果完成，停止读取
                                                     if (done) {
-                                                        Log.d(TAG, "onResponse: 回答"+huida);
+                                                        Log.d(TAG, "onResponse: 回答" + huida);
                                                         TTS(huida);
                                                         isStopRequested = true;
                                                         textFig = false;
@@ -1026,6 +986,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
     // 历史记录适配器点击事件接口
     public interface OnItemClickListener {
         void onItemClick(int position);
@@ -1033,13 +994,33 @@ public class MainActivity extends AppCompatActivity {
 
     //文字转语音方法
     public void TTS(String str) {
+
+        SystemPropertiesReflection.get("deepseek_voice_speed", "");
+        String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "50");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "xiaoyan");
+        if (deepseekVoicespeaker.equals("许久")){
+            deepseekVoicespeaker = "aisjiuxu";
+        }else if (deepseekVoicespeaker.equals("小萍")){
+            deepseekVoicespeaker = "aisxping";
+        }else if (deepseekVoicespeaker.equals("小婧")){
+            deepseekVoicespeaker = "aisjinger";
+        }else if (deepseekVoicespeaker.equals("许小宝")){
+            deepseekVoicespeaker = "aisbabyxu";
+        }else if (deepseekVoicespeaker.equals("小燕")){
+            deepseekVoicespeaker = "xiaoyan";
+        }
+
+        String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
+        String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
+        String deepseekBackgroundColor = SystemPropertiesReflection.get("deepseek_background_color", "白色");
+
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, "xiaoyan");//设置发音人
-        mTts.setParameter(SpeechConstant.SPEED, "50");//设置语速
+        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
+        mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
         //设置合成音调
-        mTts.setParameter(SpeechConstant.PITCH, "50");
-        mTts.setParameter(SpeechConstant.VOLUME, "80");//设置音量，范围0~100
+        mTts.setParameter(SpeechConstant.PITCH, "50");//设置音高
+        mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
         mTts.setParameter(SpeechConstant.STREAM_TYPE, "3");
         // 设置播放合成音频打断音乐播放，默认为true
         mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
@@ -1087,7 +1068,8 @@ public class MainActivity extends AppCompatActivity {
      * @param grantResults
      */
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
         // 此处为android 6.0以上动态授权的回调，用户自行实现。
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
@@ -1195,6 +1177,17 @@ public class MainActivity extends AppCompatActivity {
 //                intent.setData(Uri.parse("kugouplayer://play/hash/"+ hash)); // 车机版可能用这个
 //                intent.setPackage("com.kugou.android.auto"); // 限制只用车机版打开
 //                    startActivity(intent);
+                // 5. 打开酷狗音乐车机版
+                try {
+                    Intent kugou = new Intent();
+                    kugou.setComponent(new ComponentName(
+                            "com.kugou.android.auto",
+                            "com.kugou.android.auto.ui.activity.SplashPureActivity"));
+                    startActivity(kugou);
+                } catch (ActivityNotFoundException e) {
+                    Log.d(TAG, "onCreate: " + e.getMessage());
+                    Toast.makeText(MainActivity.this, "未安装酷狗音乐车机版", Toast.LENGTH_SHORT).show();
+                }
             });
             searchResultsRecyclerView.setAdapter(adapter);
         });
@@ -1220,7 +1213,7 @@ public class MainActivity extends AppCompatActivity {
 
     public static String extractLocation(String input) {
         // 匹配 "导航到XXX"、"去XXX"、"我要去XXX" 等模式
-        String pattern = "(导航到|去|我要去|带我去|帮我找|附近有|我想去|附近的)(.+?)(。|$)";
+        String pattern = "(导航到|去|我要去|带我去|帮我找|附近有|我想去|附近的|导航去|导航)(.+?)(。|$)";
         Pattern r = Pattern.compile(pattern);
         Matcher m = r.matcher(input);
         if (m.find()) {
@@ -1267,16 +1260,7 @@ public class MainActivity extends AppCompatActivity {
 //                    playControlApi.playSearchSong(0); // 播放搜索结果中的第一首
 //                    playControlApi.playIndex(0);
 //
-//                    // 5. 打开酷狗音乐车机版
-//                    try {
-//                        Intent kugou = new Intent();
-//                        kugou.setComponent(new ComponentName(
-//                                "com.kugou.android.auto",
-//                                "com.kugou.android.auto.ui.activity.SplashPureActivity"));
-//                        startActivity(kugou);
-//                    } catch (ActivityNotFoundException e) {
-//                        Toast.makeText(MainActivity.this, "未安装酷狗音乐车机版", Toast.LENGTH_SHORT).show();
-//                    }
+
 //                }
 //            }
 //            @Override
@@ -1302,8 +1286,9 @@ public class MainActivity extends AppCompatActivity {
 //                    // 添加到聊天界面
 //                    chatMessages.add(new ChatMessage("音乐搜索失败，请稍后再试", false));
 //                    chatAdapter.notifyDataSetChanged();
-//                    chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-//                    TTS("音乐搜索失败，请稍后再试");
+//                    chatRecyclerView.+
+
+    //                    TTS("音乐搜索失败，请稍后再试");
 //                });
 //            }
 //        });
@@ -1322,4 +1307,99 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        };
 //    }
+    public void Search(String input, Context context, String StrTTS) throws JSONException {
+        JudgmentNavigation judgmentNavigation = new JudgmentNavigation();
+        NavigationType navigationType = judgmentNavigation.judgeNavigationType(input);
+        switch (navigationType) {
+            // 附近搜索
+            case NEARBY: {
+                Log.d(TAG, "Search: 附近搜索");
+                isStopRequested = true;
+                // 先让机器人回复固定内容
+                String botResponse = "好的，以下是搜索结果";
+                TTS(botResponse);
+                if (StrTTS != null) {
+                    chatMessages.add(new ChatMessage(StrTTS, true)); // 添加到聊天界面
+                }
+                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                String address = extractLocation(input);
+                Log.d(TAG, "Search: " + address);
+                NeighborhoodSearch.search(address, 5000, new OnPoiSearchListener() {
+                    @Override
+                    public void onSuccess(List<LocationResult> results) {
+                        runOnUiThread(() -> showSearchResults(results));
+                        if (results != null && !results.isEmpty()) {
+                            Log.d("附近搜索", "onSuccess: ");
+                        } else {
+                            restoreDefaultRightLayout();
+                            runOnUiThread(() -> Toast.makeText(MainActivity.this, "未查询到相关内容", Toast.LENGTH_SHORT).show());
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.d("搜索失败", error);
+                    }
+                }, context);
+                break;
+            }
+            // 关键字导航
+            case KEYWORD: {
+                Log.d(TAG, "Search: 关键字");
+                isStopRequested = true;
+                // 先让机器人回复固定内容
+                String botResponse = "好的，以下是搜索结果";
+                TTS(botResponse);
+                if (StrTTS != null) {
+                    chatMessages.add(new ChatMessage(StrTTS, true)); // 添加到聊天界面
+                }
+                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                String address = extractLocation(input);
+                searchIn.searchInAmap(context, address, new OnPoiSearchListener() {
+                    @Override
+                    public void onSuccess(List<LocationResult> results) {
+                        runOnUiThread(() -> showSearchResults(results));
+                        if (results != null && !results.isEmpty()) {
+                            Log.d("关键字导航", "onSuccess: ");
+                        } else {
+                            restoreDefaultRightLayout();
+                            runOnUiThread(() -> Toast.makeText(MainActivity.this, "未查询到相关内容", Toast.LENGTH_SHORT).show());
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.d(TAG, "onError: " + error);
+                    }
+                });
+                break;
+            }
+            //非导航
+            case NON_NAV: {
+                // 搜索本地知识库
+                for (KnowledgeEntry entry : knowledgeBase) {
+                    if (entry.getTitle().equals(input)) {
+                        isStopRequested = true;
+                        String content = filterSensitiveContent(entry.getContent()); // 过滤敏感词
+                        updateContext(input, content); // 更新上下文
+                        chatMessages.add(new ChatMessage(entry.getContent(), false));
+                        chatAdapter.notifyDataSetChanged();
+                        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                        //停止播放文本
+                        TTS(entry.getContent());
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    isStopRequested = false;
+                    callGenerateApi(input);
+                }
+            }
+        }
+    }
 }
