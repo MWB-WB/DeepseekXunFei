@@ -117,7 +117,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String API_URL = "http://192.168.0.117:11434/api/chat ";
+    private static final String API_URL = "http://120.77.38.137:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -817,7 +817,7 @@ public class MainActivity extends AppCompatActivity {
         mTts.stopSpeaking();
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
-        requestBody.put("model", "deepseek-r1:1.5b");
+        requestBody.put("model", "deepseek-r1:32b");
 
         JSONArray messages = new JSONArray();
 
@@ -923,6 +923,7 @@ public class MainActivity extends AppCompatActivity {
                                                     // 更新机器人消息记录的内容
                                                     chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                     chatAdapter.notifyDataSetChanged();
+                                                    chatRecyclerView.smoothScrollBy(0, chatRecyclerView.getLayoutManager().getHeight());
 //                                                    chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
                                                     button.setOnClickListener(v -> {
                                                         isStopRequested = true;
