@@ -1,7 +1,7 @@
 package com.yl.deepseekxunfei.utlis;
 
 
-import static com.yl.deepseekxunfei.utlis.NavigationType.NON_NAV;
+import com.yl.deepseekxunfei.sceneenum.SceneType;
 
 /**
  * 判断是否是导航关键字
@@ -14,7 +14,7 @@ public class JudgmentNavigation {
      * 判断是否是导航相关问题，并返回具体类型
      *
      * @param input 用户输入
-     * @return NavigationType枚举（NEARBY-附近搜索, KEYWORD-关键字搜索, NON_NAV-非导航）
+     * @return SceneType枚举（NEARBY-附近搜索, KEYWORD-关键字搜索, NON_NAV-非导航）
      */
     // 新增音乐/歌曲相关排除关键词
     public final String[] MUSIC_EXCLUDE_WORDS = {
@@ -22,25 +22,6 @@ public class JudgmentNavigation {
             "好听", "推荐", "播放", "听听", "旋律", "歌词",
             "安和桥", "成都", "蓝莲花" // 可以扩展更多歌曲名
     };
-
-    public NavigationType judgeNavigationType(String input) {
-        // 先排除明显不是导航的情况
-        if (isOtherServiceQuery(input)) {
-            return NON_NAV;
-        }
-
-        // 检查是否是附近搜索
-        if (isNearbySearch(input)) {
-            return NavigationType.NEARBY;
-        }
-
-        // 检查是否是关键字导航搜索
-        if (isKeywordNavigation(input)) {
-            return NavigationType.KEYWORD;
-        }
-
-        return NON_NAV;
-    }
 
     /**
      * 判断是否是附近地点搜索
