@@ -93,7 +93,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener {
 
-    private static final String API_URL = "http://120.77.38.137:11434/api/chat ";
+    private static final String API_URL = "http://47.106.86.30:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -720,7 +720,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         userMessage.put("role", "user");
         userMessage.put("content", userQuestion); // userQuestion 已经过转义处理
         messages.put(userMessage);
-
         requestBody.put("messages", messages);
         requestBody.put("stream", true);
 
@@ -780,7 +779,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                         if (jsonResponse.has("message")) {
                                             JsonObject messageObject = jsonResponse.getAsJsonObject("message");
                                             if (messageObject != null && messageObject.has("content")) {
-                                                String partialResponse = messageObject.get("content").getAsString().trim();
+                                                String partialResponse = messageObject.get("content").getAsString();
                                                 boolean done = jsonResponse.get("done").getAsBoolean();
 
                                                 String startTag = "<think>";
@@ -793,6 +792,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                 } else {
                                                     result = "正在思考......";
                                                 }
+                                                String str = TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString());
+                                                String restu = str.replace("\n","").replace("\n\n","");
+
                                                 Log.d(TAG, "onResponse: " + jsonResponse);
                                                 // 拼接部分结果
                                                 fullResponseRound1.append(partialResponse);
@@ -805,7 +807,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                 // 更新 UI
                                                 runOnUiThread(() -> {
                                                     //缩进
-                                                    String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
+                                                    String huida = filterSensitiveContent(restu);
 //                                                    String huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
 //                                                    String hh = TextLineBreaker.breakTextByPunctuation(result);
                                                     // 更新机器人消息记录的内容
@@ -877,9 +879,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
     @Override
     public void onWeatherSuccess(LocalWeatherLive weatherLive) {
+        Log.e("天气", "onWeatherSuccess: " + System.currentTimeMillis());
         chatMessages.remove(chatMessages.size() - 1);
         mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
-                "，当前的温度是" + weatherLive.getTemperature() + "°";
+                "，当前的温度是" + weatherLive.getTemperature() + "摄氏度";
         TTS(mWeatherResult);
         chatMessages.add(new ChatMessage("", false)); // 添加到聊天界面
         chatAdapter.notifyDataSetChanged();
@@ -892,12 +895,13 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            if (weatherIndex == mWeatherResult.length() - 1) {
+            if (weatherIndex > mWeatherResult.length()) {
                 return;
             }
             chatMessages.set(chatMessages.size() - 1, new ChatMessage(mWeatherResult.substring(0, weatherIndex), false));
             weatherIndex++;
-            myHandler.postDelayed(weatherStreamRunnable, 500);
+            chatAdapter.notifyDataSetChanged();
+            myHandler.postDelayed(weatherStreamRunnable, 300);
         }
     };
 
