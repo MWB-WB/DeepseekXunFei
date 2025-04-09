@@ -73,16 +73,21 @@ import com.google.gson.JsonObject;
 import com.iflytek.cloud.SpeechUtility;
 
 import com.yl.deepseekxunfei.APICalls.KwmusiccarApi;
+import com.yl.deepseekxunfei.APICalls.MovieApiClient;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.OnPoiSearchListenerMusccar;
 import com.yl.deepseekxunfei.APICalls.SongPlaybackAPI;
+import com.yl.deepseekxunfei.adapter.SearchResultAdapter;
+import com.yl.deepseekxunfei.adapter.SearchResultAdapterMovie;
 import com.yl.deepseekxunfei.model.BaseChildModel;
+import com.yl.deepseekxunfei.model.MovieResponse;
 import com.yl.deepseekxunfei.model.SceneModel;
 import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.scene.SceneManager;
+import com.yl.deepseekxunfei.utlis.BotConstResponse;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
-import com.yl.deepseekxunfei.utlis.SearchResultAdapterMusical;
+import com.yl.deepseekxunfei.adapter.SearchResultAdapterMusical;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.positioning;
 
@@ -481,7 +486,7 @@ public class MainActivity extends AppCompatActivity {
             inputEditText.setText("");
             SceneModel sceneModel = sceneManager.parseQuestionToScene(input);
             BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-            actionByType(baseChildModel, MainActivity.this, null);
+            actionByType(baseChildModel, MainActivity.this);
         }
     }
 
@@ -596,9 +601,11 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "您还没开始说话", Toast.LENGTH_SHORT).show();
             return;
         }
+        chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
+        chatAdapter.notifyDataSetChanged();
         SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
         BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-        actionByType(baseChildModel, MainActivity.this, finalText);
+        actionByType(baseChildModel, MainActivity.this);
     }
 
     /**
@@ -1095,18 +1102,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void actionByType(BaseChildModel baseChildModel, Context context, String StrTTS) throws JSONException {
+    public void actionByType(BaseChildModel baseChildModel, Context context) throws JSONException {
         switch (baseChildModel.getType()) {
             // 附近搜索
             case SceneTypeConst.NEARBY: {
                 Log.d(TAG, "Search: 附近搜索");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                String botResponse = "好的，以下是搜索结果";
+                String botResponse = BotConstResponse.getSuccessResponse();
                 TTS(botResponse);
-                if (StrTTS != null) {
-                    chatMessages.add(new ChatMessage(StrTTS, true)); // 添加到聊天界面
-                }
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyDataSetChanged();
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1136,11 +1140,8 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Search: 关键字");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                String botResponse = "好的，以下是搜索结果";
+                String botResponse = BotConstResponse.getSuccessResponse();
                 TTS(botResponse);
-                if (StrTTS != null) {
-                    chatMessages.add(new ChatMessage(StrTTS, true)); // 添加到聊天界面
-                }
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyDataSetChanged();
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1164,6 +1165,16 @@ public class MainActivity extends AppCompatActivity {
                 });
                 break;
             }
+            case SceneTypeConst.RECENT_FILMS:
+                isStopRequested = true;
+                // 先让机器人回复固定内容
+                String botResponse = BotConstResponse.getSuccessResponse();
+                TTS(botResponse);
+                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                getNowPlayingMovies();
+                break;
             //闲聊
             case SceneTypeConst.CHITCHAT: {
                 // 搜索本地知识库
@@ -1183,9 +1194,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (!found) {
                     isStopRequested = false;
-                    if (StrTTS != null) {
-                        chatMessages.add(new ChatMessage(StrTTS, true)); // 添加到聊天界面
-                    }
                     callGenerateApi(baseChildModel.getText());
                 }
                 break;
@@ -1194,5 +1202,32 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "actionByType: todayWeather");
                 break;
         }
+    }
+
+    private void getNowPlayingMovies() {
+        MovieApiClient.getNowPlayingMovies(new MovieApiClient.OnMoviesLoadedListener() {
+            @Override
+            public void onSuccess(List<MovieResponse.Movie> movies) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        SearchResultAdapterMovie adapterMovie = new SearchResultAdapterMovie(MainActivity.this, movies, new SearchResultAdapterMovie.OnItemClickListener() {
+                            @Override
+                            public void onItemClick(MovieResponse.Movie result) {
+
+                            }
+                        });
+                        defaultRightContent.setVisibility(View.GONE);
+                        searchResultsRecyclerView.setVisibility(View.VISIBLE);
+                        searchResultsRecyclerView.setAdapter(adapterMovie);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(IOException e) {
+                Log.e(TAG, "Failed to load movies: " + e.getMessage());
+            }
+        });
     }
 }

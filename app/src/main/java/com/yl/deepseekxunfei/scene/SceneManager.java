@@ -1,5 +1,7 @@
 package com.yl.deepseekxunfei.scene;
 
+import android.util.Log;
+
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
 import com.yl.deepseekxunfei.sceneenum.SceneType;
@@ -9,6 +11,7 @@ public class SceneManager {
 
     private WeatherScene weatherScene;
     private NavScene navScene;
+    private MovieScene movieScene;
     private int currentSceneType;
 
     public SceneManager() {
@@ -18,10 +21,12 @@ public class SceneManager {
     private void initChildScene() {
         weatherScene = new WeatherScene();
         navScene = new NavScene();
+        movieScene = new MovieScene();
     }
 
     //解析场景
     public SceneModel parseQuestionToScene(String text) {
+        Log.e("TAG", "parseQuestionToScene: " + text );
         SceneModel resultModel = new SceneModel();
         resultModel.setText(text);
         if (text.startsWith("导航") || text.contains("附近的")) {
@@ -32,6 +37,8 @@ public class SceneManager {
             resultModel.setScene(SceneType.LOCATION);
         } else if (text.contains("天气")) {
             resultModel.setScene(SceneType.WEATHER);
+        } else if (text.contains("电影")) {
+            resultModel.setScene(SceneType.MOVIE);
         } else {
             resultModel.setScene(SceneType.CHITCHAT);
         }
@@ -49,6 +56,10 @@ public class SceneManager {
                 break;
             case NAVIGATION:
                 baseChildModel = navScene.parseSceneToChild(sceneModel);
+                currentSceneType = baseChildModel.getType();
+                break;
+            case MOVIE:
+                baseChildModel = movieScene.parseSceneToChild(sceneModel);
                 currentSceneType = baseChildModel.getType();
                 break;
             case CHITCHAT:

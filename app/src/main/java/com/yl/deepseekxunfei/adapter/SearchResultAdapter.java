@@ -1,4 +1,4 @@
-package com.yl.deepseekxunfei.utlis;
+package com.yl.deepseekxunfei.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,33 +9,35 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yl.deepseekxunfei.R;
-import com.yl.deepseekxunfei.SearchResultAdapter;
-import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 
 import java.util.List;
 
-public class SearchResultAdapterMusical extends RecyclerView.Adapter<SearchResultAdapterMusical.ViewHolder> {
-    private List<LocationMusccarResult> results;
+/**
+ * 设配器
+ */
+public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapter.ViewHolder> {
+    private List<LocationResult> results;
     private OnItemClickListener listener;
 
-    public SearchResultAdapterMusical(List<LocationMusccarResult> results, OnItemClickListener listener) {
+    public SearchResultAdapter(List<LocationResult> results, OnItemClickListener listener) {
         this.results = results;
         this.listener = listener;
     }
+
     @NonNull
     @Override
-    public SearchResultAdapterMusical.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_search_result, parent, false);
-        return new SearchResultAdapterMusical.ViewHolder(view);
+        return new ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        LocationMusccarResult result = results.get(position);
-        holder.nameText.setText(result.getSongName());
-        holder.addressText.setText(result.getAlbum());
+        LocationResult result = results.get(position);
+        holder.nameText.setText(result.getName());
+        holder.addressText.setText(result.getAddress());
         holder.itemView.setOnClickListener(v -> listener.onItemClick(result));
     }
 
@@ -43,6 +45,7 @@ public class SearchResultAdapterMusical extends RecyclerView.Adapter<SearchResul
     public int getItemCount() {
         return results.size();
     }
+
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView nameText;
         TextView addressText;
@@ -53,7 +56,8 @@ public class SearchResultAdapterMusical extends RecyclerView.Adapter<SearchResul
             addressText = itemView.findViewById(R.id.addressText);
         }
     }
+
     public interface OnItemClickListener {
-        void onItemClick(LocationMusccarResult result);
+        void onItemClick(LocationResult result);
     }
 }

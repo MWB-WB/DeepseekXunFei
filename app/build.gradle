@@ -47,10 +47,10 @@ dependencies {
     implementation libs.activity
     implementation libs.constraintlayout
     implementation files('libs\\Msc.jar')
-    implementation files('libs\\Msc.jar')
     implementation files('libs\\AMap_Location_V6.4.9_20241226.jar')
     testImplementation libs.junit
     implementation(fileTree("libs"))
+    implementation libs.glide
     implementation "com.squareup.okhttp3:okhttp:4.9.3"
     implementation "com.google.code.gson:gson:2.8.9"
     implementation 'com.hankcs:hanlp:portable-1.8.2'
