@@ -47,7 +47,7 @@ dependencies {
     implementation libs.activity
     implementation libs.constraintlayout
     implementation files('libs\\Msc.jar')
-    implementation files('libs\\AMap_Location_V6.4.9_20241226.jar')
+    implementation files('libs\\AMap3DMap_10.1.200_AMapNavi_10.1.200_AMapSearch_9.7.4_AMapLocation_6.4.9_20241226.jar')
     testImplementation libs.junit
     implementation(fileTree("libs"))
     implementation libs.glide

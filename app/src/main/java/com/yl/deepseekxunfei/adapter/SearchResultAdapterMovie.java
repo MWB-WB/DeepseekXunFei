@@ -39,10 +39,10 @@ public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultA
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         MovieResponse.Movie result = results.get(position);
         Glide.with(mContext).load(result.getImg()).into(holder.movieImg);
-        holder.movieTitle.setText(result.getNm());
-        holder.moviePt.setText(result.getRt());
-        holder.movieStart.setText(result.getStar());
-        holder.itemView.setOnClickListener(v -> listener.onItemClick(result));
+        holder.movieTitle.setText("名称:" + result.getNm());
+        holder.moviePt.setText("上映时间:" + result.getRt());
+        holder.movieStart.setText("主演:" + result.getStar());
+        holder.itemView.setOnClickListener(v -> listener.onItemClick(result, position));
     }
 
     @Override
@@ -66,6 +66,6 @@ public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultA
     }
 
     public interface OnItemClickListener {
-        void onItemClick(MovieResponse.Movie result);
+        void onItemClick(MovieResponse.Movie result, int position);
     }
 }

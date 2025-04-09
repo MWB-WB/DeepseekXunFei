@@ -17,6 +17,34 @@ public class MovieDetailModel {
         @SerializedName("shareInfo")
         private ShareInfo shareInfo;
 
+        @SerializedName("cat")
+        private String cat;
+
+        @SerializedName("img")
+        private String img;
+
+        @SerializedName("star")
+        private String star;
+
+        @SerializedName("pubDesc")
+        private String pubDesc;
+
+        public String getPubDesc() {
+            return pubDesc;
+        }
+
+        public String getStar() {
+            return star;
+        }
+
+        public String getCat() {
+            return cat;
+        }
+
+        public String getImg() {
+            return img;
+        }
+
         public String getNm() {
             return nm;
         }
@@ -25,27 +53,14 @@ public class MovieDetailModel {
             return shareInfo;
         }
 
-        private class ShareInfo {
+        public class ShareInfo {
             @SerializedName("content")
             private String content;
-
-            @SerializedName("img")
-            private String img;
-
-            @SerializedName("title")
-            private String title;
 
             public String getContent() {
                 return content;
             }
 
-            public String getImg() {
-                return img;
-            }
-
-            public String getTitle() {
-                return title;
-            }
         }
     }
 }

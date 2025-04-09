@@ -2,23 +2,18 @@ package com.yl.deepseekxunfei;
 
 
 import android.app.AlertDialog;
-import android.content.ActivityNotFoundException;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Point;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.JsonReader;
 import android.util.Log;
-import android.view.Display;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -27,6 +22,7 @@ import android.widget.EditText;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.StringReader;
+import java.lang.ref.WeakReference;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -50,7 +46,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocationClient;
-import com.github.ybq.android.spinkit.SpinKitView;
+import com.amap.api.services.weather.LocalWeatherLive;
 import com.iflytek.cloud.ErrorCode;
 import com.iflytek.cloud.InitListener;
 import com.iflytek.cloud.RecognizerResult;
@@ -72,22 +68,18 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.iflytek.cloud.SpeechUtility;
 
-import com.yl.deepseekxunfei.APICalls.KwmusiccarApi;
-import com.yl.deepseekxunfei.APICalls.MovieApiClient;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
-import com.yl.deepseekxunfei.APICalls.OnPoiSearchListenerMusccar;
-import com.yl.deepseekxunfei.APICalls.SongPlaybackAPI;
-import com.yl.deepseekxunfei.adapter.SearchResultAdapter;
-import com.yl.deepseekxunfei.adapter.SearchResultAdapterMovie;
+import com.yl.deepseekxunfei.APICalls.WeatherAPI;
+import com.yl.deepseekxunfei.fragment.MainFragment;
+import com.yl.deepseekxunfei.fragment.MovieDetailFragment;
+import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
-import com.yl.deepseekxunfei.model.MovieResponse;
+import com.yl.deepseekxunfei.model.MovieDetailModel;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
-import com.yl.deepseekxunfei.adapter.SearchResultAdapterMusical;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.positioning;
 
@@ -99,7 +91,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener {
 
     private static final String API_URL = "http://120.77.38.137:11434/api/chat ";
 
@@ -155,55 +147,37 @@ public class MainActivity extends AppCompatActivity {
     private long lastClickTime = 0;//第一次点击时间
     private static final long MIN_CLICK_INTERVAL = 3000; // 最小时间间隔为1秒
     private boolean YesNo = false;//是否改变按钮状态
+    private WeatherAPI weatherAPI;
+    private MainFragment mainFragment;
+    private RecyFragment recyFragment;
+    private MovieDetailFragment movieDetailFragment;
+    private MyHandler myHandler;
+    private String mWeatherResult;
     private static final List<String> SENSITIVE_WORDS = Arrays.asList(
             "DeepSeek", "deepseek", "DEEPSEEK", "Deepseek", "deep seek", "Deep Seek"
     );//敏感词列表
-    private RecyclerView searchResultsRecyclerView;
-    private LinearLayout defaultRightContent;
-    //动画效果
-    private SpinKitView spinKitView;
 
     // 检查当前标题是否已经存在于历史记录中
     boolean isDuplicate = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        initPermission(); // 权限请求
         super.onCreate(savedInstanceState);
-        // 初始化高德地图SDK
-        AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
-        AMapLocationClient.updatePrivacyShow(this, true, true);
-        AMapLocationClient.updatePrivacyAgree(this, true);
         enableImmersiveMode();
         setContentView(R.layout.activity_main);
-        sceneManager = new SceneManager();
-//        adjustRecyclerViewWhenKeyboardAppears(260);
+        initPermission(); // 权限请求
         ContextHolder.init(this); // 保存全局 Context
+        initView();
+        initThirdApi();
+        myHandler = new MyHandler(this);
+        sceneManager = new SceneManager();
         textFig = false;
-        Display display = getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-        display.getSize(size);
-        int width = size.x;
-        int height = size.y;
-        Log.d(TAG, "屏幕宽: " + width);
-        Log.d(TAG, "屏幕高: " + height);
-//        initial(MainActivity.this);
+    }
 
-        // 初始化视图
-        searchResultsRecyclerView = findViewById(R.id.searchResultsRecyclerView);
-        defaultRightContent = findViewById(R.id.defaultRightContent);
-        // 设置RecyclerView
-        searchResultsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+    private void initView() {
         //标题置顶
         titleTextView = findViewById(R.id.titleTextView);
         titleTextView.bringToFront();
-        //初始化动画效果
-        spinKitView = findViewById(R.id.spin_kit);
-        // 初始化语音合成
-        SpeechUtility.createUtility(MainActivity.this, SpeechConstant.APPID + "=27b3a946");
-        mTts = SpeechSynthesizer.createSynthesizer(MainActivity.this, mTtsInitListener);
-        // 加载本地知识库
-        knowledgeBase = KnowledgeBaseLoader.loadKnowledgeBase(this);
         editTextQuestion = findViewById(R.id.inputEditText);//输入框
         button = findViewById(R.id.send_button);//发送按钮
         TTSbutton = findViewById(R.id.wdxzs);
@@ -213,14 +187,6 @@ public class MainActivity extends AppCompatActivity {
         // 添加全局布局监听器
         final View activityRootView = findViewById(android.R.id.content);
         ViewTreeObserver viewTreeObserver = activityRootView.getViewTreeObserver();
-        //请求定位
-        // initLocation();
-        positioning positioning = new positioning();
-        try {
-            positioning.initLocation(MainActivity.this);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
         editTextQuestion.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -250,7 +216,7 @@ public class MainActivity extends AppCompatActivity {
                     // 获取输入框内容
                     button.setOnClickListener(v -> {
                         try {
-                            restoreDefaultRightLayout();
+                            replaceFragment(0);
                             sendMessage();
                         } catch (JSONException e) {
                             throw new RuntimeException(e);
@@ -286,12 +252,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
-
-        // 使用SpeechRecognizer对象，可根据回调消息自定义界面；
-        mIat = SpeechRecognizer.createRecognizer(MainActivity.this, mInitListener);
-        // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
-        mIatDialog = new RecognizerDialog(MainActivity.this, mInitListener);
-        mSharedPreferences = getSharedPreferences("ASR", Activity.MODE_PRIVATE);
         //输入框
         inputEditText = findViewById(R.id.inputEditText);
         chatRecyclerView = findViewById(R.id.chat_recycler_view);
@@ -310,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+
         // 初始化视图
         titleTextView = findViewById(R.id.titleTextView);
         history = findViewById(R.id.historyButton);
@@ -376,51 +337,57 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "请等待输出完成，或者点击停止输出在新建对话 ", Toast.LENGTH_SHORT).show();
             }
         });
+        mainFragment = new MainFragment();
+        recyFragment = new RecyFragment();
+        movieDetailFragment = new MovieDetailFragment();
+        getSupportFragmentManager().beginTransaction().add(R.id.right_layout, mainFragment).commit();
+        getSupportFragmentManager().beginTransaction().add(R.id.right_layout, recyFragment).commit();
+        getSupportFragmentManager().beginTransaction().add(R.id.right_layout, movieDetailFragment).commit();
+        replaceFragment(0);
+    }
 
-        TextView RightTextViewRoute = findViewById(R.id.lxgh);
-        TextView RightTextViewMusic = findViewById(R.id.yybf);
-        TextView RightTextViewPhone = findViewById(R.id.dhtx);
-        TextView RightTextViewVehicle = findViewById(R.id.clxx);
-        TextView RightTextViewClimate = findViewById(R.id.qhkz);
-        TextView RightTextViewPerimeter = findViewById(R.id.zbss);
-        // 推荐问题点击区域
-        TextView[] textViews = {
-                findViewById(R.id.t1), findViewById(R.id.t2), findViewById(R.id.t3),
-                findViewById(R.id.t4), findViewById(R.id.t5), findViewById(R.id.t6),
-                findViewById(R.id.t7), findViewById(R.id.t8), findViewById(R.id.t9),
-                findViewById(R.id.t10), findViewById(R.id.t11), findViewById(R.id.t12)
-        };
-        for (TextView textView : textViews) {
-            textView.setOnClickListener(v -> {
-                if (!textFig) {
-                    inputEditText.setText(textView.getText());
-                    if (inputEditText.getText().toString().trim().equals("播放音乐。")) {
-                        chatMessages.add(new ChatMessage(inputEditText.getText().toString().trim(), true)); // 添加到聊天界面
-                        inputEditText.setText("");
-                        String botResponse = "好的，请稍后，正在为您打开应用";
-                        TTS(botResponse);
-                        chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
-                        chatAdapter.notifyDataSetChanged();
-                        chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                        KwmusiccarApi.musiccar(MainActivity.this, "小孩", new OnPoiSearchListenerMusccar() {
-                            @Override
-                            public void onSuccess(List<LocationMusccarResult> results) {
-                                runOnUiThread(() -> showSearchResultsMusccar(results));
-                            }
+    public void showDetailFragment(MovieDetailModel model) {
+        replaceFragment(2);
+        movieDetailFragment.setData(model);
+    }
 
-                            @Override
-                            public void onError(String error) {
-                                Log.d(TAG, "歌曲搜索失败" + error);
-                            }
-                        });
-                        return;
-                    }
-                    button.performClick(); // 自动触发发送按钮点击
-                } else {
-                    Toast.makeText(MainActivity.this, "请等待当前问题回答完毕或者手动点击停止输出", Toast.LENGTH_SHORT).show();
-                }
-            });
+    public void showMovieFragment() {
+        replaceFragment(1);
+        recyFragment.getNowPlayingMovies();
+    }
+
+    public void commitText(String text) {
+        chatMessages.add(new ChatMessage(text, true));
+        chatAdapter.notifyDataSetChanged();
+        SceneModel sceneModel = sceneManager.parseQuestionToScene(text);
+        BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
+        actionByType(baseChildModel);
+    }
+
+    private void initThirdApi() {
+        // 初始化高德地图SDK
+        AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
+        AMapLocationClient.updatePrivacyShow(this, true, true);
+        AMapLocationClient.updatePrivacyAgree(this, true);
+        //初始化动画效果
+        // 初始化语音合成
+        SpeechUtility.createUtility(MainActivity.this, SpeechConstant.APPID + "=27b3a946");
+        mTts = SpeechSynthesizer.createSynthesizer(MainActivity.this, mTtsInitListener);
+        // 加载本地知识库
+        knowledgeBase = KnowledgeBaseLoader.loadKnowledgeBase(this);
+        positioning positioning = new positioning();
+        try {
+            positioning.initLocation(MainActivity.this);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+        // 使用SpeechRecognizer对象，可根据回调消息自定义界面；
+        mIat = SpeechRecognizer.createRecognizer(MainActivity.this, mInitListener);
+        // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
+        mIatDialog = new RecognizerDialog(MainActivity.this, mInitListener);
+        mSharedPreferences = getSharedPreferences("ASR", Activity.MODE_PRIVATE);
+        weatherAPI = new WeatherAPI();
+        weatherAPI.setOnWeatherListener(this);
     }
 
 
@@ -486,7 +453,7 @@ public class MainActivity extends AppCompatActivity {
             inputEditText.setText("");
             SceneModel sceneModel = sceneManager.parseQuestionToScene(input);
             BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-            actionByType(baseChildModel, MainActivity.this);
+            actionByType(baseChildModel);
         }
     }
 
@@ -506,6 +473,48 @@ public class MainActivity extends AppCompatActivity {
      */
     private void showMsg(String msg) {
         Toast.makeText(MainActivity.this, msg, Toast.LENGTH_SHORT).show();
+    }
+
+    private void replaceFragment(int id) {
+        hideFragment();
+        if (id == 0) {
+            if (mainFragment == null) {
+                //设置fragment
+                mainFragment = new MainFragment();
+                getSupportFragmentManager().beginTransaction().add(R.id.right_layout, mainFragment).commit();
+            } else {
+                getSupportFragmentManager().beginTransaction().show(mainFragment).commit();
+            }
+        } else if (id == 1) {
+            if (recyFragment == null) {
+                //设置fragment
+                recyFragment = new RecyFragment();
+                getSupportFragmentManager().beginTransaction().add(R.id.right_layout, recyFragment).commit();
+            } else {
+                getSupportFragmentManager().beginTransaction().show(recyFragment).commit();
+            }
+            recyFragment.setRecyGone();
+        } else if (id == 2) {
+            if (movieDetailFragment == null) {
+                //设置fragment
+                movieDetailFragment = new MovieDetailFragment();
+                getSupportFragmentManager().beginTransaction().add(R.id.right_layout, movieDetailFragment).commit();
+            } else {
+                getSupportFragmentManager().beginTransaction().show(movieDetailFragment).commit();
+            }
+        }
+    }
+
+    private void hideFragment() {
+        if (mainFragment != null) {
+            getSupportFragmentManager().beginTransaction().hide(mainFragment).commit();
+        }
+        if (recyFragment != null) {
+            getSupportFragmentManager().beginTransaction().hide(recyFragment).commit();
+        }
+        if (movieDetailFragment != null) {
+            getSupportFragmentManager().beginTransaction().hide(movieDetailFragment).commit();
+        }
     }
 
     /**
@@ -605,7 +614,7 @@ public class MainActivity extends AppCompatActivity {
         chatAdapter.notifyDataSetChanged();
         SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
         BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-        actionByType(baseChildModel, MainActivity.this);
+        actionByType(baseChildModel);
     }
 
     /**
@@ -866,6 +875,44 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public void onWeatherSuccess(LocalWeatherLive weatherLive) {
+        chatMessages.remove(chatMessages.size() - 1);
+        mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
+                "，当前的温度是" + weatherLive.getTemperature() + "°";
+        TTS(mWeatherResult);
+        chatMessages.add(new ChatMessage("", false)); // 添加到聊天界面
+        chatAdapter.notifyDataSetChanged();
+        weatherIndex = 0;
+        myHandler.post(weatherStreamRunnable);
+
+    }
+
+    private int weatherIndex = 0;
+    Runnable weatherStreamRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (weatherIndex == mWeatherResult.length() - 1) {
+                return;
+            }
+            chatMessages.set(chatMessages.size() - 1, new ChatMessage(mWeatherResult.substring(0, weatherIndex), false));
+            weatherIndex++;
+            myHandler.postDelayed(weatherStreamRunnable, 500);
+        }
+    };
+
+    @Override
+    public void onWeatherError(String message, int rCode) {
+    }
+
+    class MyHandler extends Handler {
+        private WeakReference<Activity> weakReference;
+
+        public MyHandler(Activity activity) {
+            weakReference = new WeakReference<>(activity);
+        }
+    }
+
 
     // 历史记录适配器点击事件接口
     public interface OnItemClickListener {
@@ -1002,73 +1049,16 @@ public class MainActivity extends AppCompatActivity {
 
     // 显示搜索结果
     private void showSearchResults(List<LocationResult> results) {
-        runOnUiThread(() -> {
-            defaultRightContent.setVisibility(View.GONE);
-            searchResultsRecyclerView.setVisibility(View.VISIBLE);
-            SearchResultAdapter adapter = new SearchResultAdapter(results, result -> {
-                // 点击结果后导航
-                AmapNavigator.startNavigationByUri(
-                        MainActivity.this,
-                        result.getName(),
-                        result.getLongitude(),
-                        result.getLatitude()
-                );
-
-            });
-            searchResultsRecyclerView.setAdapter(adapter);
-        });
-    }
-
-    private void showSearchResultsMusccar(List<LocationMusccarResult> results) {
-        Log.d(TAG, "showSearchResultsMusccar: " + results);
-        runOnUiThread(() -> {
-            defaultRightContent.setVisibility(View.GONE);
-            searchResultsRecyclerView.setVisibility(View.VISIBLE);
-            SearchResultAdapterMusical adapter = new SearchResultAdapterMusical(results, result -> {
-                Log.d("歌曲HASH值", "歌曲HASH值: " + result.getMusicId().toString());
-                SongPlaybackAPI.playBack(MainActivity.this, result.toString());
-//                //预留播放实现
-//                String hash ="1c404ebb2a6e062bea20f5627831c89c"; // 歌曲hash
-//                Intent  kugou = new Intent();
-//                // 检查是否有应用能处理该Intent
-////                kugou.setPackage("com.kugou.android.auto");
-//                kugou.setClassName("com.kugou.and roid.auto","com.kugou.android.auto/.ui.activity.SplashPureActivity");
-////                kugou.setData (Uri.parse("kugoucar://play?hash=" + hash));
-//                startActivity(kugou);
-//                String hash = "1c404ebb2a6e062bea20f5627831c89c";
-//                Intent intent = new Intent(Intent.ACTION_VIEW);
-//                intent.setData(Uri.parse("kugouplayer://play/hash/"+ hash)); // 车机版可能用这个
-//                intent.setPackage("com.kugou.android.auto"); // 限制只用车机版打开
-//                    startActivity(intent);
-                // 5. 打开酷狗音乐车机版
-                try {
-                    Intent kugou = new Intent();
-                    kugou.setComponent(new ComponentName(
-                            "com.kugou.android.auto",
-                            "com.kugou.android.auto.ui.activity.SplashPureActivity"));
-                    startActivity(kugou);
-                } catch (ActivityNotFoundException e) {
-                    Log.d(TAG, "onCreate: " + e.getMessage());
-                    Toast.makeText(MainActivity.this, "未安装酷狗音乐车机版", Toast.LENGTH_SHORT).show();
-                }
-            });
-            searchResultsRecyclerView.setAdapter(adapter);
-        });
-    }
-
-    // 恢复默认布局
-    private void restoreDefaultRightLayout() {
-        runOnUiThread(() -> {
-            defaultRightContent.setVisibility(View.VISIBLE);
-            searchResultsRecyclerView.setVisibility(View.GONE);
-        });
+        replaceFragment(1);
+        recyFragment.showNavSearchResult(results);
     }
 
     // 处理返回键
     @Override
     public void onBackPressed() {
-        if (searchResultsRecyclerView.getVisibility() == View.VISIBLE) {
-            restoreDefaultRightLayout();
+        if (recyFragment != null && recyFragment.isVisible()) {
+            //给fragment处理
+            replaceFragment(0);
         } else {
             super.onBackPressed();
         }
@@ -1102,14 +1092,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void actionByType(BaseChildModel baseChildModel, Context context) throws JSONException {
+    public void actionByType(BaseChildModel baseChildModel) {
+        String botResponse = BotConstResponse.getSuccessResponse();
         switch (baseChildModel.getType()) {
             // 附近搜索
             case SceneTypeConst.NEARBY: {
                 Log.d(TAG, "Search: 附近搜索");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                String botResponse = BotConstResponse.getSuccessResponse();
                 TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyDataSetChanged();
@@ -1123,7 +1113,7 @@ public class MainActivity extends AppCompatActivity {
                         if (results != null && !results.isEmpty()) {
                             Log.d("附近搜索", "onSuccess: ");
                         } else {
-                            restoreDefaultRightLayout();
+                            replaceFragment(0);
                             runOnUiThread(() -> Toast.makeText(MainActivity.this, "未查询到相关内容", Toast.LENGTH_SHORT).show());
                         }
                     }
@@ -1132,7 +1122,7 @@ public class MainActivity extends AppCompatActivity {
                     public void onError(String error) {
                         Log.d("搜索失败", error);
                     }
-                }, context);
+                }, this);
                 break;
             }
             // 关键字导航
@@ -1140,20 +1130,19 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Search: 关键字");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                String botResponse = BotConstResponse.getSuccessResponse();
                 TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyDataSetChanged();
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 String address = extractLocation(baseChildModel.getText());
-                searchIn.searchInAmap(context, address, new OnPoiSearchListener() {
+                searchIn.searchInAmap(this, address, new OnPoiSearchListener() {
                     @Override
                     public void onSuccess(List<LocationResult> results) {
                         runOnUiThread(() -> showSearchResults(results));
                         if (results != null && !results.isEmpty()) {
                             Log.d("关键字导航", "onSuccess: ");
                         } else {
-                            restoreDefaultRightLayout();
+                            replaceFragment(0);
                             runOnUiThread(() -> Toast.makeText(MainActivity.this, "未查询到相关内容", Toast.LENGTH_SHORT).show());
                         }
                     }
@@ -1168,12 +1157,11 @@ public class MainActivity extends AppCompatActivity {
             case SceneTypeConst.RECENT_FILMS:
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                String botResponse = BotConstResponse.getSuccessResponse();
                 TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyDataSetChanged();
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-                getNowPlayingMovies();
+                showMovieFragment();
                 break;
             //闲聊
             case SceneTypeConst.CHITCHAT: {
@@ -1194,40 +1182,23 @@ public class MainActivity extends AppCompatActivity {
                 }
                 if (!found) {
                     isStopRequested = false;
-                    callGenerateApi(baseChildModel.getText());
+                    try {
+                        callGenerateApi(baseChildModel.getText());
+                    } catch (JSONException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 break;
             }
             case SceneTypeConst.TODAY_WEATHER:
                 Log.d(TAG, "actionByType: todayWeather");
+                weatherAPI.weatherSearch();
+                // 先让机器人回复固定内容
+                TTS(BotConstResponse.searchWeatherWaiting);
+                chatMessages.add(new ChatMessage(BotConstResponse.searchWeatherWaiting, false)); // 添加到聊天界面
+                chatAdapter.notifyDataSetChanged();
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 break;
         }
-    }
-
-    private void getNowPlayingMovies() {
-        MovieApiClient.getNowPlayingMovies(new MovieApiClient.OnMoviesLoadedListener() {
-            @Override
-            public void onSuccess(List<MovieResponse.Movie> movies) {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        SearchResultAdapterMovie adapterMovie = new SearchResultAdapterMovie(MainActivity.this, movies, new SearchResultAdapterMovie.OnItemClickListener() {
-                            @Override
-                            public void onItemClick(MovieResponse.Movie result) {
-
-                            }
-                        });
-                        defaultRightContent.setVisibility(View.GONE);
-                        searchResultsRecyclerView.setVisibility(View.VISIBLE);
-                        searchResultsRecyclerView.setAdapter(adapterMovie);
-                    }
-                });
-            }
-
-            @Override
-            public void onFailure(IOException e) {
-                Log.e(TAG, "Failed to load movies: " + e.getMessage());
-            }
-        });
     }
 }
