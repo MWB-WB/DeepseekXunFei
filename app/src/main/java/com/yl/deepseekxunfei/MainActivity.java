@@ -842,7 +842,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                 }
                                                 if (endTag.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                     chatMessages.get(botMessageIndexRound1).setThinkContent(false);
-                                                    chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
                                                     continue;
                                                 }
 
@@ -876,6 +875,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                         TTS(huida);
                                                         isStopRequested = true;
                                                         textFig = false;
+                                                        chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
                                                         chatMessages.get(botMessageIndexRound1).setOver(true);
                                                         button.setImageResource(R.drawable.jzfason);
                                                         Log.d("保存上下文信息", "run: " + fullResponseRound1.toString());
@@ -950,11 +950,20 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     @Override
     public void onWeatherSuccess(LocalWeatherForecastResult localWeatherForecastResult) {
         setCurrentChatOver();
+        chatMessages.remove(chatMessages.size() - 1);
+        StringBuilder result = new StringBuilder(BotConstResponse.getSuccessResponse());
         List<LocalDayWeatherForecast> weatherForecast = localWeatherForecastResult.getForecastResult().getWeatherForecast();
         for (LocalDayWeatherForecast localDayWeatherForecast : weatherForecast) {
             Log.d(TAG, "Date: " + localDayWeatherForecast.getDate() + ":: Weather: " + localDayWeatherForecast.getDayWeather()
                     + ":: DayWeather: " + localDayWeatherForecast.getDayWeather() + ":: NightWeather: " + localDayWeatherForecast.getNightWeather());
+            int dayTemp = Integer.parseInt(localDayWeatherForecast.getDayTemp());
+            int nightTemp = Integer.parseInt(localDayWeatherForecast.getNightTemp());
+            result.append("\n").append("日期：").append(localDayWeatherForecast.getDate()).append("\t温度：")
+                    .append(Math.min(dayTemp, nightTemp)).append("°/").append(Math.max(dayTemp, nightTemp)).append("°");
         }
+        TTS(result.toString());
+        chatMessages.add(new ChatMessage(result.toString(), false)); // 添加到聊天界面
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
     }
 
     class MyHandler extends Handler {
@@ -1277,7 +1286,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             public void onTimeFinish() {
                 if (!chatMessages.get(position).isOver()) {
                     chatMessages.get(position).setOver(true);
-                    chatMessages.get(position).setMessage("当前网络波动较大，请稍后尝试");
+                    TTS(BotConstResponse.searchWeatherError);
+                    chatMessages.get(position).setMessage(BotConstResponse.searchWeatherError);
                     chatAdapter.notifyItemChanged(position);
                 }
             }
