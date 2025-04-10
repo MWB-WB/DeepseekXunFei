@@ -1,10 +1,8 @@
-package com.yl.deepseekxunfei;
+package com.yl.deepseekxunfei.utlis;
 
-import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Bundle;
 import android.util.Log;
 
 //com.autonavi.amapauto 高德包名

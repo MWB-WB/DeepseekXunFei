@@ -8,22 +8,24 @@
     ndroid:padding="4dp">
 
     <!-- 主内容布局 -->
-<!--  应用圆角背景  android:background="@drawable/rounded_corner_bg"-->
+    <!--  应用圆角背景  android:background="@drawable/rounded_corner_bg"-->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         ndroid:ignore="MissingConstraints">
+
         <TextView
             android:id="@+id/message_text_view"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingRight="10dp"
-            android:layout_margin="20dp"
-            android:textSize="20sp"
-            android:background="@drawable/rounded_corner_bg"
-            android:textColor="#000000"
             android:layout_alignParentEnd="true"
-            android:ellipsize="none" />
+            android:layout_margin="20dp"
+            android:background="@drawable/rounded_corner_bg"
+            android:ellipsize="none"
+            android:padding="10dp"
+            android:paddingRight="10dp"
+            android:textColor="#000000"
+            android:textSize="16sp" />
     </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

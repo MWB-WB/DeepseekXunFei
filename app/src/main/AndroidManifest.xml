@@ -30,6 +30,10 @@
         android:usesCleartextTraffic="true"
 
         tools:targetApi="31" >
+        <!--设置高德Key-->
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="5c04f780c8748ab0d52f27608efa579f" />
         <!-- adjustPan -->
         <activity
             android:name=".MainActivity"

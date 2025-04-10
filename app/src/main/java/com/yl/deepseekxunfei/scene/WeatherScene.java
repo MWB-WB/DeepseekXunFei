@@ -14,7 +14,7 @@ public class WeatherScene extends BaseChildScene{
         if (text.contains("今天") || text.contains("现在")) {
             weatherSceneModel.setType(SceneTypeConst.TODAY_WEATHER);
         } else {
-            weatherSceneModel.setType(SceneTypeConst.FEATHER_WEATHER);
+            weatherSceneModel.setType(SceneTypeConst.   FEATHER_WEATHER);
         }
         return weatherSceneModel;
     }

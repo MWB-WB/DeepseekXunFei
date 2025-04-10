@@ -3,17 +3,37 @@ package com.yl.deepseekxunfei;
 
 import android.app.Application;
 
+import com.amap.api.location.AMapLocationClient;
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechUtility;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MyApplication extends Application {
+
+    private ExecutorService executorService;
 
     @Override
     public void onCreate() {
         super.onCreate();
-        //  开放平台注册的APPID
-        SpeechUtility.createUtility(MyApplication.this, SpeechConstant.APPID + "=27b3a946");
+        executorService = Executors.newSingleThreadExecutor();
+        initThrid();
     }
+
+    private void initThrid() {
+        executorService.submit(()->{
+            //  开放平台注册的APPID
+            SpeechUtility.createUtility(MyApplication.this, SpeechConstant.APPID + "=27b3a946");
+            // 初始化高德地图SDK
+            AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
+            AMapLocationClient.updatePrivacyShow(this, true, true);
+            AMapLocationClient.updatePrivacyAgree(this, true);
+            // 初始化语音合成
+            SpeechUtility.createUtility(this, SpeechConstant.APPID + "=27b3a946");
+        });
+    }
+
 }
 
 

@@ -2,11 +2,8 @@ package com.yl.deepseekxunfei.APICalls;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import android.adservices.adselection.ReportEventRequest;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.Log;
-import android.widget.LinearLayout;
 
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.weather.LocalWeatherForecastResult;
@@ -14,10 +11,9 @@ import com.amap.api.services.weather.LocalWeatherLive;
 import com.amap.api.services.weather.LocalWeatherLiveResult;
 import com.amap.api.services.weather.WeatherSearch;
 import com.amap.api.services.weather.WeatherSearchQuery;
-import com.yl.deepseekxunfei.ContextHolder;
+import com.yl.deepseekxunfei.utlis.ContextHolder;
+import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.positioning;
-
-import java.util.MissingFormatWidthException;
 
 public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
     private WeatherSearchQuery mquery;
@@ -25,7 +21,7 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
     private LocalWeatherLive weatherlive;
     private Context context = ContextHolder.getContext();
 
-    public void weatherSearch() {
+    public void weatherSearch(int type) {
         //获取当前定位城市
         positioning positioning = new positioning();
         try {
@@ -36,11 +32,13 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
             positioning.release();
         }
         SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
-//        String city = sharedPreferences.getString("city", "");
-        String city = "深圳市";
-        Log.d("天气查询城市", "weatherSearch: " + city);
-//检索参数为城市和天气类型，实况天气为WEATHER_TYPE_LIVE、天气预报为WEATHER_TYPE_FORECAST
-        mquery = new WeatherSearchQuery(city, WeatherSearchQuery.WEATHER_TYPE_LIVE);
+        String city = sharedPreferences.getString("city", "");
+        //检索参数为城市和天气类型，实况天气为WEATHER_TYPE_LIVE、天气预报为WEATHER_TYPE_FORECAST
+        if (type == SceneTypeConst.TODAY_WEATHER) {
+            mquery = new WeatherSearchQuery(city, WeatherSearchQuery.WEATHER_TYPE_LIVE);
+        } else if (type == SceneTypeConst.FEATHER_WEATHER) {
+            mquery = new WeatherSearchQuery(city, WeatherSearchQuery.WEATHER_TYPE_FORECAST);
+        }
         try {
             mweathersearch = new WeatherSearch(context);
             mweathersearch.setOnWeatherSearchListener(this);
@@ -60,11 +58,24 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
         void onWeatherError(String message, int rCode);
     }
 
+    public interface OnForecastWeatherListener {
+        //查询成功方法
+        void onWeatherSuccess(LocalWeatherForecastResult localWeatherForecastResult);
+
+        //查询失败方法
+        void onWeatherError(String message, int rCode);
+    }
+
     private OnWeatherListener onWeatherListener;
+    private OnForecastWeatherListener onForecastWeatherListener;
+
     //回调方法，获取查询信息
     public void setOnWeatherListener(OnWeatherListener onWeatherListener) {
         this.onWeatherListener = onWeatherListener;
-        Log.d("查询结果", "setOnWeatherListener: " + onWeatherListener.toString());
+    }
+
+    public void setOnForecastWeatherListener(OnForecastWeatherListener onForecastWeatherListener) {
+        this.onForecastWeatherListener = onForecastWeatherListener;
     }
 
     /**
@@ -81,17 +92,19 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
                     onWeatherListener.onWeatherError("天气查询失败：错误码：", rCode);
                 }
             } else {
-                Log.d("天气请求", "onWeatherLiveSearched: " + weatherLiveResult.getLiveResult() + "\t" + weatherLiveResult);
-//                ToastUtil.show(WeatherSearchActivity.this, R.string.no_result);
             }
-        } else {
-            Log.d("天气请求", "onWeatherLiveSearched: " + rCode);
-//            ToastUtil.showerror(WeatherSearchActivity.this, rCode);
         }
     }
 
     @Override
-    public void onWeatherForecastSearched(LocalWeatherForecastResult localWeatherForecastResult, int i) {
-
+    public void onWeatherForecastSearched(LocalWeatherForecastResult localWeatherForecastResult, int rCode) {
+        if (localWeatherForecastResult != null && localWeatherForecastResult.getForecastResult().getWeatherForecast().size() > 0) {
+            if (onForecastWeatherListener != null) {
+                onForecastWeatherListener.onWeatherSuccess(localWeatherForecastResult);
+            } else {
+                onForecastWeatherListener.onWeatherError("天气查询失败：错误码：", rCode);
+            }
+        }
     }
+
 }

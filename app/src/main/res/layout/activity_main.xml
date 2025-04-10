@@ -45,9 +45,10 @@
                     android:src="@drawable/lishiduihua" />
 
                 <TextView
-                    android:layout_width="400dp"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
+                    android:layout_weight="1"
                     android:gravity="center"
                     android:text="欢迎使用智能助手"
                     android:textColor="#000000"
@@ -87,7 +88,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginTop="60dp"
-            android:layout_marginBottom="60dp"
+            android:layout_marginBottom="80dp"
             android:paddingEnd="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintHorizontal_bias="1.0"
@@ -124,7 +125,9 @@
                 android:background="@drawable/rounded_corner_bg"
                 android:hint="请输入内容"
                 android:imeOptions="actionSend"
-                android:padding="8dp" />
+                android:padding="8dp"
+                android:textColor="@color/black"
+                android:textColorHint="@color/black" />
 
             <ImageButton
                 android:id="@+id/send_button"
