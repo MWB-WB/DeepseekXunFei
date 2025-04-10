@@ -1,6 +1,5 @@
-package com.yl.deepseekxunfei;
+package com.yl.deepseekxunfei.adapter;
 
-import android.content.Context;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -12,6 +11,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.yl.deepseekxunfei.model.ChatMessage;
+import com.yl.deepseekxunfei.R;
 
 import java.util.List;
 

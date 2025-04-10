@@ -11,7 +11,7 @@ import com.amap.api.services.weather.LocalWeatherLive;
 import com.amap.api.services.weather.LocalWeatherLiveResult;
 import com.amap.api.services.weather.WeatherSearch;
 import com.amap.api.services.weather.WeatherSearchQuery;
-import com.yl.deepseekxunfei.ContextHolder;
+import com.yl.deepseekxunfei.utlis.ContextHolder;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.positioning;
 

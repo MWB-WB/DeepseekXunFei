@@ -1,4 +1,4 @@
-package com.yl.deepseekxunfei;
+package com.yl.deepseekxunfei.model;
 
 public class ChatMessage {
     private String message;

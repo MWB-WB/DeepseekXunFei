@@ -4,7 +4,6 @@ package com.yl.deepseekxunfei;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 
@@ -73,18 +72,28 @@ import com.iflytek.cloud.SpeechUtility;
 
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
+import com.yl.deepseekxunfei.adapter.ChatAdapter;
 import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.fragment.MovieDetailFragment;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
+import com.yl.deepseekxunfei.model.ChatHistory;
+import com.yl.deepseekxunfei.model.ChatMessage;
+import com.yl.deepseekxunfei.model.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MovieDetailModel;
 import com.yl.deepseekxunfei.model.SceneModel;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
+import com.yl.deepseekxunfei.utlis.ContextHolder;
+import com.yl.deepseekxunfei.utlis.JsonParser;
+import com.yl.deepseekxunfei.utlis.KeyboardUtils;
+import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
+import com.yl.deepseekxunfei.utlis.TextLineBreaker;
 import com.yl.deepseekxunfei.utlis.positioning;
+import com.yl.deepseekxunfei.utlis.searchIn;
 
 import okhttp3.*;
 import okio.BufferedSource;
@@ -376,13 +385,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     }
 
     private void initThirdApi() {
-        // 初始化高德地图SDK
-        AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
-        AMapLocationClient.updatePrivacyShow(this, true, true);
-        AMapLocationClient.updatePrivacyAgree(this, true);
         //初始化动画效果
-        // 初始化语音合成
-        SpeechUtility.createUtility(MainActivity.this, SpeechConstant.APPID + "=27b3a946");
         mTts = SpeechSynthesizer.createSynthesizer(MainActivity.this, mTtsInitListener);
         // 加载本地知识库
         knowledgeBase = KnowledgeBaseLoader.loadKnowledgeBase(this);

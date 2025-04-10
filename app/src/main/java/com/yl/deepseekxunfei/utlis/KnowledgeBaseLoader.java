@@ -1,7 +1,10 @@
-package com.yl.deepseekxunfei;
+package com.yl.deepseekxunfei.utlis;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+
+import com.yl.deepseekxunfei.model.KnowledgeEntry;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 

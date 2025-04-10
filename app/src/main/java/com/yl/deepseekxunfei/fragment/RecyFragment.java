@@ -8,8 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -21,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.github.ybq.android.spinkit.SpinKitView;
 import com.yl.deepseekxunfei.APICalls.MovieApiClient;
 import com.yl.deepseekxunfei.APICalls.SongPlaybackAPI;
-import com.yl.deepseekxunfei.AmapNavigator;
+import com.yl.deepseekxunfei.utlis.AmapNavigator;
 import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.adapter.SearchResultAdapter;
