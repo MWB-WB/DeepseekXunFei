@@ -23,7 +23,7 @@
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.8" />
+        app:layout_constraintWidth_percent="0.6" />
 
     <TextView
         android:id="@+id/movie_pt"
@@ -35,7 +35,7 @@
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toBottomOf="@+id/movie_title"
-        app:layout_constraintWidth_percent="0.8" />
+        app:layout_constraintWidth_percent="0.6" />
 
     <TextView
         android:id="@+id/movie_start"
@@ -48,7 +48,7 @@
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toBottomOf="@+id/movie_pt"
-        app:layout_constraintWidth_percent="0.8" />
+        app:layout_constraintWidth_percent="0.6" />
 
     <android.widget.Button
         android:id="@+id/movie_cinema"
