@@ -16,28 +16,30 @@
 
     <TextView
         android:id="@+id/movie_title"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:textColor="@color/black"
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.8" />
 
     <TextView
         android:id="@+id/movie_pt"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:ellipsize="end"
         android:textColor="@color/black"
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
-        app:layout_constraintTop_toBottomOf="@+id/movie_title" />
+        app:layout_constraintTop_toBottomOf="@+id/movie_title"
+        app:layout_constraintWidth_percent="0.8" />
 
     <TextView
         android:id="@+id/movie_start"
-        android:layout_width="300dp"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:ellipsize="end"
@@ -45,7 +47,8 @@
         android:textColor="@color/black"
         android:textSize="20sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
-        app:layout_constraintTop_toBottomOf="@+id/movie_pt" />
+        app:layout_constraintTop_toBottomOf="@+id/movie_pt"
+        app:layout_constraintWidth_percent="0.8" />
 
     <android.widget.Button
         android:id="@+id/movie_cinema"

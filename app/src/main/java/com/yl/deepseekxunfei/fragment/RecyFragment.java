@@ -150,6 +150,7 @@ public class RecyFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
+                        ((MainActivity)getActivity()).setCurrentChatOver();
                         searchResultsRecyclerView.setVisibility(View.VISIBLE);
                         spinKitView.setVisibility(View.GONE);
                         SearchResultAdapterMovie adapterMovie = new SearchResultAdapterMovie(getContext(), movies, new SearchResultAdapterMovie.OnItemClickListener() {

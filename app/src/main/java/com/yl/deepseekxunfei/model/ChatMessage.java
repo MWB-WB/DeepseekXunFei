@@ -6,6 +6,7 @@ public class ChatMessage {
     private String thinkContent; // 新增思考内容属性
     private boolean isThinkContent = false; //是否是思考内容
     private boolean isNeedShowFoldText = false;
+    private boolean isOver = false;
 
 
     public ChatMessage(String message, boolean isUser) {
@@ -49,6 +50,14 @@ public class ChatMessage {
     }
 
     public ChatMessage() {
+    }
+
+    public boolean isOver() {
+        return isOver;
+    }
+
+    public void setOver(boolean over) {
+        isOver = over;
     }
 
     // 添加 setMessage 方法
