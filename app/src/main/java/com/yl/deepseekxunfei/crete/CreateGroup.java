@@ -55,6 +55,8 @@ public class CreateGroup {
             JSONObject jsonObject = JSON.parseObject(textBase64Decode);
             System.out.println("text字段Base64解码后=>"+jsonObject);
         } catch (Exception e) {
+
+
             e.printStackTrace();
         }
     }
