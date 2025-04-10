@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -19,12 +20,14 @@ import java.util.List;
 public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultAdapterMovie.ViewHolder> {
     private List<MovieResponse.Movie> results;
     private OnItemClickListener listener;
+    private OnButtonClickListener buttonClickListener;
     private Context mContext;
 
-    public SearchResultAdapterMovie(Context context, List<MovieResponse.Movie> results, OnItemClickListener listener) {
+    public SearchResultAdapterMovie(Context context, List<MovieResponse.Movie> results, OnItemClickListener listener, OnButtonClickListener buttonClickListener) {
         this.mContext = context;
         this.results = results;
         this.listener = listener;
+        this.buttonClickListener = buttonClickListener;
     }
 
     @NonNull
@@ -43,6 +46,7 @@ public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultA
         holder.moviePt.setText("上映时间:" + result.getRt());
         holder.movieStart.setText("主演:" + result.getStar());
         holder.itemView.setOnClickListener(v -> listener.onItemClick(result, position));
+        holder.movieCinema.setOnClickListener(v -> buttonClickListener.onButtonClick());
     }
 
     @Override
@@ -55,6 +59,7 @@ public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultA
         TextView movieTitle;
         TextView moviePt;
         TextView movieStart;
+        Button movieCinema;
 
         public ViewHolder(View itemView) {
             super(itemView);
@@ -62,10 +67,15 @@ public class SearchResultAdapterMovie extends RecyclerView.Adapter<SearchResultA
             movieTitle = itemView.findViewById(R.id.movie_title);
             moviePt = itemView.findViewById(R.id.movie_pt);
             movieStart = itemView.findViewById(R.id.movie_start);
+            movieCinema = itemView.findViewById(R.id.movie_cinema);
         }
     }
 
     public interface OnItemClickListener {
         void onItemClick(MovieResponse.Movie result, int position);
+    }
+
+    public interface OnButtonClickListener {
+        void onButtonClick();
     }
 }

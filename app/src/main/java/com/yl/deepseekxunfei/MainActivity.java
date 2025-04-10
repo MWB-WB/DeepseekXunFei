@@ -376,6 +376,11 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         recyFragment.getNowPlayingMovies();
     }
 
+    public void showNearbyCinemaFragment() {
+        replaceFragment(1);
+        recyFragment.getNearbyCinema();
+    }
+
     public void commitText(String text) {
         chatMessages.add(new ChatMessage(text, true));
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
@@ -830,13 +835,13 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                     if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString()));
                                                         // 更新机器人消息记录的内容
-                                                        String reust = huida.replace("\n","").replace("\n\n","");
+                                                        String reust = huida.replace("\n", "").replace("\n\n", "");
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(reust);
                                                     } else {
                                                         //缩进
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
                                                         // 更新机器人消息记录的内容
-                                                        String reust = huida.replace("\n","").replace("\n\n","");
+                                                        String reust = huida.replace("\n", "").replace("\n\n", "");
                                                         chatMessages.get(botMessageIndexRound1).setMessage(reust);
                                                     }
                                                     chatAdapter.notifyDataSetChanged();
@@ -887,7 +892,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
         TTS(mWeatherResult);
         chatMessages.add(new ChatMessage("", false)); // 添加到聊天界面
-        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        chatAdapter.notifyDataSetChanged();
         weatherIndex = 0;
         myHandler.post(weatherStreamRunnable);
 
@@ -897,13 +902,13 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            if (weatherIndex == mWeatherResult.length() - 1) {
+            if (weatherIndex > mWeatherResult.length()) {
                 return;
             }
             chatMessages.set(chatMessages.size() - 1, new ChatMessage(mWeatherResult.substring(0, weatherIndex), false));
             chatAdapter.notifyDataSetChanged();
             weatherIndex++;
-            myHandler.postDelayed(weatherStreamRunnable, 500);
+            myHandler.postDelayed(weatherStreamRunnable, 200);
         }
     };
 

@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -25,6 +26,7 @@ public class MovieDetailFragment extends Fragment implements View.OnClickListene
     private TextView movieStart;
     private TextView moviePubDesc;
     private ImageView backImg;
+    private Button movieCinema;
 
     @Nullable
     @Override
@@ -46,7 +48,9 @@ public class MovieDetailFragment extends Fragment implements View.OnClickListene
         movieStart = view.findViewById(R.id.movie_start);
         moviePubDesc = view.findViewById(R.id.movie_pubDesc);
         backImg = view.findViewById(R.id.back_row);
+        movieCinema = view.findViewById(R.id.movie_cinema);
         backImg.setOnClickListener(this);
+        movieCinema.setOnClickListener(this);
     }
 
     public void setData(MovieDetailModel model) {
@@ -62,6 +66,8 @@ public class MovieDetailFragment extends Fragment implements View.OnClickListene
     public void onClick(View v) {
         if (v.getId() == R.id.back_row) {
             ((MainActivity) getActivity()).showMovieFragment();
+        } else if (v.getId() == R.id.movie_cinema) {
+            ((MainActivity) getActivity()).showNearbyCinemaFragment();
         }
     }
 }

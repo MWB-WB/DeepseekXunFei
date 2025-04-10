@@ -18,7 +18,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.ybq.android.spinkit.SpinKitView;
 import com.yl.deepseekxunfei.APICalls.MovieApiClient;
+import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.SongPlaybackAPI;
+import com.yl.deepseekxunfei.OnPoiSearchListener;
 import com.yl.deepseekxunfei.utlis.AmapNavigator;
 import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.R;
@@ -114,6 +116,33 @@ public class RecyFragment extends Fragment {
         });
     }
 
+    public void getNearbyCinema() {
+        NeighborhoodSearch.search("电影院", 1000, new OnPoiSearchListener() {
+            @Override
+            public void onSuccess(List<LocationResult> results) {
+                getActivity().runOnUiThread(() -> {
+                    searchResultsRecyclerView.setVisibility(View.VISIBLE);
+                    spinKitView.setVisibility(View.GONE);
+                    SearchResultAdapter adapter = new SearchResultAdapter(results, result -> {
+                        // 点击结果后导航
+                        AmapNavigator.startNavigationByUri(
+                                getContext(),
+                                result.getName(),
+                                result.getLongitude(),
+                                result.getLatitude()
+                        );
+                    });
+                    searchResultsRecyclerView.setAdapter(adapter);
+                });
+            }
+
+            @Override
+            public void onError(String error) {
+
+            }
+        }, getContext());
+    }
+
     public void getNowPlayingMovies() {
         MovieApiClient.getNowPlayingMovies(new MovieApiClient.OnMoviesLoadedListener() {
             @Override
@@ -127,6 +156,13 @@ public class RecyFragment extends Fragment {
                             @Override
                             public void onItemClick(MovieResponse.Movie result, int position) {
                                 getMovieDetail(result.getId());
+                            }
+                        }, new SearchResultAdapterMovie.OnButtonClickListener() {
+                            @Override
+                            public void onButtonClick() {
+                                searchResultsRecyclerView.setVisibility(View.GONE);
+                                spinKitView.setVisibility(View.VISIBLE);
+                                getNearbyCinema();
                             }
                         });
                         searchResultsRecyclerView.setAdapter(adapterMovie);
