@@ -47,7 +47,6 @@ dependencies {
     implementation libs.activity
     implementation libs.constraintlayout
     implementation files('libs\\Msc.jar')
-    implementation files('libs\\AMap3DMap_10.1.200_AMapNavi_10.1.200_AMapSearch_9.7.4_AMapLocation_6.4.9_20241226.jar')
     testImplementation libs.junit
     implementation(fileTree("libs"))
     implementation libs.glide
@@ -63,6 +62,7 @@ dependencies {
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.alibaba:fastjson:1.2.83' // 使用最新版本
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 }

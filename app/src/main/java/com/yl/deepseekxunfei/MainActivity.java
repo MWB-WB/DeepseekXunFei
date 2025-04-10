@@ -801,7 +801,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                         if (jsonResponse.has("message")) {
                                             JsonObject messageObject = jsonResponse.getAsJsonObject("message");
                                             if (messageObject != null && messageObject.has("content")) {
-                                                String partialResponse = messageObject.get("content").getAsString().trim();
+                                                String partialResponse = messageObject.get("content").getAsString();
                                                 boolean done = jsonResponse.get("done").getAsBoolean();
                                                 Log.d(TAG, "onResponse: " + jsonResponse);
                                                 Log.d(TAG, "partialResponse: " + partialResponse);
@@ -830,12 +830,14 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                     if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString()));
                                                         // 更新机器人消息记录的内容
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(huida);
+                                                        String reust = huida.replace("\n","").replace("\n\n","");
+                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(reust);
                                                     } else {
                                                         //缩进
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
                                                         // 更新机器人消息记录的内容
-                                                        chatMessages.get(botMessageIndexRound1).setMessage(huida);
+                                                        String reust = huida.replace("\n","").replace("\n\n","");
+                                                        chatMessages.get(botMessageIndexRound1).setMessage(reust);
                                                     }
                                                     chatAdapter.notifyDataSetChanged();
                                                     chatRecyclerView.smoothScrollBy(0, chatRecyclerView.getLayoutManager().getHeight());
