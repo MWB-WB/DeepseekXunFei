@@ -18,9 +18,9 @@
             android:id="@+id/youceyi"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_margin="10dp"
             android:layout_weight="1"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:padding="11dp">
             <!-- 路线规划 -->
             <LinearLayout
                 android:id="@+id/route_planning"
@@ -53,7 +53,7 @@
                         android:layout_marginStart="10dp"
                         android:text="路线规划"
                         android:textColor="#000000"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -134,7 +134,7 @@
                         android:layout_marginStart="10dp"
                         android:text="音乐播放"
                         android:textColor="#000000"
-                        android:textSize="14sp"
+                        android:textSize="16sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -191,7 +191,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="11dp">
 
             <!-- 电话通讯 -->
             <LinearLayout
@@ -364,7 +364,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:orientation="horizontal"
-            android:padding="8dp">
+            android:padding="11dp">
 
             <!-- 气候控制 -->
             <LinearLayout

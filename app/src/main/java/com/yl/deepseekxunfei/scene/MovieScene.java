@@ -14,7 +14,7 @@ public class MovieScene extends BaseChildScene {
         if (text.contains("最近")) {
             baseChildModel.setType(SceneTypeConst.RECENT_FILMS);
         } else if (text.contains("好看")) {
-            baseChildModel.setType(SceneTypeConst.GOOD_MOVIES);
+            baseChildModel.setType(SceneTypeConst.CHITCHAT);
         }
         return baseChildModel;
     }

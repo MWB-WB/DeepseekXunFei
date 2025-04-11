@@ -134,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
     //是否停止输出
     private boolean isStopRequested = false;
+    private boolean isNewChatCome = false;
     private boolean textFig;
 
     private List<KnowledgeEntry> knowledgeBase;
@@ -261,6 +262,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         TTSbutton.setOnClickListener(v -> {
             isDuplicate = true;
             isStopRequested = false;
+            isNewChatCome = true;
             editTextQuestion.setText("");
             //停止播放文本
             mTts.stopSpeaking();
@@ -289,6 +291,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         chatAdapter = new ChatAdapter(chatMessages);
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
+        // 在初始化 RecyclerView 时禁用动画
+        chatRecyclerView.setItemAnimator(null);
         // 隐藏主面板并添加历史记录
         inputEditText.setOnEditorActionListener((v, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEND) {
@@ -758,6 +762,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         // 添加当前用户问题
         JSONObject userMessage = new JSONObject();
         userMessage.put("role", "user");
+//        userMessage.put("content", "请用最简洁的语言直接回答问题：\n" + userQuestion); // userQuestion 已经过转义处理
         userMessage.put("content", userQuestion); // userQuestion 已经过转义处理
         messages.put(userMessage);
 
@@ -766,7 +771,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
         JSONObject options = new JSONObject();
         options.put("temperature", 0.6);
-        options.put("mirostat_tau", 0.5);
+        options.put("mirostat_tau", 1.0);
+        options.put("num_predict", -1);
+        options.put("repeat_penalty", 1.5);
         requestBody.put("options", options);
 
         // 将 JSONObject 转换为字符串
@@ -809,7 +816,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                             aiType = BotConstResponse.AIType.TEXT_SHUCHU;
                             while (!source.exhausted()) {
                                 Log.e(TAG, "onResponse: " + botMessageIndexRound1);
-                                if (isStopRequested) {
+                                if (isStopRequested || isNewChatCome) {
+                                    isNewChatCome = false;
                                     textFig = false;
                                     chatMessages.get(botMessageIndexRound1).setOver(true);
                                     button.setImageResource(R.drawable.jzfason);
@@ -823,6 +831,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                         if (botMessageIndexRound1 == -1) {
                                             chatMessages.add(new ChatMessage("", false, "", false));
                                             botMessageIndexRound1 = chatMessages.size() - 1;
+                                            chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(false);
                                         }
                                         // 解析 JSON
                                         JsonObject jsonResponse = new Gson().fromJson(line, JsonObject.class);
@@ -867,13 +876,12 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                         String reust = huida.replace("\n", "").replace("\n\n", "");
                                                         chatMessages.get(botMessageIndexRound1).setMessage(reust);
                                                     }
-                                                    chatAdapter.notifyDataSetChanged();
-                                                    chatRecyclerView.smoothScrollBy(0, chatRecyclerView.getLayoutManager().getHeight());
                                                     // 如果完成，停止读取
                                                     if (done) {
                                                         Log.d(TAG, "onResponse: 回答" + huida);
                                                         TTS(huida);
                                                         isStopRequested = true;
+                                                        isNewChatCome = false;
                                                         textFig = false;
                                                         chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
                                                         chatMessages.get(botMessageIndexRound1).setOver(true);
@@ -884,7 +892,11 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                         context.add(new ChatMessage(userQuestion, true));//用户消息
                                                         context.add(new ChatMessage(fullResponseRound1.toString(), false));//机器人消息
 //                                                        Log.d("上下文更新：", ); // 打印上下文信息
+                                                    } else {
+                                                        chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(false);
                                                     }
+                                                    chatAdapter.notifyItemChanged(botMessageIndexRound1);
+                                                    chatRecyclerView.scrollBy(0, chatRecyclerView.getLayoutManager().getHeight());
                                                 });
                                             }
                                         }

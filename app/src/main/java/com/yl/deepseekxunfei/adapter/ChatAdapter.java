@@ -46,63 +46,68 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         ChatMessage message = chatMessages.get(position);
-        Log.e("TAG", "onBindViewHolder: " + message.isThinkContent() + ":: message.getThinkContent(): " + message.getThinkContent()
-                + ":: message.getMessage(): " + message.getMessage() + ":: position: " + position);
-        if (message.isThinkContent()) {
-            holder.thinkMessage.setText(message.getThinkContent());
-            holder.textView.setText("");
-        } else {
-            if (message.isNeedShowFoldText()) {
-                if (!TextUtils.isEmpty(message.getThinkContent())) {
-                    holder.thinkFlodUnFlod.setVisibility(View.VISIBLE);
-                    holder.thinkMessage.setMaxLines(3);
-                    holder.thinkFlodUnFlod.setText("展开");
-                }
-                holder.thinkFlodUnFlod.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        if (isFold) {
-                            holder.thinkFlodUnFlod.setText("收起");
-                            holder.thinkMessage.setMaxLines(100);
-                        } else {
-                            holder.thinkFlodUnFlod.setText("展开");
-                            holder.thinkMessage.setMaxLines(3);
-                        }
-                        isFold = !isFold;
-                    }
-                });
+        if (getItemViewType(position) == TYPE_ANSWER) {
+            if (message.isThinkContent()) {
+                holder.thinkMessage.setText(message.getThinkContent());
+                holder.thinkMessage.setMaxLines(100);
+                holder.thinkFlodUnFlod.setVisibility(View.GONE);
+                holder.textView.setText("");
             } else {
-                if (holder.thinkFlodUnFlod != null) {
-                    holder.thinkFlodUnFlod.setVisibility(View.GONE);
+                if (message.isNeedShowFoldText()) {
+                    if (!TextUtils.isEmpty(message.getThinkContent()) && holder.thinkMessage.getLineCount() > 3) {
+                        holder.thinkFlodUnFlod.setVisibility(View.VISIBLE);
+                        holder.thinkMessage.setMaxLines(3);
+                        holder.thinkFlodUnFlod.setText("展开");
+                    }
+                    holder.thinkFlodUnFlod.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            if (isFold) {
+                                holder.thinkFlodUnFlod.setText("收起");
+                                holder.thinkMessage.setMaxLines(100);
+                            } else {
+                                holder.thinkFlodUnFlod.setText("展开");
+                                holder.thinkMessage.setMaxLines(3);
+                            }
+                            isFold = !isFold;
+                        }
+                    });
+                } else {
+                    if (holder.thinkFlodUnFlod != null) {
+                        holder.thinkFlodUnFlod.setVisibility(View.GONE);
+                    }
+                    if (holder.thinkMessage != null) {
+                        holder.thinkMessage.setMaxLines(100);
+                    }
                 }
-                if (holder.thinkMessage != null) {
-                    holder.thinkMessage.setMaxLines(100);
-                }
+                holder.textView.setText(message.getMessage());
             }
+            // 为机器人回答添加布局变化监听器
+            if (!message.isUser()) {
+                ViewTreeObserver.OnGlobalLayoutListener listener = new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        // 移除监听器，避免重复调用
+                        holder.textView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                        // 检查 Layout 是否为 null
+                        Layout layout = holder.textView.getLayout();
+                        if (layout != null) {
+                            int scrollAmount = layout.getLineTop(holder.textView.getLineCount()) - holder.textView.getHeight();
+                            if (scrollAmount > 0) {
+                                holder.textView.scrollTo(0, scrollAmount);
+                            }
+                        }
+                    }
+                };
+                // 添加全局布局监听器
+                holder.textView.getViewTreeObserver().addOnGlobalLayoutListener(listener);
+            }
+        } else {
             holder.textView.setText(message.getMessage());
         }
 
-        // 为机器人回答添加布局变化监听器
-        if (!message.isUser()) {
-            ViewTreeObserver.OnGlobalLayoutListener listener = new ViewTreeObserver.OnGlobalLayoutListener() {
-                @Override
-                public void onGlobalLayout() {
-                    // 移除监听器，避免重复调用
-                    holder.textView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
 
-                    // 检查 Layout 是否为 null
-                    Layout layout = holder.textView.getLayout();
-                    if (layout != null) {
-                        int scrollAmount = layout.getLineTop(holder.textView.getLineCount()) - holder.textView.getHeight();
-                        if (scrollAmount > 0) {
-                            holder.textView.scrollTo(0, scrollAmount);
-                        }
-                    }
-                }
-            };
-            // 添加全局布局监听器
-            holder.textView.getViewTreeObserver().addOnGlobalLayoutListener(listener);
-        }
     }
 
     @Override
