@@ -15,6 +15,7 @@ public class BotConstResponse {
     }
 
     public enum AIType {
+        FREE,
         SPEAK,
         TEXT_SHUCHU,
         TEXT_READY,

@@ -7,6 +7,7 @@ public class ChatMessage {
     private boolean isThinkContent = false; //是否是思考内容
     private boolean isNeedShowFoldText = false;
     private boolean isOver = false;
+    private boolean isSpeaking = false;
 
 
     public ChatMessage(String message, boolean isUser) {
@@ -19,6 +20,14 @@ public class ChatMessage {
         this.isUser = isUser;
         this.thinkContent = thinkContent;
         this.isThinkContent = isThinkContent;
+    }
+
+    public boolean isSpeaking() {
+        return isSpeaking;
+    }
+
+    public void setSpeaking(boolean speaking) {
+        isSpeaking = speaking;
     }
 
     public boolean isNeedShowFoldText() {

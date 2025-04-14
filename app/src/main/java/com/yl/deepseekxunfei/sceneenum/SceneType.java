@@ -9,6 +9,7 @@ public enum SceneType {
     MUSIC,      //音乐
     NAVIGATION, //导航
     MOVIE,      //电影
+    VIDEO,      //视频
     CHITCHAT    //闲聊
 
 }

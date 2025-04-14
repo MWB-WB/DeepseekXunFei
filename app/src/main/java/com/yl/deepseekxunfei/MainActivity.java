@@ -45,7 +45,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import com.amap.api.location.AMapLocationClient;
 import com.amap.api.services.weather.LocalDayWeatherForecast;
 import com.amap.api.services.weather.LocalWeatherForecastResult;
 import com.amap.api.services.weather.LocalWeatherLive;
@@ -68,7 +67,6 @@ import android.app.Activity;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.iflytek.cloud.SpeechUtility;
 
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
@@ -95,6 +93,7 @@ import com.yl.deepseekxunfei.utlis.TextLineBreaker;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
 import com.yl.deepseekxunfei.utlis.positioning;
 import com.yl.deepseekxunfei.utlis.searchIn;
+import com.yl.douyinapi.DouyinApi;
 
 import okhttp3.*;
 import okio.BufferedSource;
@@ -106,7 +105,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
-    private static final String API_URL = "http://47.106.86.30:11434/api/chat ";
+    private static final String API_URL = "http://39.108.177.132:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -223,7 +222,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 isStopRequested = true;
                 textFig = false;
                 setCurrentChatOver();
+                aiType = BotConstResponse.AIType.FREE;
                 button.setImageResource(R.drawable.jzfason);
+                chatMessages.get(chatMessages.size()-1).setSpeaking(false);
+                chatAdapter.notifyItemChanged(chatMessages.size()-1);
             }
         });
         // 添加全局布局监听器
@@ -262,7 +264,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         TTSbutton.setOnClickListener(v -> {
             isDuplicate = true;
             isStopRequested = false;
-            isNewChatCome = true;
+            if (aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+                isNewChatCome = true;
+            }
             editTextQuestion.setText("");
             //停止播放文本
             mTts.stopSpeaking();
@@ -404,7 +408,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
             actionByType(baseChildModel);
         } else {
-            if (!chatMessages.get(chatMessages.size() - 1).isOver()) {
+            if (!chatMessages.get(chatMessages.size() - 1).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
                 Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
             } else {
                 chatMessages.add(new ChatMessage(text, true));
@@ -692,6 +696,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             if (error == null) {
                 button.setImageResource(R.drawable.jzfason);
             }
+            aiType = BotConstResponse.AIType.FREE;
+            chatMessages.get(chatMessages.size()-1).setSpeaking(false);
+            chatAdapter.notifyItemChanged(chatMessages.size()-1);
         }
 
         //缓冲进度回调
@@ -704,6 +711,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             Log.d("SpeechSynthesizer", "开始播放");
             button.setImageResource(R.drawable.tingzhi);
             aiType = BotConstResponse.AIType.SPEAK;
+            chatMessages.get(chatMessages.size()-1).setSpeaking(true);
+            chatAdapter.notifyItemChanged(chatMessages.size()-1);
         }
 
         //暂停播放
@@ -928,9 +937,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
                 "，当前的温度是" + weatherLive.getTemperature() + "摄氏度，" + weatherLive.getWindDirection() + "风"
                 + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
-        TTS(mWeatherResult);
         chatMessages.add(new ChatMessage("", false)); // 添加到聊天界面
         chatAdapter.notifyDataSetChanged();
+        TTS(mWeatherResult);
         weatherIndex = 0;
         myHandler.post(weatherStreamRunnable);
 
@@ -954,9 +963,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     public void onWeatherError(String message, int rCode) {
         setCurrentChatOver();
         chatMessages.remove(chatMessages.size() - 1);
-        TTS(BotConstResponse.searchWeatherError);
         chatMessages.add(new ChatMessage(BotConstResponse.searchWeatherError, false)); // 添加到聊天界面
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        TTS(BotConstResponse.searchWeatherError);
     }
 
     @Override
@@ -973,9 +982,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             result.append("\n").append("日期：").append(localDayWeatherForecast.getDate()).append("\t温度：")
                     .append(Math.min(dayTemp, nightTemp)).append("°/").append(Math.max(dayTemp, nightTemp)).append("°");
         }
-        TTS(result.toString());
         chatMessages.add(new ChatMessage(result.toString(), false)); // 添加到聊天界面
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        TTS(result.toString());
     }
 
     class MyHandler extends Handler {
@@ -1173,9 +1182,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.d(TAG, "Search: 附近搜索");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 String address = extractLocation(baseChildModel.getText());
                 Log.d(TAG, "Search: " + address);
@@ -1206,9 +1215,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.d(TAG, "Search: 关键字");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 String address = extractLocation(baseChildModel.getText());
                 startTime(chatMessages.size() - 1);
@@ -1236,9 +1245,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             case SceneTypeConst.RECENT_FILMS:
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                TTS(botResponse);
                 chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 startTime(chatMessages.size() - 1);
                 showMovieFragment();
@@ -1274,20 +1283,23 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             case SceneTypeConst.TODAY_WEATHER:
                 weatherAPI.weatherSearch(SceneTypeConst.TODAY_WEATHER);
                 // 先让机器人回复固定内容
-                TTS(BotConstResponse.searchWeatherWaiting);
                 chatMessages.add(new ChatMessage(BotConstResponse.searchWeatherWaiting, false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(BotConstResponse.searchWeatherWaiting);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 startTime(chatMessages.size() - 1);
                 break;
             case SceneTypeConst.FEATHER_WEATHER:
                 weatherAPI.weatherSearch(SceneTypeConst.FEATHER_WEATHER);
                 // 先让机器人回复固定内容
-                TTS(BotConstResponse.searchForecastWeatherWaiting);
                 chatMessages.add(new ChatMessage(BotConstResponse.searchForecastWeatherWaiting, false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(BotConstResponse.searchForecastWeatherWaiting);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 startTime(chatMessages.size() - 1);
+                break;
+            case SceneTypeConst.VIDEO:
+                DouyinApi.requestAuth(this);
                 break;
         }
     }

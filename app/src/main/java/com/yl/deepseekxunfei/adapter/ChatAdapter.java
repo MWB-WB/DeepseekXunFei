@@ -7,6 +7,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -47,6 +50,21 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
         ChatMessage message = chatMessages.get(position);
         if (getItemViewType(position) == TYPE_ANSWER) {
+            if (message.isSpeaking()) {
+                // 创建一个垂直方向的上下跳动动画
+                TranslateAnimation animation = new TranslateAnimation(
+                        Animation.RELATIVE_TO_SELF, 0f,
+                        Animation.RELATIVE_TO_SELF, 0f,
+                        Animation.RELATIVE_TO_SELF, 0f,
+                        Animation.RELATIVE_TO_SELF, -0.2f);
+                animation.setDuration(1000); // 动画时长 1 秒
+                animation.setRepeatCount(Animation.INFINITE); // 无限重复
+                animation.setRepeatMode(Animation.REVERSE); // 重复模式为反转
+                holder.imageView.startAnimation(animation);
+            } else {
+                holder.imageView.clearAnimation();
+            }
+
             if (message.isThinkContent()) {
                 holder.thinkMessage.setText(message.getThinkContent());
                 holder.thinkMessage.setMaxLines(100);
@@ -131,9 +149,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         TextView textView;
         TextView thinkMessage;
         TextView thinkFlodUnFlod;
+        ImageView imageView;
 
         public ChatViewHolder(@NonNull View itemView) {
             super(itemView);
+            imageView = itemView.findViewById(R.id.image_view);
             textView = itemView.findViewById(R.id.message_text_view);
             thinkMessage = itemView.findViewById(R.id.think_message);
             thinkFlodUnFlod = itemView.findViewById(R.id.think_flod_unFlod);

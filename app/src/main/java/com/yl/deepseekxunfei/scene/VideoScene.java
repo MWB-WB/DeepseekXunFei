@@ -1,0 +1,17 @@
+package com.yl.deepseekxunfei.scene;
+
+import com.yl.deepseekxunfei.model.BaseChildModel;
+import com.yl.deepseekxunfei.model.SceneModel;
+import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+
+public class VideoScene extends BaseChildScene {
+
+    @Override
+    public BaseChildModel parseSceneToChild(SceneModel sceneModel) {
+        String text = sceneModel.getText();
+        BaseChildModel baseChildModel = new BaseChildModel();
+        baseChildModel.setText(text);
+        baseChildModel.setType(SceneTypeConst.VIDEO);
+        return baseChildModel;
+    }
+}

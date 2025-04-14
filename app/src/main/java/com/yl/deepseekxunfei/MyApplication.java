@@ -6,6 +6,7 @@ import android.app.Application;
 import com.amap.api.location.AMapLocationClient;
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechUtility;
+import com.yl.douyinapi.DouyinApi;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -31,6 +32,7 @@ public class MyApplication extends Application {
             AMapLocationClient.updatePrivacyAgree(this, true);
             // 初始化语音合成
             SpeechUtility.createUtility(this, SpeechConstant.APPID + "=27b3a946");
+            DouyinApi.init(this);
         });
     }
 

@@ -12,6 +12,7 @@ public class SceneManager {
     private WeatherScene weatherScene;
     private NavScene navScene;
     private MovieScene movieScene;
+    private VideoScene videoScene;
     private int currentSceneType;
 
     public SceneManager() {
@@ -22,11 +23,12 @@ public class SceneManager {
         weatherScene = new WeatherScene();
         navScene = new NavScene();
         movieScene = new MovieScene();
+        videoScene = new VideoScene();
     }
 
     //解析场景
     public SceneModel parseQuestionToScene(String text) {
-        Log.e("TAG", "parseQuestionToScene: " + text );
+        Log.e("TAG", "parseQuestionToScene: " + text);
         SceneModel resultModel = new SceneModel();
         resultModel.setText(text);
         if (text.startsWith("导航") || text.contains("附近的")) {
@@ -39,6 +41,8 @@ public class SceneManager {
             resultModel.setScene(SceneType.WEATHER);
         } else if (text.contains("电影")) {
             resultModel.setScene(SceneType.MOVIE);
+        } else if (text.contains("视频")) {
+            resultModel.setScene(SceneType.VIDEO);
         } else {
             resultModel.setScene(SceneType.CHITCHAT);
         }
@@ -67,6 +71,10 @@ public class SceneManager {
                 baseChildModel.setType(SceneTypeConst.CHITCHAT);
                 baseChildModel.setText(sceneModel.getText());
                 currentSceneType = SceneTypeConst.CHITCHAT;
+                break;
+            case VIDEO:
+                baseChildModel = videoScene.parseSceneToChild(sceneModel);
+                currentSceneType = baseChildModel.getType();
                 break;
             default:
                 baseChildModel = new BaseChildModel();
