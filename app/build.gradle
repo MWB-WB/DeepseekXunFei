@@ -48,6 +48,7 @@ dependencies {
     testImplementation libs.junit
     implementation(fileTree("libs"))
     implementation project(':DouyinApi')
+//    implementation files('..\\gradle\\wrapper\\gradle-wrapper.jar')
     implementation libs.glide
     implementation "com.squareup.okhttp3:okhttp:4.9.3"
     implementation 'com.hankcs:hanlp:portable-1.8.2'

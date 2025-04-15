@@ -1,6 +1,5 @@
 package com.yl.deepseekxunfei.crete;
 
-
 import android.os.Build;
 import android.util.Log;
 
@@ -10,13 +9,9 @@ import com.google.gson.Gson;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -26,57 +21,66 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- *创建声纹特征库
+ * 声纹识别1:N
  */
-public class CreateGroup {
+public class SearchFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
+    //音频存放位置
+    private static String AUDIO_PATH;
     private CreateLogotype createLogotype;
+
     //解析Json
     private static Gson json = new Gson();
+
     //构造函数,为成员变量赋值
-    public CreateGroup(String requestUrl,String APPID,String apiSecret,String apiKey,CreateLogotype createLogotype ){
+    public SearchFeature(String requestUrl,String APPID,String apiSecret,String apiKey,String AUDIO_PATH,CreateLogotype createLogotype){
         this.requestUrl=requestUrl;
         this.APPID=APPID;
         this.apiSecret=apiSecret;
         this.apiKey=apiKey;
+        this.AUDIO_PATH=AUDIO_PATH;
         this.createLogotype = createLogotype;
     }
-
     //提供给主函数调用的方法
-    public static void doCreateGroup(String requestUrl,String APPID,String apiSecret,String apiKey,CreateLogotype createLogotype ){
-        CreateGroup createGroup = new CreateGroup(requestUrl,APPID,apiSecret,apiKey,createLogotype);
+    public static void doSearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype) {
+        SearchFeature searchFeature = new SearchFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH,createLogotype);
         try {
-            createGroup.doRequest(new NetCallGroup() {
+            searchFeature.doRequest(new NetCall1_N() {
                 @Override
                 public void OnSuccess(String success) {
                     try {
-                        Log.d("创建声纹特征库:","resp=>"+success);
+                        Log.d("1:N比对", "resp=>" + success);
                         JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
-                        String textBase64Decode= null;
+                        String textBase64Decode = null;
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createGroupRes.text), "UTF-8");
+                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.searchFeaRes.text), "UTF-8");
                         }
+                        Log.d("识别结果：", "OnSuccess: "+textBase64Decode);
                         JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                        Log.d("创建声纹特征库","text字段Base64解码后=>"+jsonObject);
-                    } catch (UnsupportedEncodingException e) {
-                        throw new RuntimeException(e);
+                        Log.d("1:N比对", "text字段Base64解码后=>" + jsonObject);
+                    } catch (Exception e) {
+                        Log.e("1:N比对", "解析错误: " + e.getMessage());
                     }
                 }
+                @Override
+                public void OnError(String error) {
+                    Log.e("1:N比对", "请求失败: " + error);
+                }
             });
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
     /**
      * 请求主方法
+     *
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetCallGroup callGroup) {
+    public void doRequest(final NetCall1_N call1N) {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
             OutputStream out = null;
@@ -93,23 +97,27 @@ public class CreateGroup {
                 // 写入请求参数
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
-                Log.d("创建声纹特征库", "params=>" + params);
+                Log.d("1:N比对", "params=>" + params);
                 out.write(params.getBytes());
                 out.flush();
+
                 // 获取响应
                 int responseCode = httpURLConnection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
-                    Log.d("创建声纹特征库结果", "readAllBytes(is)=>" + response);
-                    callGroup.OnSuccess(response); // 成功回调
+                    Log.d("1:N比对", "1:N返回服务结果" + response);
+                    call1N.OnSuccess(response);
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "Error code: " + responseCode + ", message: " + readAllBytes(is);
-                    Log.e("创建声纹特征库错误", error);
+                    String error = "HTTP错误: " + responseCode + " - " + readAllBytes(is);
+                    Log.e("1:N比对", error);
+                    call1N.OnError(error);
                 }
             } catch (Exception e) {
-                Log.e("创建声纹特征库异常", "Exception: " + e.getMessage());
+                String error = "请求异常: " + e.getMessage();
+                Log.e("1:N比对", error);
+                call1N.OnError(error);
             } finally {
                 try {
                     if (out != null) out.close();
@@ -125,27 +133,27 @@ public class CreateGroup {
     /**
      * 处理请求URL
      * 封装鉴权参数等
+     *
      * @return 处理后的URL
      */
-    public String buildRequetUrl(){
+    public String buildRequetUrl() {
         URL url = null;
         // 替换调schema前缀 ，原因是URL库不支持解析包含ws,wss schema的url
-        String  httpRequestUrl = requestUrl.replace("ws://", "http://").replace("wss://","https://" );
+        String httpRequestUrl = requestUrl.replace("ws://", "http://").replace("wss://", "https://");
         try {
             url = new URL(httpRequestUrl);
             //获取当前日期并格式化
             SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             format.setTimeZone(TimeZone.getTimeZone("GMT"));
-            //String date = "Wed, 10 Jul 2019 07:35:43 GMT";
             String date = format.format(new Date());
+
             String host = url.getHost();
-           /* if (url.getPort()!=80 && url.getPort() !=443){
-                host = host +":"+String.valueOf(url.getPort());
-            }*/
+            if (url.getPort() != 80 && url.getPort() != 443) {
+                host = host + ":" + String.valueOf(url.getPort());
+            }
             StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").//
                     append("date: ").append(date).append("\n").//
                     append("POST ").append(url.getPath()).append(" HTTP/1.1");
-            System.err.println(builder);
             Charset charset = Charset.forName("UTF-8");
             Mac mac = Mac.getInstance("hmacsha256");
             SecretKeySpec spec = new SecretKeySpec(apiSecret.getBytes(charset), "hmacsha256");
@@ -155,18 +163,16 @@ public class CreateGroup {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sha = Base64.getEncoder().encodeToString(hexDigits);
             }
-            System.out.println("sha:"+sha);
 
             String authorization = String.format("api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"", apiKey, "hmac-sha256", "host date request-line", sha);
             String authBase = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 authBase = Base64.getEncoder().encodeToString(authorization.getBytes(charset));
             }
-            System.out.println("authBase:"+authBase);
-            System.out.println(String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date)));
             return String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date));
+
         } catch (Exception e) {
-            throw new RuntimeException("assemble requestUrl error:"+e.getMessage());
+            throw new RuntimeException("assemble requestUrl error:" + e.getMessage());
         }
     }
 
@@ -174,36 +180,49 @@ public class CreateGroup {
      * 组装请求参数
      * 直接使用示例参数，
      * 替换部分值
+     *
      * @return 参数字符串
      */
-    private String  buildParam() {
-        String param = "{"+
-                "    \"header\": {"+
-                "        \"app_id\": \""+APPID+"\","+
-                "        \"status\": 3"+
-                "    },"+
-                "    \"parameter\": {"+
-                "        \"s782b4996\": {"+
-                "            \"func\": \"createGroup\","+
-                //分组ID
-                "            \"groupId\": \""+createLogotype.getGroupId()+"\","+
-                //分组名称
-                "            \"groupName\": \""+createLogotype.getGroupName()+"\","+
-                //分组描述
-                "            \"groupInfo\": \""+createLogotype.getGroupInfo()+"\","+
-                "            \"createGroupRes\": {"+
-                "                \"encoding\": \"utf8\","+
-                "                \"compress\": \"raw\","+
-                "                \"format\": \"json\""+
-                "            }"+
-                "        }"+
-                "    }"+
-                "}";
+    private String buildParam() throws IOException {
+        String param = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            param = "{" +
+                    "    \"header\": {" +
+                    "        \"app_id\": \"" + APPID + "\"," +
+                    "        \"status\": 3" +
+                    "    }," +
+                    "    \"parameter\": {" +
+                    "        \"s782b4996\": {" +
+                    "            \"func\": \"searchFea\"," +
+                    //这里填上所需要的groupId
+                    "            \"groupId\": \""+createLogotype.getGroupId()+"\"," +
+                    //这里填写期望返回的个数,最大为10,且groupId要有足够特征才会返回
+                    "            \"topK\": 10," +
+                    "            \"searchFeaRes\": {" +
+                    "                \"encoding\": \"utf8\"," +
+                    "                \"compress\": \"raw\"," +
+                    "                \"format\": \"json\"" +
+                    "            }" +
+                    "        }" +
+                    "    }," +
+                    "\"payload\":{" +
+                    "    \"resource\": {" +
+                    //这里根据不同的音频编码填写不同的编码格式
+                    "        \"encoding\": \"raw\"," +
+                    "        \"sample_rate\": 16000," +
+                    "        \"channels\": 1," +
+                    "        \"bit_depth\": 16," +
+                    "        \"status\": " + 3 + "," +
+                    "        \"audio\": \""+ Base64.getEncoder().encodeToString(read(AUDIO_PATH))+"\""+
+                    "    }}" +
+                    "}";
+        }
         return param;
     }
 
     /**
      * 读取流数据
+     *
      * @param is 流
      * @return 字符串
      * @throws IOException 异常
@@ -216,6 +235,22 @@ public class CreateGroup {
             sb.append(new String(b, 0, len, "utf-8"));
         }
         return sb.toString();
+    }
+
+    public static byte[] read(String filePath) throws IOException {
+        InputStream in = new FileInputStream(filePath);
+        byte[] data = inputStream2ByteArray(in);
+        in.close();
+        return data;
+    }
+    private static byte[] inputStream2ByteArray(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024 * 4];
+        int n = 0;
+        while ((n = in.read(buffer)) != -1) {
+            out.write(buffer, 0, n);
+        }
+        return out.toByteArray();
     }
     //Json解析
     class JsonParse {
@@ -230,15 +265,23 @@ public class CreateGroup {
     }
     class Payload{
         //根据model的取值不同,名字有所变动。
-        public CreateGroupRes createGroupRes;
+        public SearchFeaRes searchFeaRes;
     }
-    class CreateGroupRes{
+    class SearchFeaRes{
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
-    public interface NetCallGroup{
-        void OnSuccess(String  success);
+    //添加回调方法获取返回值
+    public interface NetCall1_N{
+        void OnSuccess(String success);
+        void OnError(String error);
+    }
+    //获取识别结果
+    class scoreList{
+       public double score;
+       public String featureInfo;
+       public String featureId;
     }
 }

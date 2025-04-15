@@ -1,17 +1,13 @@
 package com.yl.deepseekxunfei.crete;
 
-import android.net.ConnectivityManager;
 import android.os.Build;
-import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
-import com.google.gson.annotations.SerializedName;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -23,112 +19,74 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
-
 /**
- * 添加音频特征
+ * 声纹识别1:1
  */
-public class CreateFeature {
+public class SearchOneFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
     //音频存放位置
     private static String AUDIO_PATH;
+
     //解析Json
     private static Gson json = new Gson();
-    private CreateLogotype createLogotype;
 
     //构造函数,为成员变量赋值
-    public CreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,CreateLogotype createLogotype) {
-        this.requestUrl = requestUrl;
-        this.APPID = APPID;
-        this.apiSecret = apiSecret;
-        this.apiKey = apiKey;
-        this.AUDIO_PATH = AUDIO_PATH;
-        this.createLogotype =createLogotype;
+    public SearchOneFeature(String requestUrl,String APPID,String apiSecret,String apiKey,String AUDIO_PATH){
+        this.requestUrl=requestUrl;
+        this.APPID=APPID;
+        this.apiSecret=apiSecret;
+        this.apiKey=apiKey;
+        this.AUDIO_PATH=AUDIO_PATH;
     }
 
     //提供给主函数调用的方法
-    public static void doCreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,CreateLogotype createLogotype) {
-        CreateFeature createFeature = new CreateFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH,createLogotype);
+    public static void doSearchOneFeature(String requestUrl,String APPID,String apiSecret,String apiKey,String AUDIO_PATH) {
+        SearchOneFeature searchOneFeature = new SearchOneFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH);
         try {
-          createFeature.doRequest(new NetCall() {
-                @Override
-                public void OnSuccess(String success) {
-                    try {
-                        Log.d("添加音频特征服务 ", "resp=>" + success);
-                        JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
-                        String textBase64Decode = null;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createFeatureRes.text), "UTF-8");
-                        }
-                        JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                        Log.d("添加音频特征解码：", "text字段Base64解码后=>" + jsonObject);
-                    }catch (Exception e){
-                        Log.d("特征创建失败",e.getMessage());
-                    }
-                }
-                @Override
-                public void OnError() {
-                    Log.d("失败", "声纹特征创建失败");
-                }
-            });
+            String resp = searchOneFeature.doRequest();
+            System.out.println("resp=>" + resp);
+            JsonParse myJsonParse = json.fromJson(resp, JsonParse.class);
+            String textBase64Decode= null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.searchScoreFeaRes.text), "UTF-8");
+            }
+            JSONObject jsonObject = JSON.parseObject(textBase64Decode);
+            System.out.println("text字段Base64解码后=>"+jsonObject);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
     /**
      * 请求主方法
      *
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetCall call) {
-        new Thread(() -> {
-            HttpURLConnection httpURLConnection = null;
-            OutputStream out = null;
-            InputStream is = null;
-            try {
-                URL realUrl = new URL(buildRequetUrl());
-                httpURLConnection = (HttpURLConnection) realUrl.openConnection();
-                httpURLConnection.setDoInput(true);
-                httpURLConnection.setDoOutput(true);
-                httpURLConnection.setRequestMethod("POST");
-                httpURLConnection.setRequestProperty("Content-type", "application/json");
+    public String doRequest() throws Exception {
+        URL realUrl = new URL(buildRequetUrl());
+        URLConnection connection = realUrl.openConnection();
+        HttpURLConnection httpURLConnection = (HttpURLConnection) connection;
+        httpURLConnection.setDoInput(true);
+        httpURLConnection.setDoOutput(true);
+        httpURLConnection.setRequestMethod("POST");
+        httpURLConnection.setRequestProperty("Content-type", "application/json");
 
-                // 写入请求参数
-                out = httpURLConnection.getOutputStream();
-                String params = buildParam();
-                Log.d("添加音频特征", "params=>" + params);
-                out.write(params.getBytes());
-                out.flush();
-                // 获取响应
-                int responseCode = httpURLConnection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
-                    is = httpURLConnection.getInputStream();
-                    String response = readAllBytes(is);
-                    Log.d("添加音频特征服务结果", "doRequest()：\t" + response);
-                    call.OnSuccess(response);
-                } else {
-                    is = httpURLConnection.getErrorStream();
-                    String error = "Error code: " + responseCode + ", message: " + readAllBytes(is);
-                    Log.d("错误", "doRequest: " + error);
-                    call.OnError();
-                }
-            } catch (Exception e) {
-                Log.e("错误", "doRequest exception: " + e.getMessage());
-                call.OnError();
-            } finally {
-                try {
-                    if (out != null) out.close();
-                    if (is != null) is.close();
-                    if (httpURLConnection != null) httpURLConnection.disconnect();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        OutputStream out = httpURLConnection.getOutputStream();
+        String params = buildParam();
+        System.out.println("params=>" + params);
+        out.write(params.getBytes());
+        out.flush();
+        InputStream is = null;
+        try {
+            is = httpURLConnection.getInputStream();
+        } catch (Exception e) {
+            is = httpURLConnection.getErrorStream();
+            throw new Exception("make request error:" + "code is " + httpURLConnection.getResponseMessage() + readAllBytes(is));
+        }
+        return readAllBytes(is);
     }
 
     /**
@@ -194,14 +152,12 @@ public class CreateFeature {
                     "    }," +
                     "    \"parameter\": {" +
                     "        \"s782b4996\": {" +
-                    "            \"func\": \"createFeature\"," +
+                    "            \"func\": \"searchScoreFea\"," +
                     //这里填上所需要的groupId
-                    "            \"groupId\": \"" + createLogotype.getGroupId() + "\"," +
-                    //特征表示
-                    "            \"featureId\": \""+createLogotype.getFeatureId()+"\"," +
-                    //特征描述
-                    "            \"featureInfo\": \""+createLogotype.getFeatureInfo()+"\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
-                    "            \"createFeatureRes\": {" +
+                    "            \"groupId\": \""+APPID+"\"," +
+                    //这里填上所需要的featureId
+                    "            \"dstFeatureId\": \"iFLYTEK_examples_featureId\"," +
+                    "            \"searchScoreFeaRes\": {" +
                     "                \"encoding\": \"utf8\"," +
                     "                \"compress\": \"raw\"," +
                     "                \"format\": \"json\"" +
@@ -212,11 +168,11 @@ public class CreateFeature {
                     "    \"resource\": {" +
                     //这里根据不同的音频编码填写不同的编码格式
                     "        \"encoding\": \"raw\"," +
-                    "        \"sample_rate\": 16000," + //采样率
-                    "        \"channels\": 1," +        //通道
-                    "        \"bit_depth\": 16," +      //量化
-                    "        \"status\": 3," +
-                    "        \"audio\": \"" + Base64.getEncoder().encodeToString(read(AUDIO_PATH)) + "\"" +
+                    "        \"sample_rate\": 16000," +
+                    "        \"channels\": 1," +
+                    "        \"bit_depth\": 16," +
+                    "        \"status\": " + 3 + "," +
+                    "        \"audio\": \""+ Base64.getEncoder().encodeToString(read(AUDIO_PATH))+"\""+
                     "    }}" +
                     "}";
         }
@@ -234,7 +190,7 @@ public class CreateFeature {
         byte[] b = new byte[1024];
         StringBuilder sb = new StringBuilder();
         int len = 0;
-        while ((len = is.read(b)) != -1) {
+        while ((len = is.read(b)) != -1){
             sb.append(new String(b, 0, len, "utf-8"));
         }
         return sb.toString();
@@ -246,7 +202,6 @@ public class CreateFeature {
         in.close();
         return data;
     }
-
     private static byte[] inputStream2ByteArray(InputStream in) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024 * 4];
@@ -256,37 +211,25 @@ public class CreateFeature {
         }
         return out.toByteArray();
     }
-
     //Json解析
     class JsonParse {
         public Header header;
         public Payload payload;
     }
-
-    class Header {
+    class Header{
         public int code;
         public String message;
         public String sid;
         public int status;
     }
-
-    class Payload {
+    class Payload{
         //根据model的取值不同,名字有所变动。
-        public CreateFeatureRes createFeatureRes;
+        public SearchScoreFeaRes searchScoreFeaRes;
     }
-
-    class CreateFeatureRes {
+    class SearchScoreFeaRes{
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
-
-    //添加一个回调方法通过回调获取返回值
-    public interface NetCall {
-        void OnSuccess(String success);
-
-        void OnError();
-    }
-
 }
