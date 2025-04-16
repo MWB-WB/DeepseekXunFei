@@ -3,6 +3,10 @@ package com.yl.deepseekxunfei;
 
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
@@ -13,7 +17,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
-import android.text.Layout;
 import android.text.TextWatcher;
 import android.util.JsonReader;
 import android.util.Log;
@@ -214,9 +217,44 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         ContextHolder.init(this); // 保存全局 Context
         initView();
         initThirdApi();
+        registerBroadCast();
         myHandler = new MyHandler(this);
         sceneManager = new SceneManager();
         textFig = false;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        boolean isStartRecord;
+        try {
+            isStartRecord = getIntent().getExtras().getBoolean("isStartRecord", false);
+        } catch (Exception e) {
+            isStartRecord = false;
+        }
+        if (isStartRecord) {
+            TTS("我在");
+            startVoiceRecognize();
+        }
+    }
+
+    private void registerBroadCast() {
+        BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                Log.e(TAG, "onReceive: ");
+                if ("com.yl.voice.wakeup".equals(intent.getAction())) {
+                    startVoiceRecognize();
+                } else if ("com.yl.voice.recognize.text".equals(intent.getAction())) {
+                    RecognizerResult result = intent.getParcelableExtra("result", RecognizerResult.class);
+                    boolean isLast = intent.getBooleanExtra("isLast", false);
+                    printResult(result, isLast);
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
+        filter.addAction("com.yl.voice.recognize.text");
+        registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
     }
 
     private void initView() {
@@ -296,38 +334,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
-            isDuplicate = true;
-            isStopRequested = false;
-            if (aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-                isNewChatCome = true;
-            }
-            editTextQuestion.setText("");
-            // 1. 先创建录音文件
-            creteFlies = creteUtlis.createAudioFilePath(MainActivity.this);
-            Log.e(TAG, "initView: " + creteFlies);
-            creteUtlis.startRecord(new WeakReference<>(this), creteFlies);
-
-//            creteUtlis.startRecording(creteFlies);
-            //停止播放文本
-            mTts.stopSpeaking();
-            if (null == mIat) {
-                Log.d(TAG, "创建对象失败，请确认libmsc.so放置正确，且有调用createUtility进行初始化");
-                return;
-            }
-            mIatResults.clear();
-            setParam();
-            //带UI界面
-            mIatDialog.setListener(mRecognizerDialogListener);
-            mIatDialog.show();
-            //获取字体所在控件
-            TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
-            txt.setText("请说出您的问题！");
-            txt.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    //设置为点击无反应，避免跳转到讯飞平台
-                }
-            });
+            startVoiceRecognize();
         });
         //输入框
         inputEditText = findViewById(R.id.inputEditText);
@@ -486,6 +493,41 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             });
             // 显示自定义 Dialog
             customDialog.show();
+        });
+    }
+
+    private void startVoiceRecognize() {
+        isDuplicate = true;
+        isStopRequested = false;
+        if (aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+            isNewChatCome = true;
+        }
+        editTextQuestion.setText("");
+        // 1. 先创建录音文件
+        creteFlies = creteUtlis.createAudioFilePath(MainActivity.this);
+        Log.e(TAG, "initView: " + creteFlies);
+        creteUtlis.startRecord(new WeakReference<>(this), creteFlies);
+
+//            creteUtlis.startRecording(creteFlies);
+        //停止播放文本
+        mTts.stopSpeaking();
+        if (null == mIat) {
+            Log.d(TAG, "创建对象失败，请确认libmsc.so放置正确，且有调用createUtility进行初始化");
+            return;
+        }
+        mIatResults.clear();
+        setParam();
+        //带UI界面
+        mIatDialog.setListener(mRecognizerDialogListener);
+        mIatDialog.show();
+        //获取字体所在控件
+        TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
+        txt.setText("请说出您的问题！");
+        txt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //设置为点击无反应，避免跳转到讯飞平台
+            }
         });
     }
 
@@ -682,8 +724,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      */
     @Override
     protected void onDestroy() {
-
-
         if (null != mIat) {
             // 退出时释放连接
             mIat.cancel();
@@ -741,7 +781,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      *
      * @param results
      */
-    private void printResult(RecognizerResult results, boolean isLast) throws JSONException {
+    private void printResult(RecognizerResult results, boolean isLast) {
         String text = JsonParser.parseIatResult(results.getResultString());
         Log.d("识别内容", "printResult: " + text);
 
@@ -759,7 +799,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         if (!isLast) {
             CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
             QueryFeatureList.doQueryFeatureList(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//查询特征列表
-            SearchOneFeature.doSearchOneFeature(requestUrl,APP_ID,APISecret,APIKey,creteFlies);
+            SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies);
             SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);//1:N比对
             return;
         }
@@ -786,11 +826,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      */
     private final RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
         public void onResult(RecognizerResult results, boolean isLast) {
-            try {
-                printResult(results, isLast);//结果数据解析
-            } catch (JSONException e) {
-                throw new RuntimeException(e);
-            }
+            printResult(results, isLast);//结果数据解析
         }
 
         /**
@@ -926,6 +962,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 isNewChatCome = true;
                 textFig = false;
                 button.setImageResource(R.drawable.jzfason);
+                aiType = BotConstResponse.AIType.FREE;
                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "网络波动较大，请稍后再试", Toast.LENGTH_SHORT).show());
                 e.printStackTrace();
             }
