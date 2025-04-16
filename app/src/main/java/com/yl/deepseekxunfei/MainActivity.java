@@ -229,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         boolean isStartRecord;
         try {
             isStartRecord = getIntent().getExtras().getBoolean("isStartRecord", false);
+            getIntent().putExtra("isStartRecord",false);
         } catch (Exception e) {
             isStartRecord = false;
         }

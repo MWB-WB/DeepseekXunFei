@@ -124,7 +124,7 @@ public class VoiceWakeupService extends Service {
             } else {
                 Intent xunFeiDialogIntent = new Intent(getApplicationContext(), MainActivity.class);
                 xunFeiDialogIntent.putExtra("isStartRecord", true);
-                xunFeiDialogIntent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                xunFeiDialogIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(xunFeiDialogIntent);
             }
         }

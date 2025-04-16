@@ -21,6 +21,7 @@
     <uses-permission
         android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
         tools:ignore="ProtectedPermissions" />
+    <protected-broadcast android:name="com.yl.voice.wakeup" />
 
     <queries>
         <!--允许查询抖音和抖音极速版的软件包信息-->
@@ -51,6 +52,7 @@
             android:name=".MainActivity"
             android:enabled="true"
             android:exported="true"
+            android:launchMode="singleInstance"
             android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
