@@ -40,25 +40,25 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginBottom="16dp">
-
             <RadioButton
                 android:id="@+id/radio_teacher"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="车主"
-                android:checked="true"/>
+                android:text="车主" />
             <RadioButton
                 android:id="@+id/radio_student"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="家人"
-                android:layout_marginLeft="16dp"/>
+                android:layout_marginLeft="16dp"
+                />
             <RadioButton
                 android:id="@+id/radio_friend"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="朋友"
-                android:layout_marginLeft="16dp"/>
+                android:layout_marginLeft="16dp"
+                />
         </RadioGroup>
     </LinearLayout>
     <!-- 身份选择单选按钮组 -->

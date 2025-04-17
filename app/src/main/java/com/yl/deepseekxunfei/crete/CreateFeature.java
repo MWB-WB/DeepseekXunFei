@@ -186,7 +186,20 @@ public class CreateFeature {
      */
     private String buildParam() throws IOException {
         String param = null;
+        String id =null;
+        String featureId =null;
+        String featureInfo =null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            for (int i = 0; i < createLogotype.getGroupId().size(); i++) {
+                id = createLogotype.getGroupId().get(i).toString();
+            }
+            for (int i = 0; i < createLogotype.getFeatureId().size(); i++) {
+                featureId = createLogotype.getFeatureId().get(i).toString();
+            }
+            for (int i = 0; i < createLogotype.getFeatureInfo().size(); i++) {
+                featureInfo = createLogotype.getFeatureInfo().get(i).toString();
+            }
+            Log.d("创建id 标识 描述", "buildParam: "+id+"\t"+featureId+"\t"+featureInfo);
             param = "{" +
                     "    \"header\": {" +
                     "        \"app_id\": \"" + APPID + "\"," +
@@ -196,11 +209,11 @@ public class CreateFeature {
                     "        \"s782b4996\": {" +
                     "            \"func\": \"createFeature\"," +
                     //这里填上所需要的groupId
-                    "            \"groupId\": \"" + createLogotype.getGroupId() + "\"," +
+                    "            \"groupId\": \"" + id + "\"," +
                     //特征表示
-                    "            \"featureId\": \""+createLogotype.getFeatureId()+"\"," +
+                    "            \"featureId\": \""+featureId+"\"," +
                     //特征描述
-                    "            \"featureInfo\": \""+createLogotype.getFeatureInfo()+"\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
+                    "            \"featureInfo\": \""+featureInfo+"\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
                     "            \"createFeatureRes\": {" +
                     "                \"encoding\": \"utf8\"," +
                     "                \"compress\": \"raw\"," +

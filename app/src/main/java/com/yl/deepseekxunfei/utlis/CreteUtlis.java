@@ -41,7 +41,7 @@ public class CreteUtlis {
     // 创建录音文件路径
     public String createAudioFilePath(Context context) {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        String fileName = "VOICE_" + "timeStamp" + ".pcm";
+        String fileName = "VOICE_" + timeStamp + ".pcm";
         Log.e("TAG", "createAudioFilePath: " +context.getExternalCacheDir().getAbsolutePath() );
         return context.getExternalCacheDir().getAbsolutePath() + "/" + fileName;
     }

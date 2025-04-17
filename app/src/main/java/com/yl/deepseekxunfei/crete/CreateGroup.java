@@ -177,6 +177,19 @@ public class CreateGroup {
      * @return 参数字符串
      */
     private String  buildParam() {
+        String id = null;
+        String groupName = null;
+        String groupInfo = null;
+        for (int i = 0; i < createLogotype.getGroupId().size(); i++) {
+            id = createLogotype.getGroupId().get(i).toString();
+        }
+        for (int i = 0; i < createLogotype.getGroupName().size(); i++) {
+            groupName = createLogotype.getGroupName().get(i).toString();
+        }
+        for (int i = 0; i < createLogotype.getGroupInfo().size(); i++) {
+            groupInfo = createLogotype.getGroupInfo().get(i).toString();
+        }
+        Log.d("创建id 标识 描述", "buildParam: "+id+"\t"+groupName+"\t"+groupInfo);
         String param = "{"+
                 "    \"header\": {"+
                 "        \"app_id\": \""+APPID+"\","+
@@ -186,11 +199,11 @@ public class CreateGroup {
                 "        \"s782b4996\": {"+
                 "            \"func\": \"createGroup\","+
                 //分组ID
-                "            \"groupId\": \""+createLogotype.getGroupId()+"\","+
+                "            \"groupId\": \""+id+"\","+
                 //分组名称
-                "            \"groupName\": \""+createLogotype.getGroupName()+"\","+
+                "            \"groupName\": \""+groupName+"\","+
                 //分组描述
-                "            \"groupInfo\": \""+createLogotype.getGroupInfo()+"\","+
+                "            \"groupInfo\": \""+groupInfo+"\","+
                 "            \"createGroupRes\": {"+
                 "                \"encoding\": \"utf8\","+
                 "                \"compress\": \"raw\","+
