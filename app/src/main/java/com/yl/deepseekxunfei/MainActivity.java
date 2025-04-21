@@ -18,17 +18,16 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.JsonReader;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.EditText;
 
-import androidx.annotation.LongDef;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.StringReader;
@@ -43,7 +42,6 @@ import java.util.List;
 
 import android.widget.ImageButton;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -127,7 +125,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
-    private static final String API_URL = "http://47.106.198.135:11434/api/chat ";
+    private static final String API_URL = "http://39.108.215.125:11434/api/chat ";
 
     private EditText editTextQuestion;
 
@@ -232,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     List<String> groupInfoLsit = new ArrayList<>();//分组描述信息
     List<String> featureIdList = new ArrayList<>();//特征唯一标识
     List<String> featureInfoList = new ArrayList<>();//特征描述
-     int che = 0;//判断是不是第一次注册车主声纹
+    int che = 0;//判断是不是第一次注册车主声纹
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -252,16 +250,15 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     @Override
     protected void onResume() {
         super.onResume();
-        boolean isStartRecord;
+        String text = "";
         try {
-            isStartRecord = getIntent().getExtras().getBoolean("isStartRecord", false);
-            getIntent().putExtra("isStartRecord",false);
+            text = getIntent().getExtras().getString("text");
+            getIntent().putExtra("text", "");
         } catch (Exception e) {
-            isStartRecord = false;
+            text = "";
         }
-        if (isStartRecord) {
-            TTS("我在");
-            startVoiceRecognize();
+        if (!TextUtils.isEmpty(text)) {
+            commitText(text);
         }
     }
 
@@ -272,15 +269,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.e(TAG, "onReceive: ");
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
                     startVoiceRecognize();
-                } else if ("com.yl.voice.recognize.text".equals(intent.getAction())) {
-                    RecognizerResult result = intent.getParcelableExtra("result", RecognizerResult.class);
-                    boolean isLast = intent.getBooleanExtra("isLast", false);
-                    printResult(result, isLast);
                 }
             }
         };
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
-        filter.addAction("com.yl.voice.recognize.text");
         registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
     }
 

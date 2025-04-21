@@ -24,8 +24,6 @@ public class MyApplication extends Application {
 
     private void initThrid() {
         executorService.submit(()->{
-            //  开放平台注册的APPID
-            SpeechUtility.createUtility(MyApplication.this, SpeechConstant.APPID + "=27b3a946");
             // 初始化高德地图SDK
             AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
             AMapLocationClient.updatePrivacyShow(this, true, true);
