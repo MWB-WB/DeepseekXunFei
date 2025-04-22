@@ -78,8 +78,17 @@ public class RecyFragment extends Fragment {
         });
         searchResultsRecyclerView.setAdapter(adapter);
     }
+    public void showMusicSearchResult(List<LocationMusccarResult> results) {
+        searchResultsRecyclerView.setVisibility(View.VISIBLE);
+        spinKitView.setVisibility(View.GONE);
+        SearchResultAdapterMusical adapter = new SearchResultAdapterMusical(results, result -> {
+            // 点击结果后导航
+            showSearchResultsMusccar(results);
+        });
+        searchResultsRecyclerView.setAdapter(adapter);
+    }
 
-    private void showSearchResultsMusccar(List<LocationMusccarResult> results) {
+    public  void showSearchResultsMusccar(List<LocationMusccarResult> results) {
         Log.d("TAG", "showSearchResultsMusccar: " + results);
         getActivity().runOnUiThread(() -> {
             searchResultsRecyclerView.setVisibility(View.VISIBLE);

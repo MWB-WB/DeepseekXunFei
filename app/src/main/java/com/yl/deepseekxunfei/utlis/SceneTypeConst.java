@@ -9,6 +9,7 @@ public class SceneTypeConst {
     public static final int RECENT_FILMS = 1004;
     public static final int GOOD_MOVIES = 1005;
     public static final int VIDEO = 1006;
+    public static final int MUSIC = 1007;//音乐
     public static final int CHITCHAT = 10010;
 
 

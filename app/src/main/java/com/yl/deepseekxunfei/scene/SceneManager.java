@@ -2,6 +2,8 @@ package com.yl.deepseekxunfei.scene;
 
 import android.util.Log;
 
+import com.kugou.opensdk.kgmusicaidlcop.entity.MusicListBaseData;
+import com.kugou.opensdk.kgmusicaidlcop.entity.MusicListBean;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
 import com.yl.deepseekxunfei.sceneenum.SceneType;
@@ -13,6 +15,7 @@ public class SceneManager {
     private NavScene navScene;
     private MovieScene movieScene;
     private VideoScene videoScene;
+    private MusicScene musicScene;
     private int currentSceneType;
 
     public SceneManager() {
@@ -24,6 +27,7 @@ public class SceneManager {
         navScene = new NavScene();
         movieScene = new MovieScene();
         videoScene = new VideoScene();
+        musicScene = new MusicScene();
     }
 
     //解析场景
@@ -74,6 +78,10 @@ public class SceneManager {
                 break;
             case VIDEO:
                 baseChildModel = videoScene.parseSceneToChild(sceneModel);
+                currentSceneType = baseChildModel.getType();
+                break;
+            case MUSIC:
+                baseChildModel = musicScene.parseSceneToChild(sceneModel);
                 currentSceneType = baseChildModel.getType();
                 break;
             default:

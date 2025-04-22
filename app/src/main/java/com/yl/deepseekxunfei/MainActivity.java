@@ -79,7 +79,9 @@ import android.app.Activity;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
+import com.yl.deepseekxunfei.APICalls.KwmusiccarApi;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
+import com.yl.deepseekxunfei.APICalls.OnPoiSearchListenerMusccar;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.adapter.ChatAdapter;
 import com.yl.deepseekxunfei.crete.CreateFeature;
@@ -97,6 +99,7 @@ import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MovieDetailModel;
 import com.yl.deepseekxunfei.model.SceneModel;
+import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
@@ -128,9 +131,11 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     private static final String API_URL = "http://39.108.215.125:11434/api/chat ";
 
     private EditText editTextQuestion;
-
+    MediaRecorder mediaRecorder = new MediaRecorder();
     private SpeechSynthesizer mTts;
-
+    private StringBuilder speakTts = new StringBuilder();
+    private boolean isSpeakDone = true;
+    private boolean isInRound = false;
     private static final String TAG = "MainActivity";
 
     private SpeechRecognizer mIat;// 语音听写对象
@@ -207,7 +212,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     //全局声纹识别创建文件工具类
     private CreteUtlis creteUtlis = new CreteUtlis();
     //开始录音按钮
-    private ImageButton kaishiluyin;
+    private Button kaishiluyin;
     // media_ecorder_recording.xml 布局中的开始录音按钮
     private Button btnStart;
     // media_ecorder_recording.xml 布局中的停止录音按钮
@@ -225,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     String selectedText;
     final Map<String, String>[] SearchOneFeatureList = new Map[]{new HashMap<>()}; //1:1服务结果
     final Map<String, String>[] result = new Map[]{new HashMap<>()};//1:N服务结果
+    final Map<String, String>[] group = new Map[]{new HashMap<>()};//创建特征库服务结果
     List<String> groupIdList = new ArrayList<>();//分组标识
     List<String> groupNameList = new ArrayList<>();//声纹分组名称
     List<String> groupInfoLsit = new ArrayList<>();//分组描述信息
@@ -269,10 +275,21 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.e(TAG, "onReceive: ");
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
                     startVoiceRecognize();
+                } else if ("com.yl.voice.recognize.text".equals(intent.getAction())) {
+                    RecognizerResult result = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        result = intent.getParcelableExtra("result", RecognizerResult.class);
+                    }
+                    boolean isLast = intent.getBooleanExtra("isLast", false);
+                    printResult(result, isLast);
                 }
             }
         };
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
+        filter.addAction("com.yl.voice.recognize.text");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        }
         registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
     }
 
@@ -306,12 +323,12 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                         replaceFragment(0);
                         sendMessage();
                     } else {
-//                        if (!chatMessages.get(chatMessages.size() - 1).isOver()) {
-//                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
-//                        } else {
-//                            replaceFragment(0);
-//                            sendMessage();
-//                        }
+                        if (!chatMessages.get(chatMessages.size() - 1).isOver()) {
+                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
+                        } else {
+                            replaceFragment(0);
+                            sendMessage();
+                        }
                     }
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
@@ -473,7 +490,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             textTime = customDialog.findViewById(R.id.text_time);
             // 找到关闭按钮
             Button closeDialogButton = customDialog.findViewById(R.id.btn_stop);
-            MediaRecorder mediaRecorder = new MediaRecorder();
+
             // 显示自定义 Dialog
             customDialog.show();
             // 设置关闭按钮点击事件
@@ -513,7 +530,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 mIatDialog.show();
                 //获取字体所在控件
                 TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
-                txt.setText("请开始说话，我们会使用您的录音作为声纹验证！");
+                txt.setText("您可以朗读一段文本，为保证声纹识别的准确度，请保证录音时长在5到10秒之间");
                 txt.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -521,11 +538,11 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                     }
                 });
             });
-
         });
     }
 
     private void startVoiceRecognize() {
+        setParam();
         // 1. 先创建录音文件
         contrastFies = creteUtlis.createAudioFilePath(MainActivity.this);
         Log.e(TAG, "initView: " + contrastFies);
@@ -536,7 +553,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             isNewChatCome = true;
         }
         editTextQuestion.setText("");
-//            creteUtlis.startRecording(creteFlies);
         //停止播放文本
         mTts.stopSpeaking();
         if (null == mIat) {
@@ -544,7 +560,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             return;
         }
         mIatResults.clear();
-        setParam();
         //带UI界面
         mIatDialog.setListener(mRecognizerDialogListener);
         mIatDialog.show();
@@ -776,6 +791,35 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      * 参数设置
      */
     public void setParam() {
+        SystemPropertiesReflection.get("deepseek_voice_speed", "");
+        String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "100");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "x4_lingfeizhe_emo");
+//        if (deepseekVoicespeaker.equals("许久")) {
+//            deepseekVoicespeaker = "aisjiuxu";
+//        } else if (deepseekVoicespeaker.equals("小萍")) {
+//            deepseekVoicespeaker = "aisxping";
+//        } else if (deepseekVoicespeaker.equals("小婧")) {
+//            deepseekVoicespeaker = "aisjinger";
+//        } else if (deepseekVoicespeaker.equals("许小宝")) {
+//            deepseekVoicespeaker = "aisbabyxu";
+//        } else if (deepseekVoicespeaker.equals("小燕")) {
+//            deepseekVoicespeaker = "xiaoyan";
+//        }
+
+        String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
+        String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
+        String deepseekBackgroundColor = SystemPropertiesReflection.get("deepseek_background_color", "白色");
+
+        mTts.setParameter(SpeechConstant.PARAMS, null);
+        mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
+        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
+        mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
+        //设置合成音调
+        mTts.setParameter(SpeechConstant.PITCH, "50");//设置音高
+        mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
+        mTts.setParameter(SpeechConstant.STREAM_TYPE, "3");
+        // 设置播放合成音频打断音乐播放，默认为true
+        mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
         // 清空参数
         mIat.setParameter(SpeechConstant.PARAMS, null);
         // 设置听写引擎
@@ -837,64 +881,69 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         }
         // 只有最后一段才做最终判断
         if (!isLast) {
-            Thread thread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    QueryFeatureList.doQueryFeatureList(requestUrl, APP_ID, APISecret, APIKey, createLogotype);
-                    if (createLogotype.getGroupId().size() > 1) {
-                        for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
-                            result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j));//1:N比对
-                           if (result[0]!=null){
-                               if (Double.parseDouble(result[0].get("score")) >= 0.6) {
-                                   return;
-                               }
-                           }else {
-                               runOnUiThread(()->Toast.makeText(MainActivity.this,"声纹为空",Toast.LENGTH_SHORT).show());
-                           }
-                        }
-                    } else if (createLogotype.getGroupId().size() == 1) {
-                        for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
-                            for (int k = 0; k < createLogotype.getFeatureId().size(); k++) {
-                                SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j), createLogotype.getFeatureId().get(k));//1:1
-                               if (SearchOneFeatureList[0]!=null){
-                                   if (Double.parseDouble(SearchOneFeatureList[0].get("score")) >= 0.6) {
-                                       return;
-                                   }
-                               }else {
-                                 runOnUiThread(()->Toast.makeText(MainActivity.this,"声纹为空",Toast.LENGTH_SHORT).show());
-                               }
-                            }
-                        }
-                    }
-                }
-            });
-            thread.start();
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+//            Thread thread = new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    QueryFeatureList.doQueryFeatureList(requestUrl, APP_ID, APISecret, APIKey, createLogotype);
+//                    if (createLogotype.getGroupId() != null) {
+//                        if (createLogotype.getGroupId().size() > 1) {
+//                            for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
+//                                result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j));//1:N比对
+//                                if (result[0] != null) {
+//                                    if (Double.parseDouble(result[0].get("score")) >= 0.6) {
+//                                        return;
+//                                    }
+//                                } else {
+//                                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "声纹为空", Toast.LENGTH_SHORT).show());
+//                                }
+//                            }
+//                        } else if (createLogotype.getGroupId().size() == 1) {
+//                            for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
+//                                for (int k = 0; k < createLogotype.getFeatureId().size(); k++) {
+//                                    SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j), createLogotype.getFeatureId().get(k));//1:1
+//                                    if (SearchOneFeatureList[0] != null && SearchOneFeatureList[0].get("score") != null) {
+//                                        if (Double.parseDouble(SearchOneFeatureList[0].get("score")) >= 0.6) {
+//                                            return;
+//                                        }
+//                                    } else {
+//                                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "声纹为空", Toast.LENGTH_SHORT).show());
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    } else {
+//                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "请先注册声纹信息", Toast.LENGTH_SHORT).show());
+//                    }
+//                }
+//            });
+//            thread.start();
+//            try {
+//                thread.join();
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
             return;
         }
-        double towServiceResultsScore = 0;
-        double oneServiceResultsScore = 0;
-        if (SearchOneFeatureList[0].get("score") != null) {
-            oneServiceResultsScore = Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score")));
-        }
-        if (result[0].get("score") != null) {
-            towServiceResultsScore = Double.parseDouble(Objects.requireNonNull(result[0].get("score")));
-        }
+//        double towServiceResultsScore = 0;
+//        double oneServiceResultsScore = 0;
+//        if (SearchOneFeatureList[0].get("score") != null) {
+//            oneServiceResultsScore = Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score")));
+//        }
+//        if (result[0].get("score") != null) {
+//            towServiceResultsScore = Double.parseDouble(Objects.requireNonNull(result[0].get("score")));
+//        }
 //            String serviceResultsFeatureId = result[0].get("featureId");
 //            String serviceResultsFeatureInfo = result[0].get("featureInfo");
-        if (towServiceResultsScore >= 0.6 || oneServiceResultsScore >= 0.6) {
-            chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
-            chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-            SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
-            BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-            actionByType(baseChildModel);
-        } else {
-            Toast.makeText(MainActivity.this, "声纹验证失败，请先注册声纹信息！！！", Toast.LENGTH_SHORT).show();
-        }
+        chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
+        BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
+        actionByType(baseChildModel);
+//        if (towServiceResultsScore >= 0.6 || oneServiceResultsScore >= 0.6) {
+//
+//        } else {
+//            Toast.makeText(MainActivity.this, "声纹验证失败，请先注册声纹信息！！！", Toast.LENGTH_SHORT).show();
+//        }
     }
 
     /**
@@ -918,17 +967,29 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         //会话结束回调接口，没有错误时，error为null
         public void onCompleted(SpeechError error) {
             Log.d(TAG, "播放完毕");
-            if (error == null) {
+            Log.d(TAG, "error" + error);
+            Log.d(TAG, "isInRound" + isInRound);
+            if (error == null && !isInRound) {
                 button.setImageResource(R.drawable.jzfason);
             }
-            aiType = BotConstResponse.AIType.FREE;
-            chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
+            if (error != null) isInRound = true;
+            if (isInRound) {
+                isSpeakDone = true;
+            } else {
+                aiType = BotConstResponse.AIType.FREE;
+                chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
+            }
+            if (!isInRound && speakTts != null) {
+                TTS(speakTts.toString().trim());
+                speakTts.delete(0, speakTts.length());
+            }
             chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
 
         //缓冲进度回调
         //percent为缓冲进度0~100，beginPos为缓冲音频在文本中开始位置，endPos表示缓冲音频在文本中结束位置，info为附加信息。
         public void onBufferProgress(int percent, int beginPos, int endPos, String info) {
+
         }
 
         //开始播放
@@ -936,6 +997,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             Log.d("SpeechSynthesizer", "开始播放");
             button.setImageResource(R.drawable.tingzhi);
             aiType = BotConstResponse.AIType.SPEAK;
+            isSpeakDone = false;
             chatMessages.get(chatMessages.size() - 1).setSpeaking(true);
             chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
@@ -948,7 +1010,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         //播放进度回调
         //percent为播放进度0~100,beginPos为播放音频在文本中开始位置，endPos表示播放音频在文本中结束位置.
         public void onSpeakProgress(int percent, int beginPos, int endPos) {
-
+            Log.d("播放进度", "" + percent);
         }
 
         //恢复播放回调接口
@@ -979,6 +1041,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         textFig = true;
         button.setImageResource(R.drawable.tingzhi);
         mTts.stopSpeaking();
+        //重置标识
+        isSpeakDone = true;
+        speakTts.delete(0, speakTts.length());
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
         requestBody.put("model", "deepseek-r1:32b");
@@ -1020,8 +1085,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         // 异步执行请求
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
                 .build();
 
         client.newCall(requestRound1).enqueue(new Callback() {
@@ -1050,6 +1115,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                         if (responseBody != null) {
                             BufferedSource source = responseBody.source();
                             aiType = BotConstResponse.AIType.TEXT_SHUCHU;
+                            isInRound = true;
                             while (!source.exhausted()) {
                                 Log.e(TAG, "onResponse: " + botMessageIndexRound1);
                                 if (isStopRequested || isNewChatCome) {
@@ -1096,6 +1162,38 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                 } else {
                                                     //回答文本主题
                                                     fullResponseRound1.append(partialResponse);
+                                                    if (!isSpeakDone || speakTts.length() <= 6) {
+                                                        Thread thread = new Thread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                speakTts.append(partialResponse);
+                                                            }
+                                                        });
+                                                        thread.start();
+                                                        try {
+                                                            Thread.sleep(100);
+                                                            thread.join();
+                                                        } catch (InterruptedException e) {
+                                                            throw new RuntimeException(e);
+                                                        }
+                                                        Log.d(TAG, "onResponse: 是否大于6_1：" + speakTts.toString().trim());
+                                                    } else {
+                                                        speakTts.append(partialResponse);
+                                                        Log.d(TAG, "onResponse: 是否大于6_2" + speakTts.toString().trim());
+                                                        Thread thread = new Thread(new Runnable() {
+                                                            @Override
+                                                            public void run() {
+                                                                TTS(speakTts.toString().trim());
+                                                                speakTts.delete(0, speakTts.length());
+                                                            }
+                                                        });
+                                                        thread.start();
+                                                        try {
+                                                            thread.join(100);
+                                                        } catch (InterruptedException e) {
+                                                            throw new RuntimeException(e);
+                                                        }
+                                                    }
                                                 }
                                                 // 更新 UI
                                                 runOnUiThread(() -> {
@@ -1109,19 +1207,20 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                         //缩进
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
                                                         // 更新机器人消息记录的内容
-                                                        String reust = huida.replace("\n", "").replace("\n\n", "");
-                                                        chatMessages.get(botMessageIndexRound1).setMessage(reust);
+                                                        String result = huida.replace("\n", "").replace("\n\n", "");
+                                                        chatMessages.get(botMessageIndexRound1).setMessage(result);
+                                                        Log.d("huida", "huida: " + huida);
                                                     }
                                                     // 如果完成，停止读取
                                                     if (done) {
                                                         Log.d(TAG, "onResponse: 回答" + huida);
-                                                        TTS(huida);
+                                                        isInRound = false;
                                                         isStopRequested = true;
                                                         isNewChatCome = false;
                                                         textFig = false;
                                                         chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
                                                         chatMessages.get(botMessageIndexRound1).setOver(true);
-                                                        button.setImageResource(R.drawable.jzfason);
+//                                                        button.setImageResource(R.drawable.jzfason);
                                                         Log.d("保存上下文信息", "run: " + fullResponseRound1.toString());
                                                         // 保存上下文信息
 
@@ -1171,7 +1270,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         TTS(mWeatherResult);
         weatherIndex = 0;
         myHandler.post(weatherStreamRunnable);
-
     }
 
     private int weatherIndex = 0;
@@ -1236,45 +1334,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
     //文字转语音方法
     public void TTS(String str) {
-
-        SystemPropertiesReflection.get("deepseek_voice_speed", "");
-        String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "50");
-        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "xiaoyan");
-        if (deepseekVoicespeaker.equals("许久")) {
-            deepseekVoicespeaker = "aisjiuxu";
-        } else if (deepseekVoicespeaker.equals("小萍")) {
-            deepseekVoicespeaker = "aisxping";
-        } else if (deepseekVoicespeaker.equals("小婧")) {
-            deepseekVoicespeaker = "aisjinger";
-        } else if (deepseekVoicespeaker.equals("许小宝")) {
-            deepseekVoicespeaker = "aisbabyxu";
-        } else if (deepseekVoicespeaker.equals("小燕")) {
-            deepseekVoicespeaker = "xiaoyan";
-        }
-
-        String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
-        String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
-        String deepseekBackgroundColor = SystemPropertiesReflection.get("deepseek_background_color", "白色");
-
-        mTts.setParameter(SpeechConstant.PARAMS, null);
-        mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
-        mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
-        //设置合成音调
-        mTts.setParameter(SpeechConstant.PITCH, "50");//设置音高
-        mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
-        mTts.setParameter(SpeechConstant.STREAM_TYPE, "3");
-        // 设置播放合成音频打断音乐播放，默认为true
-        mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
-
-        // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
-        // 注：AUDIO_FORMAT参数语记需要更新版本才能生效
-        // mTts.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
-        // boolean isSuccess = mTts.setParameter(SpeechConstant.TTS_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/tts2.wav");
-        // Toast.makeText(MainActivity.this, "语音合成 保存音频到本地：\n" + isSuccess, Toast.LENGTH_LONG).show();
-        //3.开始合成
+        Log.e(TAG, "123131312: " + str);
         int code = mTts.startSpeaking(str, mSynListener);
-
         if (code != ErrorCode.SUCCESS) {
             if (code == ErrorCode.ERROR_COMPONENT_NOT_INSTALLED) {
                 //上面的语音配置对象为初始化时：
@@ -1563,7 +1624,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         } else if (radioButtonJr.isChecked()) {
             selectedText = radioButtonJr.getText().toString().trim();
         } else {
-            Log.d(TAG, "create: 未选择身份");
+            runOnUiThread(() -> Toast.makeText(MainActivity.this, "请先选择身份！！", Toast.LENGTH_SHORT).show());
+            return;
         }
         String name = selectedText;
         Thread thread = new Thread(new Runnable() {
@@ -1580,14 +1642,49 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                     featureInfoList.add(name + "Num" + i);
                     createLogotype.setFeatureId(featureIdList);//特征唯一标识
                     createLogotype.setFeatureInfo(featureInfoList); //特征描述
-                    CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
+                    group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
+                    Log.d(TAG, "code: " + group[0].get("code"));
+                    Log.d(TAG, "message: " + group[0].get("message"));
+                    Log.d(TAG, "message: " + group[0].get("error"));
+                    if (group[0] != null) {
+                        if (group[0].get("code").equals("0") && group[0].get("message").equals("success")) {
+                            // 关闭弹窗
+                            customDialog.dismiss();
+                            if (isRecording) {
+                                try {
+                                    mediaRecorder.stop();
+                                    mediaRecorder.release();
+                                    isRecording = false;
+                                } catch (IllegalStateException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                    }
+                    runOnUiThread(() -> Toast.makeText(MainActivity.this, "注册声纹成功", Toast.LENGTH_SHORT).show());
                 } else {
                     featureIdList.add(translateToEnglish(name) + "number" + i);
                     featureInfoList.add(name + i);
                     createLogotype.setFeatureId(featureIdList);//特征唯一标识
                     createLogotype.setFeatureInfo(featureInfoList); //特征描述
                     if (name.equals("车主") && che == 0) {
-                        CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
+                        group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
+                        if (group[0] != null) {
+                            if (group[0].get("code").equals("0") && group[0].get("message").equals("success")) {
+                                // 关闭弹窗
+                                customDialog.dismiss();
+                                if (isRecording) {
+                                    try {
+                                        mediaRecorder.stop();
+                                        mediaRecorder.release();
+                                        isRecording = false;
+                                    } catch (IllegalStateException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        }
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "注册声纹成功", Toast.LENGTH_SHORT).show());
                         che++;
                         i++;
                     } else {
