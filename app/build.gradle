@@ -58,6 +58,7 @@ dependencies {
     implementation 'com.github.ybq:Android-SpinKit:1.4.0'  // 替代 com.wang.avi
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.alibaba:fastjson:1.2.83' // 使用最新版本
+    implementation 'com.hankcs:hanlp:portable-1.7.5'
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core
 }

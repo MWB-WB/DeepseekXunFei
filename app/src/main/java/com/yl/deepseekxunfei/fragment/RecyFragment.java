@@ -78,6 +78,14 @@ public class RecyFragment extends Fragment {
         });
         searchResultsRecyclerView.setAdapter(adapter);
     }
+
+    public int getItemCount(){
+        if (searchResultsRecyclerView != null) {
+            return searchResultsRecyclerView.getAdapter().getItemCount();
+        }
+        return -1;
+    }
+
     public void showMusicSearchResult(List<LocationMusccarResult> results) {
         searchResultsRecyclerView.setVisibility(View.VISIBLE);
         spinKitView.setVisibility(View.GONE);
@@ -88,7 +96,17 @@ public class RecyFragment extends Fragment {
         searchResultsRecyclerView.setAdapter(adapter);
     }
 
-    public  void showSearchResultsMusccar(List<LocationMusccarResult> results) {
+    public void performClickItem(int position) {
+        if (searchResultsRecyclerView != null) {
+            RecyclerView.LayoutManager layoutManager = searchResultsRecyclerView.getLayoutManager();
+            View view = layoutManager.findViewByPosition(position);
+            if (view != null) {
+                view.performClick();
+            }
+        }
+    }
+
+    public void showSearchResultsMusccar(List<LocationMusccarResult> results) {
         Log.d("TAG", "showSearchResultsMusccar: " + results);
         getActivity().runOnUiThread(() -> {
             searchResultsRecyclerView.setVisibility(View.VISIBLE);
@@ -159,7 +177,7 @@ public class RecyFragment extends Fragment {
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        ((MainActivity)getActivity()).setCurrentChatOver();
+                        ((MainActivity) getActivity()).setCurrentChatOver();
                         searchResultsRecyclerView.setVisibility(View.VISIBLE);
                         spinKitView.setVisibility(View.GONE);
                         SearchResultAdapterMovie adapterMovie = new SearchResultAdapterMovie(getContext(), movies, new SearchResultAdapterMovie.OnItemClickListener() {

@@ -64,7 +64,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
             } else {
                 holder.imageView.clearAnimation();
             }
-
+            if (TextUtils.isEmpty(message.getThinkContent())) {
+                holder.thinkMessage.setVisibility(View.GONE);
+            } else {
+                holder.thinkMessage.setVisibility(View.VISIBLE);
+            }
             if (message.isThinkContent()) {
                 holder.thinkMessage.setText(message.getThinkContent());
                 holder.thinkMessage.setMaxLines(100);

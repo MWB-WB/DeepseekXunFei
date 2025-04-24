@@ -10,6 +10,7 @@ public enum SceneType {
     NAVIGATION, //导航
     MOVIE,      //电影
     VIDEO,      //视频
+    SELECTION,  //选项
     CHITCHAT    //闲聊
 
 }

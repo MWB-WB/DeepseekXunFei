@@ -108,6 +108,7 @@ import com.yl.deepseekxunfei.utlis.CreteUtlis;
 import com.yl.deepseekxunfei.utlis.JsonParser;
 import com.yl.deepseekxunfei.utlis.KeyboardUtils;
 import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
+import com.yl.deepseekxunfei.utlis.OptionPositionParser;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.TextLineBreaker;
@@ -128,7 +129,7 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
-    private static final String API_URL = "http://39.108.215.125:11434/api/chat ";
+    private static final String API_URL = "http://39.108.85.191:11434/api/chat ";
 
     private EditText editTextQuestion;
     MediaRecorder mediaRecorder = new MediaRecorder();
@@ -220,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     // media_ecorder_recording.xml 布局中的文本显示控件
     private TextView textTime;
     private CreateLogotype createLogotype = new CreateLogotype();
+    private Call currentCall;
     // 创建自定义 Dialog
     Dialog customDialog;
     RadioGroup radio_teacher;
@@ -228,6 +230,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     RadioButton radioButtonJr;
     // 获取选中的按钮文本
     String selectedText;
+    private List<SceneModel> sceneModelList = new ArrayList<>();
     final Map<String, String>[] SearchOneFeatureList = new Map[]{new HashMap<>()}; //1:1服务结果
     final Map<String, String>[] result = new Map[]{new HashMap<>()};//1:N服务结果
     final Map<String, String>[] group = new Map[]{new HashMap<>()};//创建特征库服务结果
@@ -258,13 +261,35 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         super.onResume();
         String text = "";
         try {
-            text = getIntent().getExtras().getString("text");
-            getIntent().putExtra("text", "");
+            text = SystemPropertiesReflection.get("persist.sys.yl.text", "");
+            Log.e(TAG, "onResume: " + text);
+            SystemPropertiesReflection.set("persist.sys.yl.text", "");
         } catch (Exception e) {
             text = "";
+            SystemPropertiesReflection.set("persist.sys.yl.text", "");
         }
         if (!TextUtils.isEmpty(text)) {
             commitText(text);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mTts.stopSpeaking();
+        if (currentCall != null) {
+            currentCall.cancel();
+            currentCall = null;
+        }
+        isStopRequested = true;
+        textFig = false;
+        isInRound = false;
+        setCurrentChatOver();
+        aiType = BotConstResponse.AIType.FREE;
+        button.setImageResource(R.drawable.jzfason);
+        if (!chatMessages.isEmpty()) {
+            chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
+            chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
     }
 
@@ -335,6 +360,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 }
             } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
                 mTts.stopSpeaking();
+                if (currentCall != null) {
+                    currentCall.cancel();
+                    currentCall = null;
+                }
                 isStopRequested = true;
                 textFig = false;
                 setCurrentChatOver();
@@ -591,18 +620,20 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 
     public void commitText(String text) {
         if (chatMessages.isEmpty()) {
-            chatMessages.add(new ChatMessage(text, true));
+            chatMessages.add(new ChatMessage(text, true, "", false));
             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
             SceneModel sceneModel = sceneManager.parseQuestionToScene(text);
+            sceneModelList.add(sceneModel);
             BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
             actionByType(baseChildModel);
         } else {
             if (!chatMessages.get(chatMessages.size() - 1).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
                 Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
             } else {
-                chatMessages.add(new ChatMessage(text, true));
+                chatMessages.add(new ChatMessage(text, true, "", false));
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 SceneModel sceneModel = sceneManager.parseQuestionToScene(text);
+                sceneModelList.add(sceneModel);
                 BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
                 actionByType(baseChildModel);
             }
@@ -692,11 +723,12 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 titleTextView.setText(currentTitle); // 更新标题
             }
             // 添加问题到对话列表
-            chatMessages.add(new ChatMessage(input, true));
+            chatMessages.add(new ChatMessage(input, true, "", false));
             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
             inputEditText.setText("");
             SceneModel sceneModel = sceneManager.parseQuestionToScene(input);
+            sceneModelList.add(sceneModel);
             BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
             actionByType(baseChildModel);
         }
@@ -934,7 +966,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 //        }
 //            String serviceResultsFeatureId = result[0].get("featureId");
 //            String serviceResultsFeatureInfo = result[0].get("featureInfo");
-        chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
+        chatMessages.add(new ChatMessage(finalText, true, "", false)); // 添加到聊天界面
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
         BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
@@ -972,14 +1004,13 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             if (error == null && !isInRound) {
                 button.setImageResource(R.drawable.jzfason);
             }
-            if (error != null) isInRound = true;
             if (isInRound) {
                 isSpeakDone = true;
             } else {
                 aiType = BotConstResponse.AIType.FREE;
                 chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
             }
-            if (!isInRound && speakTts != null) {
+            if (!isInRound && !TextUtils.isEmpty(speakTts.toString())) {
                 TTS(speakTts.toString().trim());
                 speakTts.delete(0, speakTts.length());
             }
@@ -1088,8 +1119,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 .readTimeout(10, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .build();
-
-        client.newCall(requestRound1).enqueue(new Callback() {
+        currentCall = client.newCall(requestRound1);
+        currentCall.enqueue(new Callback() {
             // 用于存储第一轮完整响应
             StringBuilder fullResponseRound1 = new StringBuilder();
             StringBuilder thinkText = new StringBuilder();
@@ -1476,7 +1507,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.d(TAG, "Search: 附近搜索");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatMessages.add(new ChatMessage(botResponse, false, "", false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1509,7 +1540,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 Log.d(TAG, "Search: 关键字");
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatMessages.add(new ChatMessage(botResponse, false, "", false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1539,7 +1570,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             case SceneTypeConst.RECENT_FILMS:
                 isStopRequested = true;
                 // 先让机器人回复固定内容
-                chatMessages.add(new ChatMessage(botResponse, false)); // 添加到聊天界面
+                chatMessages.add(new ChatMessage(botResponse, false, "", false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 TTS(botResponse);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
@@ -1555,7 +1586,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                         isStopRequested = true;
                         String content = filterSensitiveContent(entry.getContent()); // 过滤敏感词
                         updateContext(baseChildModel.getText(), content); // 更新上下文
-                        chatMessages.add(new ChatMessage(entry.getContent(), false));
+                        chatMessages.add(new ChatMessage(entry.getContent(), false, "", false));
                         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                         chatRecyclerView.smoothScrollToPosition(chatMessages.size() - 1);
                         //停止播放文本
@@ -1577,18 +1608,35 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             case SceneTypeConst.TODAY_WEATHER:
                 weatherAPI.weatherSearch(SceneTypeConst.TODAY_WEATHER);
                 // 先让机器人回复固定内容
-                chatMessages.add(new ChatMessage(BotConstResponse.searchWeatherWaiting, false)); // 添加到聊天界面
+                chatMessages.add(new ChatMessage(BotConstResponse.searchWeatherWaiting, false, "", false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 TTS(BotConstResponse.searchWeatherWaiting);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                startTime(chatMessages.size() - 1);
                 break;
             case SceneTypeConst.FEATHER_WEATHER:
                 weatherAPI.weatherSearch(SceneTypeConst.FEATHER_WEATHER);
                 // 先让机器人回复固定内容
-                chatMessages.add(new ChatMessage(BotConstResponse.searchForecastWeatherWaiting, false)); // 添加到聊天界面
+                chatMessages.add(new ChatMessage(BotConstResponse.searchForecastWeatherWaiting, false, "", false)); // 添加到聊天界面
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
                 TTS(BotConstResponse.searchForecastWeatherWaiting);
                 chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                startTime(chatMessages.size() - 1);
+                break;
+            case SceneTypeConst.SELECTION:
+                chatMessages.add(new ChatMessage(BotConstResponse.ok, false, "", false));
+                chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                TTS(BotConstResponse.ok);
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
+                if (recyFragment != null && recyFragment.isVisible()) {
+                    int position = OptionPositionParser.parsePosition(baseChildModel.getText(), recyFragment.getItemCount());
+                    Log.e(TAG, "actionByType position: " + position);
+                    if (position == -1) {
+
+                    } else {
+                        recyFragment.performClickItem(position);
+                    }
+                }
                 break;
             case SceneTypeConst.VIDEO:
                 DouyinApi.requestAuth(this);
@@ -1611,7 +1659,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     }
 
     public void setCurrentChatOver() {
-        chatMessages.get(chatMessages.size() - 1).setOver(true);
+        if (chatMessages.size() > 0){
+            chatMessages.get(chatMessages.size() - 1).setOver(true);
+        }
     }
 
     //逻辑还存在一点问题
