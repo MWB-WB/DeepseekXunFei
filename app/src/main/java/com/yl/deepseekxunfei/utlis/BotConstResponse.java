@@ -23,6 +23,4 @@ public class BotConstResponse {
         TEXT_READY,
         TEXT_NO_READY
     }
-
-
 }

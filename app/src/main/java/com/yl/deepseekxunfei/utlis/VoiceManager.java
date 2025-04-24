@@ -1,0 +1,159 @@
+package com.yl.deepseekxunfei.utlis;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.iflytek.cloud.SpeechConstant;
+import com.iflytek.cloud.SpeechError;
+import com.iflytek.cloud.SpeechSynthesizer;
+import com.iflytek.cloud.SynthesizerListener;
+import com.yl.deepseekxunfei.MainActivity;
+import com.yl.deepseekxunfei.R;
+import com.yl.deepseekxunfei.model.ChatMessage;
+
+public class VoiceManager {
+    private final StringBuilder mTextBuffer = new StringBuilder();
+    private final Object mLock = new Object();
+    private volatile boolean mIsSpeaking = false;
+    public SpeechSynthesizer mTts;
+    private HandlerThread mWorkThread;
+    public MainActivity mainActivity;
+
+    // 初始化语音引擎
+    public void init(Context context) {
+        // 创建后台工作线程
+        mWorkThread = new HandlerThread("VoiceThread");
+        mWorkThread.start();
+        //初始化动画效果
+        mTts = SpeechSynthesizer.createSynthesizer(context, null);
+        mTts.setParameter(SpeechConstant.PARAMS, null);
+        mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
+        mTts.setParameter(SpeechConstant.VOICE_NAME, "x4_lingfeizhe_emo");//设置发音人
+        mTts.setParameter(SpeechConstant.SPEED, "60");//设置语速
+        //设置合成音调
+        mTts.setParameter(SpeechConstant.PITCH, "55");//设置音高
+        mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
+        mTts.setParameter(SpeechConstant.STREAM_TYPE, "3");
+        // 设置播放合成音频打断音乐播放，默认为true
+        mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
+        //设置超时时间
+//        mTts.setParameter(SpeechConstant.NET_TIMEOUT, "200");
+        // 开启缓冲时间
+        mTts.setParameter(SpeechConstant.TTS_BUFFER_TIME, "100");
+        if (context instanceof MainActivity) {
+            this.mainActivity = (MainActivity) context;
+        }
+    }
+
+    // 启动文本处理循环
+    public void startProcessing() {
+        new Handler(mWorkThread.getLooper()).post(() -> {
+            while (!Thread.interrupted()) {
+                processText();
+                try {
+                    Thread.sleep(100); // 降低CPU占用
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
+    }
+
+    // 外部输入文本
+    public void appendText(String newText) {
+        synchronized (mLock) {
+            mTextBuffer.append(newText);
+        }
+    }
+
+    private ChatMessage chatMessage = new ChatMessage();
+
+    private void processText() {
+        synchronized (mLock) {
+            if (!TextUtils.isEmpty(mTextBuffer) && mTextBuffer.toString().trim().length() >= 12 && !mIsSpeaking) {
+                mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(true);
+                String speakText = mTextBuffer.toString();
+                mTextBuffer.delete(0, mTextBuffer.length());
+                startSpeech(speakText);
+            }
+        }
+    }
+
+    private void startSpeech(String text) {
+        mIsSpeaking = true;
+        // 在主线程执行语音播报
+        new Handler(Looper.getMainLooper()).post(() -> {
+            mTts.startSpeaking(text, new SynthesizerListener() {
+                @Override
+                public void onSpeakBegin() {
+
+                }
+
+                @Override
+                public void onBufferProgress(int i, int i1, int i2, String s) {
+
+                }
+
+                @Override
+                public void onSpeakPaused() {
+
+                }
+
+                @Override
+                public void onSpeakResumed() {
+
+                }
+
+                @Override
+                public void onSpeakProgress(int i, int i1, int i2) {
+                    mainActivity.button.setOnClickListener(v -> {
+                        mTts.stopSpeaking();
+                        mainActivity.isStopRequested = true;
+                        mainActivity.isNewChatCome = true;
+                        mainActivity.button.setImageResource(R.drawable.jzfason);
+                        mainActivity.aiType = BotConstResponse.AIType.FREE;
+                        mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(false);
+                        mainActivity.chatAdapter.notifyItemChanged(mainActivity.chatMessages.size() - 1);
+                        release();
+                    });
+                }
+
+                @Override
+                public void onCompleted(SpeechError error) {
+                    if (mTextBuffer.toString().trim().length() <= 0) {
+                        mainActivity.button.setImageResource(R.drawable.jzfason);
+                        mainActivity.aiType = BotConstResponse.AIType.FREE;
+                        mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(false);
+                        mainActivity.chatAdapter.notifyItemChanged(mainActivity.chatMessages.size() - 1);
+                        release();
+                    }
+                    mIsSpeaking = false;
+                    Log.d("TAG", "onCompleted: " + error);
+                    if (error == null) {
+                        Log.d("停止", "onCompleted: ");
+                    }
+                }
+
+                @Override
+                public void onEvent(int i, int i1, int i2, Bundle bundle) {
+
+                }
+            });
+        });
+    }
+
+    // 释放资源
+    public void release() {
+        if (mWorkThread != null) {
+            mWorkThread.quitSafely();
+        }
+        if (mTts != null) {
+            mTts.destroy();
+        }
+    }
+}

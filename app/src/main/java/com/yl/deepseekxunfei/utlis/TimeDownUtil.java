@@ -8,7 +8,7 @@ public class TimeDownUtil {
      * 通过Handler延迟发送消息的形式实现定时任务。
      */
     public static final int CHANGE_TIPS_TIMER_INTERVAL = 1000;
-    private static int count = 10;
+    private static int count = 30;
     private static Handler mChangeTipsHandler = new Handler();
 
     public static void startTimeDown(CountTimeListener countTimeListener) {

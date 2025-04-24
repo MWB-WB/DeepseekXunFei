@@ -50,7 +50,6 @@ public class QueryFeatureList {
         try {
             //queryFeatureListRes
             String resp = queryFeatureList.doRequest();
-
             Log.d("查询","resp=>"+resp);
             JsonParse myJsonParse = json.fromJson(resp, JsonParse.class);
             String textBase64Decode= null;

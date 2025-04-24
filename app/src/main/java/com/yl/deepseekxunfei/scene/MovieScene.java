@@ -13,7 +13,7 @@ public class MovieScene extends BaseChildScene {
         baseChildModel.setText(text);
         if (text.contains("最近")) {
             baseChildModel.setType(SceneTypeConst.RECENT_FILMS);
-        } else if (text.contains("好看")) {
+        } else {
             baseChildModel.setType(SceneTypeConst.CHITCHAT);
         }
         return baseChildModel;
