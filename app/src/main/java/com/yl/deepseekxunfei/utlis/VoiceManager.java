@@ -30,11 +30,28 @@ public class VoiceManager {
         mWorkThread = new HandlerThread("VoiceThread");
         mWorkThread.start();
         //初始化动画效果
+        String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "55");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "x4_lingfeizhe_emo");
+        if (deepseekVoicespeaker.equals("许久")) {
+            deepseekVoicespeaker = "aisjiuxu";
+        } else if (deepseekVoicespeaker.equals("小萍")) {
+            deepseekVoicespeaker = "aisxping";
+        } else if (deepseekVoicespeaker.equals("小婧")) {
+            deepseekVoicespeaker = "aisjinger";
+        } else if (deepseekVoicespeaker.equals("许小宝")) {
+            deepseekVoicespeaker = "aisbabyxu";
+        } else if (deepseekVoicespeaker.equals("小燕")) {
+            deepseekVoicespeaker = "xiaoyan";
+        }
+
+        String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
+        String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
+        String deepseekBackgroundColor = SystemPropertiesReflection.get("deepseek_background_color", "白色");
         mTts = SpeechSynthesizer.createSynthesizer(context, null);
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, "x4_lingfeizhe_emo");//设置发音人
-        mTts.setParameter(SpeechConstant.SPEED, "60");//设置语速
+        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
+        mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
         //设置合成音调
         mTts.setParameter(SpeechConstant.PITCH, "55");//设置音高
         mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
@@ -75,7 +92,7 @@ public class VoiceManager {
 
     private void processText() {
         synchronized (mLock) {
-            if (!TextUtils.isEmpty(mTextBuffer) && mTextBuffer.toString().trim().length() >= 12 && !mIsSpeaking) {
+            if (!TextUtils.isEmpty(mTextBuffer) && mTextBuffer.toString().trim().length() >= 2 && !mIsSpeaking) {
                 mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(true);
                 String speakText = mTextBuffer.toString();
                 mTextBuffer.delete(0, mTextBuffer.length());
@@ -111,16 +128,7 @@ public class VoiceManager {
 
                 @Override
                 public void onSpeakProgress(int i, int i1, int i2) {
-                    mainActivity.button.setOnClickListener(v -> {
-                        mTts.stopSpeaking();
-                        mainActivity.isStopRequested = true;
-                        mainActivity.isNewChatCome = true;
-                        mainActivity.button.setImageResource(R.drawable.jzfason);
-                        mainActivity.aiType = BotConstResponse.AIType.FREE;
-                        mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(false);
-                        mainActivity.chatAdapter.notifyItemChanged(mainActivity.chatMessages.size() - 1);
-                        release();
-                    });
+
                 }
 
                 @Override

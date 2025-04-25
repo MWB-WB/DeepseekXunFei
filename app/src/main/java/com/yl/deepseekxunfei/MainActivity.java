@@ -242,6 +242,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     List<String> featureIdList = new ArrayList<>();//特征唯一标识
     List<String> featureInfoList = new ArrayList<>();//特征描述
     int che = 0;//判断是不是第一次注册车主声纹
+    VoiceManager voiceManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -250,6 +251,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         setContentView(R.layout.activity_main);
         initPermission(); // 权限请求
         ContextHolder.init(this); // 保存全局 Context
+        voiceManager = new VoiceManager();
+        voiceManager.init(MainActivity.this);
         initView();
         initThirdApi();
         registerBroadCast();
@@ -300,8 +303,13 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.e(TAG, "onReceive: ");
+                Log.e(TAG, "registerBroadCast();: "+intent);
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
+                    creteFlies = getExternalFilesDir("msc").getAbsolutePath() + "/ivw.wav";
+                    if(createFig()){
+                        Toast.makeText(MainActivity.this,"未注册声纹",Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     startVoiceRecognize();
                 } else if ("com.yl.voice.recognize.text".equals(intent.getAction())) {
                     RecognizerResult result = null;
@@ -345,9 +353,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
 //        );
 
         button.setOnClickListener(v -> {
+            Log.e(TAG, "button onclick: " + aiType);
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
                 Toast.makeText(MainActivity.this, "请输入一个问题", Toast.LENGTH_SHORT).show();
-            } else if (aiType == BotConstResponse.AIType.TEXT_READY) {
+            } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
                 try {
                     if (chatMessages.isEmpty()) {
                         replaceFragment(0);
@@ -377,6 +386,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
                 chatAdapter.notifyItemChanged(chatMessages.size() - 1);
             }
+            Log.d(TAG, "initView: uiahauhsdiaushdiauh");
         });
         // 添加全局布局监听器
         final View activityRootView = findViewById(android.R.id.content);
@@ -834,17 +844,17 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         SystemPropertiesReflection.get("deepseek_voice_speed", "");
         String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "55");
         String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "x4_lingfeizhe_emo");
-//        if (deepseekVoicespeaker.equals("许久")) {
-//            deepseekVoicespeaker = "aisjiuxu";
-//        } else if (deepseekVoicespeaker.equals("小萍")) {
-//            deepseekVoicespeaker = "aisxping";
-//        } else if (deepseekVoicespeaker.equals("小婧")) {
-//            deepseekVoicespeaker = "aisjinger";
-//        } else if (deepseekVoicespeaker.equals("许小宝")) {
-//            deepseekVoicespeaker = "aisbabyxu";
-//        } else if (deepseekVoicespeaker.equals("小燕")) {
-//            deepseekVoicespeaker = "xiaoyan";
-//        }
+        if (deepseekVoicespeaker.equals("许久")) {
+            deepseekVoicespeaker = "aisjiuxu";
+        } else if (deepseekVoicespeaker.equals("小萍")) {
+            deepseekVoicespeaker = "aisxping";
+        } else if (deepseekVoicespeaker.equals("小婧")) {
+            deepseekVoicespeaker = "aisjinger";
+        } else if (deepseekVoicespeaker.equals("许小宝")) {
+            deepseekVoicespeaker = "aisbabyxu";
+        } else if (deepseekVoicespeaker.equals("小燕")) {
+            deepseekVoicespeaker = "xiaoyan";
+        }
 
         String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
         String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
@@ -936,7 +946,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         String serviceResultsFeatureInfo = result[0].get("featureInfo");
         Log.d("towServiceResultsScore", "1:N对比结果: " + towServiceResultsScore);
         Log.d("oneServiceResultsScore", "1:1对比结果: " + oneServiceResultsScore);
-        if (towServiceResultsScore >= 0.6 || oneServiceResultsScore >= 0.6) {
+        if (towServiceResultsScore >= 0.4 || oneServiceResultsScore >= 0.4) {
             chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
             SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
@@ -1061,10 +1071,17 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         requestBody.put("stream", true);
 
         JSONObject options = new JSONObject();
-        options.put("temperature", 0.6);
+        options.put("temperature", 0);
         options.put("mirostat_tau", 1.0);
         options.put("num_predict", -1);
         options.put("repeat_penalty", 1.5);
+        options.put("mirostat_mode", 2);
+        options.put("mirostat_tau", 6.5);
+        options.put("mirostat_eta", 0.08);
+        options.put("repeat_last_n", 1.5);
+        options.put("repeat_penalty", 1.5);
+        options.put("top_k", 60);
+
         requestBody.put("options", options);
 
         // 将 JSONObject 转换为字符串
@@ -1115,8 +1132,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                             BufferedSource source = responseBody.source();
                             aiType = BotConstResponse.AIType.TEXT_SHUCHU;
                             isInRound = true;
-                            VoiceManager voiceManager = new VoiceManager();
-                            voiceManager.init(MainActivity.this);
                             voiceManager.startProcessing();
                             while (!source.exhausted()) {
                                 Log.e(TAG, "botMessageIndexRound1: " + botMessageIndexRound1);
@@ -1124,7 +1139,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                     isNewChatCome = false;
                                     textFig = false;
                                     if (botMessageIndexRound1 != -1) {
-                                        chatMessages.get(botMessageIndexRound1).setOver(true);
+                                    chatMessages.get(botMessageIndexRound1).setOver(true);
                                     } else {
                                         ChatMessage chatMessage = new ChatMessage();
                                         chatMessage.setMessage("不好意思，请您重新提问");
@@ -1183,12 +1198,21 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                                         String reust = huida.replace("\n", "").replace("\n\n", "");
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(reust);
                                                     } else {
-                                                        //缩进
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
-                                                        // 更新机器人消息记录的内容
-                                                        String result = huida.replace("\n", "").replace("\n\n", "");
-                                                        chatMessages.get(botMessageIndexRound1).setMessage(result);
-                                                        Log.d("huida", "huida: " + huida);
+                                                        //缩进
+                                                        if (huida.length() <= 0){
+                                                            huida = "对不起，这个问题我暂时不能回答哦";
+                                                            // 更新机器人消息记录的内容
+                                                            String result = huida.replace("\n", "").replace("\n\n", "");
+                                                            chatMessages.get(botMessageIndexRound1).setMessage(result);
+                                                            Log.d("huida", "huida: " + huida);
+                                                            TTS(huida);
+                                                        } else{
+                                                            // 更新机器人消息记录的内容
+                                                            String result = huida.replace("\n", "").replace("\n\n", "");
+                                                            chatMessages.get(botMessageIndexRound1).setMessage(result);
+                                                            Log.d("huida", "huida: " + huida);
+                                                        }
                                                     }
                                                     // 如果完成，停止读取
                                                     if (done) {
@@ -1760,12 +1784,12 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
                     result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j));//1:N比对
                     if (result[0] != null) {
-                        if (Double.parseDouble(result[0].get("score")) >= 0.6) {
+                        if (Double.parseDouble(result[0].get("score")) >= 0.4) {
                             fig = false;
                             break;
                         }
                     } else {
-                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "没有匹配的声纹信息，请注册", Toast.LENGTH_SHORT).show());
+                        runOnUiThread(() -> Toast.makeText(MainActivity.this, "没有匹配的声纹信息，请注册1：N", Toast.LENGTH_SHORT).show());
                         fig = true;
                     }
                 }
@@ -1774,11 +1798,11 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                     for (int k = 0; k < createLogotype.getFeatureId().size(); k++) {
                         SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j), createLogotype.getFeatureId().get(k));//1:1
                         if (SearchOneFeatureList[0] != null && SearchOneFeatureList[0].get("score") != null) {
-                            if (Double.parseDouble(SearchOneFeatureList[0].get("score")) >= 0.6) {
+                            if (Double.parseDouble(SearchOneFeatureList[0].get("score")) >= 0.4) {
                                 fig = false;
                             }
                         } else {
-                            runOnUiThread(() -> Toast.makeText(MainActivity.this, "没有匹配的声纹信息，请注册", Toast.LENGTH_SHORT).show());
+                            runOnUiThread(() -> Toast.makeText(MainActivity.this, "没有匹配的声纹信息，请注册1:1", Toast.LENGTH_SHORT).show());
                             fig = true;
                         }
                     }

@@ -140,7 +140,7 @@ public class SearchOneFeature {
                 } else {
                     is = httpURLConnection.getErrorStream();
                     String error = "HTTP错误" + responseCode + "_" + readAllBytes(is);
-                    Log.d("1：1错误", error);
+                    Log.d("1:1错误", error);
                     netSuccess.OnError(error);
                 }
             } catch (Exception e) {
