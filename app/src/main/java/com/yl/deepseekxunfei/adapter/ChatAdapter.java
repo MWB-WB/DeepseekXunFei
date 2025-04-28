@@ -1,5 +1,6 @@
 package com.yl.deepseekxunfei.adapter;
 
+import android.graphics.Color;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.util.Log;
@@ -17,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.R;
+import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 
 import java.util.List;
 
@@ -48,6 +50,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull ChatViewHolder holder, int position) {
+        setTextBySetting(holder);
         ChatMessage message = chatMessages.get(position);
         if (getItemViewType(position) == TYPE_ANSWER) {
             if (message.isSpeaking()) {
@@ -130,6 +133,40 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
         }
 
 
+    }
+
+    private void setTextBySetting(ChatViewHolder holder) {
+        String deepseekFontSize = SystemPropertiesReflection.get("persist.sys.deepseek_font_size", "中等");
+        String deepseekFontColor = SystemPropertiesReflection.get("persist.sys.deepseek_font_color", "黑色");
+        Log.e("TAG", "setTextBySetting: " + deepseekFontSize + ":: deepseekFontColor: " + deepseekFontColor);
+        switch (deepseekFontSize) {
+            case "小":
+                holder.textView.setTextSize(10);
+                break;
+            case "大":
+                holder.textView.setTextSize(18);
+                break;
+            default:
+                holder.textView.setTextSize(14);
+                break;
+        }
+        switch (deepseekFontColor) {
+            case "橙色":
+                holder.textView.setTextColor(Color.parseColor("#EE7942"));
+                break;
+            case "红色":
+                holder.textView.setTextColor(Color.parseColor("#CD5C5C"));
+                break;
+            case "绿色":
+                holder.textView.setTextColor(Color.parseColor("#54FF9F"));
+                break;
+            case "黄色":
+                holder.textView.setTextColor(Color.parseColor("#CDCD00"));
+                break;
+            default:
+                holder.textView.setTextColor(Color.parseColor("#FF000000"));
+                break;
+        }
     }
 
     @Override

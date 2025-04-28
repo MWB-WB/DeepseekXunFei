@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 
@@ -46,6 +47,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.view.inputmethod.EditorInfo;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -128,9 +130,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
+public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener, View.OnClickListener {
 
-    private static final String API_URL = "http://120.79.181.132:11434/api/chat ";
+    private static final String API_URL = "http://39.108.140.12:11434/api/chat ";
     public boolean fig = true;
     public int createOne = 0;//是否第一次注册，第一次注册不进行判断
     private EditText editTextQuestion;
@@ -167,7 +169,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     private List<KnowledgeEntry> knowledgeBase;
     private SceneManager sceneManager;
 
-    private LinearLayout inputLayout;
+    private LinearLayout inputLayout, mDeepThinkLayout;
+    private ImageView mDeepThinkImg;
+    private TextView mDeepThinkText;
+    private boolean mIsDeepThinkMode = true;
     private ImageButton TTSbutton;
     //是否隐藏停止输出按钮
     public boolean found = false;
@@ -260,11 +265,18 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         sceneManager = new SceneManager();
         textFig = false;
         setParam();
+        chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
+        chatMessages.get(chatMessages.size() - 1).setOver(true);
+        TTS("我是小天，很高兴见到你！");
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        if (chatMessages.size() > 0) {
+            chatAdapter.notifyDataSetChanged();
+        }
         String text = "";
         try {
             text = SystemPropertiesReflection.get("persist.sys.yl.text", "");
@@ -311,18 +323,21 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                         return;
                     }
                     startVoiceRecognize();
-                } else if ("com.yl.voice.recognize.text".equals(intent.getAction())) {
-                    RecognizerResult result = null;
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        result = intent.getParcelableExtra("result", RecognizerResult.class);
+                } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
+                    String result = intent.getStringExtra("result");
+                    commitText(result);
+                } else if ("com.yl.voice.test.stop".equals(intent.getAction())) {
+                    if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+                        if (button != null) {
+                            button.performClick();
+                        }
                     }
-                    boolean isLast = intent.getBooleanExtra("isLast", false);
-                    printResult(result, isLast);
                 }
             }
         };
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
-        filter.addAction("com.yl.voice.recognize.text");
+        filter.addAction("com.yl.voice.test.start");
+        filter.addAction("com.yl.voice.test.stop");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         }
@@ -336,6 +351,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         //标题置顶
         titleTextView = findViewById(R.id.titleTextView);
         titleTextView.bringToFront();
+        mDeepThinkLayout = findViewById(R.id.deep_think_layout);
+        mDeepThinkLayout.setOnClickListener(this);
+        mDeepThinkImg = findViewById(R.id.deep_think_img);
+        mDeepThinkText = findViewById(R.id.deep_think_text);
         editTextQuestion = findViewById(R.id.inputEditText);//输入框
         button = findViewById(R.id.send_button);//发送按钮
         TTSbutton = findViewById(R.id.wdxzs);
@@ -841,9 +860,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      * 参数设置
      */
     public void setParam() {
-        SystemPropertiesReflection.get("deepseek_voice_speed", "");
-        String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "55");
-        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "x4_lingfeizhe_emo");
+        String deepseekVoiceSpeed = SystemPropertiesReflection.get("persist.sys.deepseek_voice_speed", "50");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("persist.sys.deepseek_voice_speaker", "x4_lingfeizhe_emo");
         if (deepseekVoicespeaker.equals("许久")) {
             deepseekVoicespeaker = "aisjiuxu";
         } else if (deepseekVoicespeaker.equals("小萍")) {
@@ -855,10 +873,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         } else if (deepseekVoicespeaker.equals("小燕")) {
             deepseekVoicespeaker = "xiaoyan";
         }
-
-        String deepseekFontSize = SystemPropertiesReflection.get("deepseek_font_size", "20dp");
-        String deepseekFontColor = SystemPropertiesReflection.get("deepseek_font_color", "黑色");
-        String deepseekBackgroundColor = SystemPropertiesReflection.get("deepseek_background_color", "白色");
 
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
@@ -931,7 +945,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         }
         // 只有最后一段才做最终判断
         if (!isLast) {
-            createFig();//调用判断是否注册声纹
+//            createFig();//调用判断是否注册声纹
             return;
         }
         double towServiceResultsScore = 0;
@@ -1045,6 +1059,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         mTts.stopSpeaking();
         //重置标识
         isSpeakDone = true;
+        isStopRequested = false;
+        isNewChatCome = false;
         speakTts.delete(0, speakTts.length());
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
@@ -1068,6 +1084,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         messages.put(userMessage);
 
         requestBody.put("messages", messages);
+//        if (!mIsDeepThinkMode) {
+//            requestBody.put("system", "请直接返回答案，用中文回答，回复在100字内。");
+//        }
         requestBody.put("stream", true);
 
         JSONObject options = new JSONObject();
@@ -1318,6 +1337,22 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         chatMessages.add(new ChatMessage(result.toString(), false)); // 添加到聊天界面
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         TTS(result.toString());
+    }
+
+    @Override
+    public void onClick(View v) {
+        if (v.getId() == R.id.deep_think_layout) {
+            mIsDeepThinkMode = !mIsDeepThinkMode;
+            if (!mIsDeepThinkMode) {
+                mDeepThinkLayout.setBackgroundResource(R.drawable.text_bg);
+                mDeepThinkText.setTextColor(Color.parseColor("#000000"));
+                mDeepThinkImg.setImageResource(R.drawable.think_unselected);
+            } else {
+                mDeepThinkLayout.setBackgroundResource(R.drawable.text_selected_bg);
+                mDeepThinkText.setTextColor(Color.parseColor("#00BFFF"));
+                mDeepThinkImg.setImageResource(R.drawable.think_select);
+            }
+        }
     }
 
     class MyHandler extends Handler {
@@ -1623,6 +1658,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         }
     }
 
+    //超时逻辑处理
     private void startTime(int position) {
         TimeDownUtil.startTimeDown(new TimeDownUtil.CountTimeListener() {
             @Override
