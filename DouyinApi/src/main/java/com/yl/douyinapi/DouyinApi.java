@@ -2,9 +2,10 @@ package com.yl.douyinapi;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.util.Log;
 
-//import com.aliyun.tea.TeaException;
 import com.bytedance.sdk.open.aweme.authorize.model.Authorization;
 import com.bytedance.sdk.open.aweme.init.DouYinOpenSDKConfig;
 import com.bytedance.sdk.open.douyin.DouYinOpenApiFactory;
@@ -27,15 +28,15 @@ public class DouyinApi {
     }
 
     public static void init(Context context) {
-        boolean isUserAgreePrivacyPolicy = true; //用户是否同意隐私政策，请替换成真实的逻辑判断
+//        boolean isUserAgreePrivacyPolicy = true; //用户是否同意隐私政策，请替换成真实的逻辑判断
 
-        DouYinOpenSDKConfig douYinOpenSDKConfig = new DouYinOpenSDKConfig.Builder()
-                .context(context) //此处注入context
-                .clientKey(DOUYIN_CLIENT_KEY) //此处填写申请的应用client_key
-                .autoStartTracker(isUserAgreePrivacyPolicy) // 是否自动启动埋点上报
-                .build();
-        DouYinOpenApiFactory.initConfig(douYinOpenSDKConfig);
-
+//        DouYinOpenSDKConfig douYinOpenSDKConfig = new DouYinOpenSDKConfig.Builder()
+//                .context(context) //此处注入context
+//                .clientKey(DOUYIN_CLIENT_KEY) //此处填写申请的应用client_key
+//                .autoStartTracker(isUserAgreePrivacyPolicy) // 是否自动启动埋点上报
+//                .build();
+//        DouYinOpenApiFactory.initConfig(douYinOpenSDKConfig);
+//
 //        try {
 //            Config config = new Config().setClientKey("awovf4ro2byxcgj1").setClientSecret("38ac8d9d42151824f390f42af838deac");
 //            Client client = new Client(config);
@@ -73,6 +74,12 @@ public class DouyinApi {
 //        } catch (Exception e) {
 //            System.out.println(e.getMessage());
 //        }
+    }
+
+    public static void goToPage(Context context) {
+        String url = "https://m.bilibili.com/video/BV1GJ411x7h7";
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        context.startActivity(intent);
     }
 
 }

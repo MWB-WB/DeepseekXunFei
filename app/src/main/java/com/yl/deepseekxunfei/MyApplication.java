@@ -23,7 +23,7 @@ public class MyApplication extends Application {
     }
 
     private void initThrid() {
-        executorService.submit(()->{
+        executorService.submit(() -> {
             // 初始化高德地图SDK
             AMapLocationClient.setApiKey("5c04f780c8748ab0d52f27608efa579f");
             AMapLocationClient.updatePrivacyShow(this, true, true);

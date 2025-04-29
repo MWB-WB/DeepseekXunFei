@@ -1,11 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+
+    <style name="AppTheme" parent="Theme.AppCompat">
         <!-- Customize your theme here. -->
-<!--        应用头部-->
+        <!--        应用头部-->
         <item name="colorPrimary">@color/cardview_dark_background</item>
-<!--        状态栏-->
+        <!--        状态栏-->
         <item name="colorPrimaryDark">@color/cardview_dark_background</item>
         <item name="colorAccent">@color/cardview_dark_background</item>
     </style>
+
+
+    <style name="CustomDialog" parent="android:style/Theme.Dialog">
+        <!--背景颜色及和透明程度-->
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <!--是否去除标题 -->
+        <item name="android:windowNoTitle">true</item>
+        <!--是否去除边框-->
+        <item name="android:windowFrame">@null</item>
+        <!--是否浮现在activity之上-->
+        <item name="android:windowIsFloating">true</item>
+        <!--是否模糊-->
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+
+    <style name="PopupMenuStyle" parent="AppTheme">
+        <item name="android:radioButtonStyle">@style/MenuRadioButtonStyle</item>
+    </style>
+
+    <style name="MenuRadioButtonStyle" parent="@android:style/Widget.CompoundButton.RadioButton">
+        <item name="android:button">@drawable/answer_text_bg</item>
+    </style>
+
 </resources>

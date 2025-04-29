@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/action_menu"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:background="@drawable/popup_background"
+    android:orientation="vertical"
+    android:padding="10dp"
+    android:visibility="visible">
+
+    <android.widget.Button
+        android:id="@+id/btn_rename"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/backduncoloi"
+        android:drawableStart="@drawable/rename"
+        android:text="重命名"
+        android:textColor="@color/black"
+        android:textSize="16sp" />
+
+    <android.widget.Button
+        android:id="@+id/btn_delete"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/backduncoloi"
+        android:drawableStart="@drawable/delete"
+        android:text="删除"
+        android:textColor="@color/black"
+        android:textSize="16sp" />
+</LinearLayout>

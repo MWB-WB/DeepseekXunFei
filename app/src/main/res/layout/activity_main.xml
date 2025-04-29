@@ -22,9 +22,12 @@
             android:id="@+id/introLayout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="#FFF"
+            android:background="@drawable/main_top_bg"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingStart="10dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="10dp"
+            android:paddingBottom="10dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
@@ -32,8 +35,18 @@
             <!-- 欢迎使用智能助手 -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="30dp"
+                android:layout_height="34dp"
                 android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:text="欢迎使用智能助手"
+                    android:textColor="#000000"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <ImageButton
                     android:id="@+id/historyButton"
@@ -44,34 +57,28 @@
                     android:background="@drawable/backduncoloi"
                     android:src="@drawable/lishiduihua" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:layout_weight="1"
-                    android:gravity="center"
-                    android:text="欢迎使用智能助手"
-                    android:textColor="#000000"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
                 <!-- 新建对话按钮 -->
                 <ImageButton
                     android:id="@+id/xjianduihua"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
                     android:layout_gravity="start"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/backduncoloi"
                     android:src="@drawable/xinjianduihua" />
 
-                <Button
+                <android.widget.Button
                     android:id="@+id/kaishiluyin"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/backduncoloi"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/btn_bg"
                     android:text="录制声纹信息"
                     android:textSize="8sp" />
+
             </LinearLayout>
+
         </LinearLayout>
 
         <!-- 对话标题 -->
@@ -135,8 +142,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:textColor="#00BFFF"
                     android:text=" 深度思考（R1）"
+                    android:textColor="#00BFFF"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -150,8 +157,8 @@
                 <ImageButton
                     android:id="@+id/wdxzs"
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center_horizontal"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
                     android:background="@drawable/backduncoloi"
                     android:src="@drawable/yymkf" />
 
@@ -172,7 +179,7 @@
                 <ImageButton
                     android:id="@+id/send_button"
                     android:layout_width="wrap_content"
-                    android:layout_height="65dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
                     android:background="@drawable/backduncoloi"
                     android:src="@drawable/fason" />

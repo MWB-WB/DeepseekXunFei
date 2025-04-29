@@ -30,6 +30,10 @@ public class TimeDownUtil {
         mChangeTipsHandler.post(mChangeTipsRunnable);
     }
 
+    public static void clearTimeDown() {
+        mChangeTipsHandler.removeCallbacksAndMessages(null);
+    }
+
     public interface CountTimeListener {
         void onTimeFinish();
     }
