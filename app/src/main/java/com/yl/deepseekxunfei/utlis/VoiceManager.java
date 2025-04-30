@@ -23,6 +23,7 @@ public class VoiceManager {
     public SpeechSynthesizer mTts;
     private HandlerThread mWorkThread;
     public MainActivity mainActivity;
+    private Handler mHandler;
 
     // 初始化语音引擎
     public void init(Context context) {
@@ -69,9 +70,13 @@ public class VoiceManager {
 
     // 启动文本处理循环
     public void startProcessing() {
-        new Handler(mWorkThread.getLooper()).post(() -> {
+        if (mHandler == null) {
+            mHandler = new Handler(mWorkThread.getLooper());
+        }
+        mHandler.post(() -> {
             while (!Thread.interrupted()) {
                 processText();
+                Log.e("1231231", "startProcessing: " + mTextBuffer.toString());
                 try {
                     Thread.sleep(100); // 降低CPU占用
                 } catch (InterruptedException e) {
@@ -102,6 +107,7 @@ public class VoiceManager {
     }
 
     private void startSpeech(String text) {
+        Log.e("1231231", "startSpeech: " + text);
         mIsSpeaking = true;
         // 在主线程执行语音播报
         new Handler(Looper.getMainLooper()).post(() -> {
@@ -134,6 +140,7 @@ public class VoiceManager {
                 @Override
                 public void onCompleted(SpeechError error) {
                     if (mTextBuffer.toString().trim().length() <= 0) {
+                        Log.d("TAG", "onCompleted: " + "");
                         mainActivity.button.setImageResource(R.drawable.jzfason);
                         mainActivity.aiType = BotConstResponse.AIType.FREE;
                         mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(false);
@@ -156,8 +163,10 @@ public class VoiceManager {
     }
 
     // 释放资源
-    public void release() {
+    public  void release() {
+        mTextBuffer.delete(0, mTextBuffer.length());
         if (mWorkThread != null) {
+            mWorkThread.interrupt();
             mWorkThread.quitSafely();
         }
         if (mTts != null) {

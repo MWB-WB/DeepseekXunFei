@@ -4,6 +4,7 @@ package com.yl.deepseekxunfei;
 import android.Manifest;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -23,6 +24,8 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.JsonReader;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -50,6 +53,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -89,6 +93,8 @@ import com.yl.deepseekxunfei.adapter.ChatAdapter;
 import com.yl.deepseekxunfei.crete.CreateFeature;
 import com.yl.deepseekxunfei.crete.CreateGroup;
 import com.yl.deepseekxunfei.crete.CreateLogotype;
+import com.yl.deepseekxunfei.crete.DeleteFeature;
+import com.yl.deepseekxunfei.crete.DeleteGroup;
 import com.yl.deepseekxunfei.crete.QueryFeatureList;
 import com.yl.deepseekxunfei.crete.SearchFeature;
 import com.yl.deepseekxunfei.crete.SearchOneFeature;
@@ -131,15 +137,19 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener, View.OnClickListener {
 
-    private static final String API_URL = "http://39.108.140.12:11434/api/chat ";
+    private static final String API_URL = "http://39.108.89.176:11434/api/chat ";
     public boolean fig = true;
+    private boolean selectGroupFig = true;
+    private int seleteSize = 0;//判断是不是第一次进行唤醒
     public int createOne = 0;//是否第一次注册，第一次注册不进行判断
     private EditText editTextQuestion;
+    private boolean deleteFig = false;//是否进入删除成功回调
     MediaRecorder mediaRecorder = new MediaRecorder();
     private SpeechSynthesizer mTts;
     private StringBuilder speakTts = new StringBuilder();
@@ -162,6 +172,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     public ImageButton button;
     private RecyclerView chatRecyclerView;
     public ChatAdapter chatAdapter;
+    public TextView textCrete;
+    public Button deleteCrete;
+    public RelativeLayout relativeLayout;
+
     public List<ChatMessage> chatMessages = new ArrayList<>();
 
     //是否停止输出
@@ -232,19 +246,23 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     RadioButton radioButtonChe;
     RadioButton radioButtonPy;
     RadioButton radioButtonJr;
+    View layout;
     // 获取选中的按钮文本
     String selectedText;
     private List<SceneModel> sceneModelList = new ArrayList<>();
     final Map<String, String>[] SearchOneFeatureList = new Map[]{new HashMap<>()}; //1:1服务结果
     final Map<String, String>[] result = new Map[]{new HashMap<>()};//1:N服务结果
     final Map<String, String>[] group = new Map[]{new HashMap<>()};//创建特征库服务结果
+    final Map<String, String>[] querySelect = new Map[]{new HashMap<>()};//查询结果
     List<String> groupIdList = new ArrayList<>();//分组标识
     List<String> groupNameList = new ArrayList<>();//声纹分组名称
     List<String> groupInfoLsit = new ArrayList<>();//分组描述信息
     List<String> featureIdList = new ArrayList<>();//特征唯一标识
     List<String> featureInfoList = new ArrayList<>();//特征描述
     int che = 0;//判断是不是第一次注册车主声纹
-    VoiceManager voiceManager;
+
+    Button selectCrete;//删除声纹信息
+    private VoiceManager voiceManager = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -253,8 +271,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         setContentView(R.layout.activity_main);
         initPermission(); // 权限请求
         ContextHolder.init(this); // 保存全局 Context
-        voiceManager = new VoiceManager();
-        voiceManager.init(MainActivity.this);
+//        voiceManager = new VoiceManager();
+//        voiceManager.init(MainActivity.this);
         initView();
         initThirdApi();
         registerBroadCast();
@@ -309,17 +327,22 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     }
 
     private void registerBroadCast() {
+        seleteSize++;
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 Log.e(TAG, "registerBroadCast();: " + intent);
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
-                    creteFlies = getExternalFilesDir("msc").getAbsolutePath() + "/ivw.wav";
-                    if (createFig()) {
-                        Toast.makeText(MainActivity.this, "未注册声纹", Toast.LENGTH_SHORT).show();
-                        return;
+                    if (seleteCrete()) {
+                        if (!createFig()) {
+                            startVoiceRecognize();
+                        }
+                    } else {
+                        if (seleteSize != 0) {
+                            Toast.makeText(MainActivity.this, "暂无声纹信息，请注册", Toast.LENGTH_SHORT).show();
+                            seleteSize++;
+                        }
                     }
-                    startVoiceRecognize();
                 } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
                     String result = intent.getStringExtra("result");
                     commitText(result);
@@ -359,6 +382,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         // 获取输入区域的布局
         inputLayout = findViewById(R.id.submitLayout); // 输入区域布局的 id 为 layoutInput
         button.setImageResource(R.drawable.jzfason);
+        // 获取容器
+
         //获取录音弹出的布局
         // 动态加载 ConstraintLayout
 //        LayoutInflater inflater = LayoutInflater.from(this);
@@ -397,12 +422,15 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 isStopRequested = true;
                 textFig = false;
                 setCurrentChatOver();
+                if (voiceManager!=null){
+                    voiceManager.mTts.stopSpeaking();
+                    voiceManager.release();
+                }
                 aiType = BotConstResponse.AIType.FREE;
                 button.setImageResource(R.drawable.jzfason);
                 chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
                 chatAdapter.notifyItemChanged(chatMessages.size() - 1);
             }
-            Log.d(TAG, "initView: uiahauhsdiaushdiauh");
         });
         // 添加全局布局监听器
         final View activityRootView = findViewById(android.R.id.content);
@@ -490,10 +518,10 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
             creteUtlis.startRecord(new WeakReference<>(this), contrastFies);
             // 获取 media_ecorder_recording.xml 布局中的按钮和文本控件
             btnStart = customDialog.findViewById(R.id.btn_start);
-            textTime = customDialog.findViewById(R.id.text_time);
             // 找到关闭按钮
             Button closeDialogButton = customDialog.findViewById(R.id.btn_stop);
-
+            selectCrete = customDialog.findViewById(R.id.query_selete);
+            relativeLayout = customDialog.findViewById(R.id.pathRelative);
             // 显示自定义 Dialog
             customDialog.show();
             // 设置关闭按钮点击事件
@@ -541,7 +569,241 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                     }
                 });
             });
+            //查询声纹信息
+            selectCrete.setOnClickListener(select -> {
+                seleteCrete();
+            });
         });
+    }
+
+    //查询声纹特征的方法
+    public boolean seleteCrete() {
+
+        // 检查groupId是否存在
+        Log.d(TAG, "initView: " + createLogotype.getGroupId());
+        if (createLogotype.getGroupId() != null && !createLogotype.getGroupId().isEmpty()) {
+            // 开始查询前清空并显示容器
+            relativeLayout.removeAllViews();
+            relativeLayout.setVisibility(View.VISIBLE);
+
+            // 用于存储所有结果的列表
+            final List<JSONObject> allResults = new ArrayList<>();
+
+
+            // 记录groupId总数和已完成的查询数
+            final int totalGroups = createLogotype.getGroupId().size();
+            final AtomicInteger completedGroups = new AtomicInteger(0);
+
+            // 遍历所有groupId进行查询
+            for (int j = 0; j < totalGroups; j++) {
+                final String groupId = createLogotype.getGroupId().get(j);
+                QueryFeatureList.doQueryFeatureList(requestUrl, APP_ID, APISecret, APIKey, createLogotype, groupId,
+                        new QueryFeatureList.NetCall() {
+                            @Override
+                            public void OnSuccess(String success) {
+                                try {
+                                    JSONArray jsonArray = new JSONArray(success);
+                                    Log.d(TAG, "查询groupId " + groupId + " 结果: " + jsonArray.toString());
+
+                                    // 将当前groupId的结果添加到总结果列表
+                                    for (int i = 0; i < jsonArray.length(); i++) {
+                                        JSONObject item = jsonArray.getJSONObject(i);
+                                        item.put("groupId", groupId); // 保存groupId到结果中
+                                        allResults.add(item);
+                                    }
+
+                                    // 检查是否所有groupId都查询完成
+                                    if (completedGroups.incrementAndGet() == totalGroups) {
+                                        // 所有查询完成后，统一更新UI
+                                        runOnUiThread(() -> updateUIWithResults(allResults));
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e(TAG, "解析JSON失败", e);
+                                }
+                                Log.d(TAG, "seleteCrete: " + allResults);
+                            }
+
+                            @Override
+                            public void OnError() {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(MainActivity.this, "查询groupId " + groupId + " 失败", Toast.LENGTH_SHORT).show();
+                                    // 即使部分查询失败，也继续处理已有的结果
+                                    if (completedGroups.incrementAndGet() == totalGroups) {
+                                        updateUIWithResults(allResults);
+                                    }
+                                });
+                            }
+                        });
+            }
+            return true;
+        } else {
+            if (!deleteFig) {
+                Toast.makeText(MainActivity.this, "暂无声纹信息，请注册", Toast.LENGTH_SHORT).show();
+            }
+            return false;
+        }
+    }
+
+    // 删除声纹特征的方法
+    private void deleteFeature(String groupId, String featureId, int viewId) {
+        Log.d(TAG, "删除声纹: GroupID=" + groupId + ", FeatureID=" + featureId);
+        // 显示加载中
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("正在删除...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        // 执行删除请求
+        DeleteFeature.doDeleteFeature(requestUrl, APP_ID, APISecret, APIKey, createLogotype, groupId, featureId, new DeleteFeature.NetCallDeleteCrete() {
+            @Override
+            public void OnSuccess(String success) {
+                DeleteGroup.doDeleteGroup(requestUrl, APP_ID, APISecret, APIKey, groupId, new DeleteGroup.NetDeleteGroup() {
+                    @Override
+                    public void OnSuccessGroup(String success) {
+                        runOnUiThread(() -> {
+                            progressDialog.dismiss();
+                            Toast.makeText(MainActivity.this, "删除成功", Toast.LENGTH_SHORT).show();
+                            deleteFig = true;
+                            //根据删除的id获取到对应的下标，在根据下标删除对应的描述信息和声纹唯一标识
+                            createLogotype.getGroupInfo().remove(createLogotype.getGroupId().indexOf(groupId));
+                            createLogotype.getGroupName().remove(createLogotype.getGroupId().indexOf(groupId));
+                            createLogotype.getFeatureInfo().remove(createLogotype.getGroupId().indexOf(groupId));
+                            createLogotype.getFeatureId().remove(featureId);
+                            createLogotype.getGroupId().remove(groupId);
+                            Log.d(TAG, "OnSuccessGroup: " + createLogotype);
+                            boolean fig = seleteCrete();
+                            if (!fig) {
+                                // 关闭弹窗
+                                customDialog.dismiss();
+                                if (isRecording) {
+                                    try {
+                                        mediaRecorder.stop();
+                                        mediaRecorder.release();
+                                        isRecording = false;
+                                    } catch (IllegalStateException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void OnErrorGroup() {
+                        runOnUiThread(() -> {
+                            progressDialog.dismiss();
+                            Toast.makeText(MainActivity.this, "删除特征库失败", Toast.LENGTH_SHORT).show();
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void OnError() {
+                runOnUiThread(() -> {
+                    progressDialog.dismiss();
+                    Toast.makeText(MainActivity.this, "删除声纹特征失败", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    // 统一更新UI的方法
+    private void updateUIWithResults(List<JSONObject> results) {
+        // 清空之前的视图
+        relativeLayout.removeAllViews();
+
+        // 记录上一个视图的ID
+        int lastViewId = 0;
+
+        // 遍历所有结果，创建视图
+        for (JSONObject item : results) {
+            try {
+                String featureInfo = item.getString("featureInfo");
+                String featureId = item.getString("featureId");
+                String groupId = item.getString("groupId"); // 获取保存的groupId
+
+                // 创建一个线性布局作为条目容器
+                LinearLayout itemLayout = new LinearLayout(MainActivity.this);
+                itemLayout.setOrientation(LinearLayout.HORIZONTAL);
+                itemLayout.setPadding(0, 0, 0, 10);
+
+                // 生成唯一的viewId
+                int itemViewId = View.generateViewId();
+                itemLayout.setId(itemViewId);
+
+                // 设置布局参数
+                RelativeLayout.LayoutParams itemParams = new RelativeLayout.LayoutParams(
+                        RelativeLayout.LayoutParams.MATCH_PARENT,
+                        RelativeLayout.LayoutParams.WRAP_CONTENT
+                );
+
+                // 如果不是第一个视图，则放在上一个视图的下方
+                if (lastViewId != 0) {
+                    itemParams.addRule(RelativeLayout.BELOW, lastViewId);
+                }
+
+                itemLayout.setLayoutParams(itemParams);
+
+                // 创建文本视图
+                TextView textView = new TextView(MainActivity.this);
+                textView.setText(featureInfo);
+                textView.setTextSize(18);
+                textView.setPadding(16, 16, 16, 16);
+                textView.setBackgroundResource(android.R.color.holo_blue_light);
+
+                // 设置文本视图的布局参数，使其占据大部分空间
+                LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                        0, // 宽度为0，由weight决定
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1.0f // 权重为1，占据剩余空间
+                );
+                textView.setLayoutParams(textParams);
+
+                // 创建删除按钮
+                Button deleteButton = new Button(MainActivity.this);
+                deleteButton.setText("删除");
+                deleteButton.setBackgroundResource(android.R.color.holo_red_light);
+                deleteButton.setTextColor(Color.WHITE);
+
+                // 设置删除按钮的布局参数
+                LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                );
+                buttonParams.setMargins(10, 0, 0, 0);
+                deleteButton.setLayoutParams(buttonParams);
+
+                // 为删除按钮设置点击事件，绑定groupId和featureId
+                deleteButton.setOnClickListener(v2 -> {
+                    try {
+                        // 显示确认对话框
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("确认删除")
+                                .setMessage("确定要删除此声纹吗？\nGroup ID: " + groupId + "\nFeature ID: " + featureId)
+                                .setPositiveButton("确认", (dialog, which) -> {
+                                    // 执行删除操作
+                                    deleteFeature(groupId, featureId, itemViewId);
+                                })
+                                .setNegativeButton("取消", null)
+                                .show();
+                    } catch (Exception e) {
+                        Log.e(TAG, "删除按钮点击事件异常", e);
+                    }
+                });
+                // 将文本视图和删除按钮添加到条目布局
+                itemLayout.addView(textView);
+                itemLayout.addView(deleteButton);
+
+                // 将条目布局添加到主布局
+                relativeLayout.addView(itemLayout);
+
+                // 更新最后一个视图的ID
+                lastViewId = itemViewId;
+
+            } catch (JSONException e) {
+                Log.e(TAG, "处理结果失败", e);
+            }
+        }
     }
 
     private void startVoiceRecognize() {
@@ -853,9 +1115,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      * @param results
      */
     private void printResult(RecognizerResult results, boolean isLast) {
-        String text = JsonParser.parseIatResult(results.getResultString());
-        Log.d("识别内容", "printResult: " + text);
 
+
+        String text = JsonParser.parseIatResult(results.getResultString());
         String sn = null;
         try {
             JSONObject resultJson = new JSONObject(results.getResultString());
@@ -863,7 +1125,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
         mIatResults.put(sn, text);
         StringBuffer resultBuffer = new StringBuffer();
         for (String key : mIatResults.keySet()) {
@@ -876,30 +1137,14 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         }
         // 只有最后一段才做最终判断
         if (!isLast) {
-//            createFig();//调用判断是否注册声纹
             return;
         }
-        double towServiceResultsScore = 0;
-        double oneServiceResultsScore = 0;
-        if (SearchOneFeatureList[0].get("score") != null) {
-            oneServiceResultsScore = Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score")));
-        }
-        if (result[0].get("score") != null) {
-            towServiceResultsScore = Double.parseDouble(Objects.requireNonNull(result[0].get("score")));
-        }
-        String serviceResultsFeatureId = result[0].get("featureId");
-        String serviceResultsFeatureInfo = result[0].get("featureInfo");
-        Log.d("towServiceResultsScore", "1:N对比结果: " + towServiceResultsScore);
-        Log.d("oneServiceResultsScore", "1:1对比结果: " + oneServiceResultsScore);
-        if (towServiceResultsScore >= 0.4 || oneServiceResultsScore >= 0.4) {
-            chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
-            chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-            SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
-            BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
-            actionByType(baseChildModel);
-        } else {
-            Toast.makeText(MainActivity.this, "声纹验证失败，请先注册声纹信息！！！", Toast.LENGTH_SHORT).show();
-        }
+        chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
+        chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+        SceneModel sceneModel = sceneManager.parseQuestionToScene(finalText);
+        BaseChildModel baseChildModel = sceneManager.distributeScene(sceneModel);
+        actionByType(baseChildModel);
+
     }
 
     /**
@@ -1019,31 +1264,24 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
         requestBody.put("stream", true);
 
         JSONObject options = new JSONObject();
-        options.put("temperature", 0);
+        options.put("temperature", 0.6);
         options.put("mirostat_tau", 1.0);
         options.put("num_predict", -1);
         options.put("repeat_penalty", 1.5);
-        options.put("mirostat_mode", 2);
-        options.put("mirostat_tau", 6.5);
-        options.put("mirostat_eta", 0.08);
-        options.put("repeat_last_n", 1.5);
-        options.put("repeat_penalty", 1.5);
-        options.put("top_k", 60);
-
+//        options.put("mirostat_eta", 1);//影响算法响应生成文本的反馈的速度。较低的学习率将导致较慢的调整，而较高的学习率将使算法的响应速度更快。（默认值：0.1）
+//        options.put("mirostat_tau", 4.0);//控制输出的连贯性和多样性之间的平衡。较低的值将导致文本更集中、更连贯。（默认值：5.0）
         requestBody.put("options", options);
-
         // 将 JSONObject 转换为字符串
         String jsonBodyRound1 = requestBody.toString();
-
 
         RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
         Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
         Log.d(TAG, "请求: " + API_URL);
         // 异步执行请求
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(10, TimeUnit.SECONDS)//连接超时
-                .readTimeout(10, TimeUnit.SECONDS)//读取超时
-                .writeTimeout(10, TimeUnit.SECONDS)//写入超时
+                .connectTimeout(3, TimeUnit.SECONDS)//连接超时
+                .readTimeout(3, TimeUnit.SECONDS)//读取超时
+                .writeTimeout(3, TimeUnit.SECONDS)//写入超时
                 .build();
         currentCall = client.newCall(requestRound1);
         currentCall.enqueue(new Callback() {
@@ -1080,6 +1318,8 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                             BufferedSource source = responseBody.source();
                             aiType = BotConstResponse.AIType.TEXT_SHUCHU;
                             isInRound = true;
+                            voiceManager = new VoiceManager();
+                            voiceManager.init(MainActivity.this);
                             voiceManager.startProcessing();
                             while (!source.exhausted()) {
                                 Log.e(TAG, "botMessageIndexRound1: " + botMessageIndexRound1);
@@ -1636,9 +1876,9 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
     //逻辑还存在一点问题
     public void create() {
         boolean createEnrollFig = true;
-        if (createOne == 1) {
-            createEnrollFig = createFig();
-        }
+//        if (createOne == 1) {
+//            createEnrollFig = createFig();
+//        }
         Log.d(TAG, "注册声纹: " + createEnrollFig);
         if (createEnrollFig) {
             //匹配成功返回false失败返回true
@@ -1685,6 +1925,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                                 }
                                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "注册声纹成功", Toast.LENGTH_SHORT).show());
                             } else {
+
                                 runOnUiThread(() -> Toast.makeText(MainActivity.this, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                             }
                         }
@@ -1739,7 +1980,6 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
      */
     private void createVoiceprint(RecognizerResult results, boolean isLast) throws JSONException {
         String text = JsonParser.parseIatResult(results.getResultString());
-        Log.d("识别内容", "printResult: " + text);
         String sn = null;
         try {
             JSONObject resultJson = new JSONObject(results.getResultString());
@@ -1774,7 +2014,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                 for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
                     result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j));//1:N比对
                     if (result[0] != null) {
-                        if (Double.parseDouble(result[0].get("score")) >= 0.4) {
+                        if (Double.parseDouble(Objects.requireNonNull(result[0].get("score"))) >= 0.35) {
                             fig = false;
                             break;
                         }
@@ -1788,7 +2028,7 @@ public class MainActivity extends AppCompatActivity implements WeatherAPI.OnWeat
                     for (int k = 0; k < createLogotype.getFeatureId().size(); k++) {
                         SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j), createLogotype.getFeatureId().get(k));//1:1
                         if (SearchOneFeatureList[0] != null && SearchOneFeatureList[0].get("score") != null) {
-                            if (Double.parseDouble(SearchOneFeatureList[0].get("score")) >= 0.4) {
+                            if (Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score"))) >= 0.35) {
                                 fig = false;
                             }
                         } else {

@@ -46,9 +46,8 @@ public class HistoryDialog extends Dialog implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.custom_dialog_btn) {
+        if (v.getId() == R.id.custom_dialog_btn && !mData.isEmpty()) {
             ChatHistoryEntity chatHistoryEntity = mData.get(historyRecyAdapter.getClickPosition());
-
         }
     }
 }

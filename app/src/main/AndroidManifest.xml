@@ -53,8 +53,7 @@
             android:enabled="true"
             android:exported="true"
             android:launchMode="singleInstance"
-            android:windowSoftInputMode="adjustPan"
-            android:theme="@style/PopupMenuStyle">
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="com.yl.deepseek.start" />

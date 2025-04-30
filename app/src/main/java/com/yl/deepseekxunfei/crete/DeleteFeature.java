@@ -1,5 +1,7 @@
 package com.yl.deepseekxunfei.crete;
 
+import static android.content.ContentValues.TAG;
+
 import android.os.Build;
 import android.util.Log;
 
@@ -27,68 +29,77 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * 查询音频特征列表
+ * <p>Title : 非实时引擎demo</p>
+ * <p>Description : http服务通用demo</p>
+ * <p>Date : 2020/8/4 </p>
+ *
+ * @author : aicloud
  */
-public class QueryFeatureList {
+public class DeleteFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
-    private CreateLogotype createLogotype;
-
     //解析Json
     private static Gson json = new Gson();
-    String id = null;
+    public String featureId;
+    public String groupId;
+    public CreateLogotype createLogotype;
 
     //构造函数,为成员变量赋值
-    public QueryFeatureList(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String id) {
+    public DeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
         this.createLogotype = createLogotype;
-        this.id = id;
+        this.groupId = groupId;
+        this.featureId = featureId;
     }
 
     //提供给主函数调用的方法
-    public static void doQueryFeatureList(String requestUrl, String APPID, String apiSecret,
-                                          String apiKey, CreateLogotype createLogotype,String  id, final NetCall call) {
-        QueryFeatureList queryFeatureList = new QueryFeatureList(requestUrl, APPID, apiSecret, apiKey, createLogotype,id);
-        queryFeatureList.doRequest(new NetCall() {
+    public static void doDeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId, NetCallDeleteCrete netCallDeleteCrete) {
+        DeleteFeature deleteFeature = new DeleteFeature(requestUrl, APPID, apiSecret, apiKey, createLogotype,groupId,featureId);
+        deleteFeature.doRequest(new NetCallDeleteCrete() {
             @Override
             public void OnSuccess(String success) {
                 try {
+                    System.out.println("resp=>" + success);
                     JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
                     String textBase64Decode = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.queryFeatureListRes.text), "UTF-8");
+                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.deleteFeatureRes.text), "UTF-8");
                     }
-                    JSONArray jsonArray = JSON.parseArray(textBase64Decode);
-                    Log.d("查询特征列表", "text字段Base64解码后=>" + jsonArray);
-                    call.OnSuccess(jsonArray.toString());
-                } catch (Exception e) {
-                    Log.e("错误", "解析结果失败: " + e.getMessage());
-                    call.OnError();
+                    Log.d("解码", "OnSuccess: "+textBase64Decode);
+                    JSONObject jsonObject = JSON.parseObject(textBase64Decode);
+                    netCallDeleteCrete.OnSuccess(jsonObject.toString());
+                } catch (UnsupportedEncodingException e) {
+                    netCallDeleteCrete.OnError();
+                    throw new RuntimeException(e);
                 }
             }
             @Override
             public void OnError() {
-                call.OnError();
+                netCallDeleteCrete.OnError();
             }
         });
     }
 
     /**
-     * 请求主方法（异步）
+     * 请求主方法
+     *
+     * @return 返回服务结果
+     * @throws Exception 异常
      */
-    public void doRequest(final NetCall call) {
+    public void doRequest(final NetCallDeleteCrete netCallDeleteCrete) {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
-            OutputStream out = null;
             InputStream is = null;
+            OutputStream out = null;
             try {
                 URL realUrl = new URL(buildRequetUrl());
-                httpURLConnection = (HttpURLConnection) realUrl.openConnection();
+                URLConnection connection = realUrl.openConnection();
+                httpURLConnection = (HttpURLConnection) connection;
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
                 httpURLConnection.setRequestMethod("POST");
@@ -96,25 +107,25 @@ public class QueryFeatureList {
 
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
-                Log.d("查询特征列表", "params=>" + params);
+                System.out.println("params=>" + params);
                 out.write(params.getBytes());
                 out.flush();
-
                 int responseCode = httpURLConnection.getResponseCode();
-                if (responseCode == HttpURLConnection.HTTP_OK) {
+                if (responseCode == httpURLConnection.HTTP_OK) {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
-                    Log.d("查询特征列表结果", response);
-                    call.OnSuccess(response);
+                    Log.d("查询结果", "doRequest: " + response);
+                    netCallDeleteCrete.OnSuccess(response);
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "错误码：" + responseCode + ", 信息：" + readAllBytes(is);
+                    String error = "删除声纹特征错误码：" + responseCode + ", 信息：" + readAllBytes(is);
                     Log.e("错误", error);
-                    call.OnError();
+                    netCallDeleteCrete.OnError();
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 Log.e("错误", "请求异常: " + e.getMessage());
-                call.OnError();
+                netCallDeleteCrete.OnError();
+                throw new RuntimeException(e);
             } finally {
                 try {
                     if (out != null) out.close();
@@ -128,26 +139,29 @@ public class QueryFeatureList {
     }
 
     /**
-     * 处理请求URL（与CreateFeature一致）
+     * 处理请求URL
+     * 封装鉴权参数等
+     *
+     * @return 处理后的URL
      */
     public String buildRequetUrl() {
         URL url = null;
+        // 替换调schema前缀 ，原因是URL库不支持解析包含ws,wss schema的url
         String httpRequestUrl = requestUrl.replace("ws://", "http://").replace("wss://", "https://");
         try {
             url = new URL(httpRequestUrl);
+            //获取当前日期并格式化
             SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             format.setTimeZone(TimeZone.getTimeZone("GMT"));
             String date = format.format(new Date());
 
             String host = url.getHost();
             if (url.getPort() != 80 && url.getPort() != 443) {
-                host = host + ":" + url.getPort();
+                host = host + ":" + String.valueOf(url.getPort());
             }
-
-            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n")
-                    .append("date: ").append(date).append("\n")
-                    .append("POST ").append(url.getPath()).append(" HTTP/1.1");
-
+            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").//
+                    append("date: ").append(date).append("\n").//
+                    append("POST ").append(url.getPath()).append(" HTTP/1.1");
             Charset charset = Charset.forName("UTF-8");
             Mac mac = Mac.getInstance("hmacsha256");
             SecretKeySpec spec = new SecretKeySpec(apiSecret.getBytes(charset), "hmacsha256");
@@ -158,37 +172,41 @@ public class QueryFeatureList {
                 sha = Base64.getEncoder().encodeToString(hexDigits);
             }
 
-            String authorization = String.format("api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"",
-                    apiKey, "hmac-sha256", "host date request-line", sha);
+            String authorization = String.format("api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"", apiKey, "hmac-sha256", "host date request-line", sha);
             String authBase = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 authBase = Base64.getEncoder().encodeToString(authorization.getBytes(charset));
             }
+            return String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date));
 
-            return String.format("%s?authorization=%s&host=%s&date=%s",
-                    requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date));
         } catch (Exception e) {
-            throw new RuntimeException("组装URL失败: " + e.getMessage());
+            throw new RuntimeException("assemble requestUrl error:" + e.getMessage());
         }
     }
 
     /**
      * 组装请求参数
+     * 直接使用示例参数，
+     * 替换部分值
+     *
+     * @return 参数字符串
      */
-    private String buildParam() {
-
-        Log.d("查询特征列表", "groupId: " + id);
-
-        return "{" +
+    private String buildParam() throws IOException {
+        Log.d(TAG, "buildParam: "+groupId);
+        Log.d(TAG, "buildParam: "+featureId);
+        String param = "{" +
                 "    \"header\": {" +
                 "        \"app_id\": \"" + APPID + "\"," +
                 "        \"status\": 3" +
                 "    }," +
                 "    \"parameter\": {" +
                 "        \"s782b4996\": {" +
-                "            \"func\": \"queryFeatureList\"," +
-                "            \"groupId\": \"" + id + "\"," +
-                "            \"queryFeatureListRes\": {" +
+                "            \"func\": \"deleteFeature\"," +
+                //这里填上所需要的groupId
+                "            \"groupId\": \""+groupId+"\"," +
+                //这里填上所需要的featureId
+                "            \"featureId\": \""+featureId+"\"," +
+                "            \"deleteFeatureRes\": {" +
                 "                \"encoding\": \"utf8\"," +
                 "                \"compress\": \"raw\"," +
                 "                \"format\": \"json\"" +
@@ -196,22 +214,27 @@ public class QueryFeatureList {
                 "        }" +
                 "    }" +
                 "}";
+        return param;
     }
 
     /**
-     * 读取流数据（与CreateFeature一致）
+     * 读取流数据
+     *
+     * @param is 流
+     * @return 字符串
+     * @throws IOException 异常
      */
     private String readAllBytes(InputStream is) throws IOException {
         byte[] b = new byte[1024];
         StringBuilder sb = new StringBuilder();
-        int len;
+        int len = 0;
         while ((len = is.read(b)) != -1) {
             sb.append(new String(b, 0, len, "utf-8"));
         }
         return sb.toString();
     }
 
-    // Json解析类
+    //Json解析
     class JsonParse {
         public Header header;
         public Payload payload;
@@ -225,19 +248,20 @@ public class QueryFeatureList {
     }
 
     class Payload {
-        public QueryFeatureListRes queryFeatureListRes;
+        //根据model的取值不同,名字有所变动。
+        public DeleteFeatureRes deleteFeatureRes;
     }
 
-    class QueryFeatureListRes {
+    class DeleteFeatureRes {
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
 
-    // 回调接口（与CreateFeature一致）
-    public interface NetCall {
+    public interface NetCallDeleteCrete {
         void OnSuccess(String success);
+
         void OnError();
     }
 }
