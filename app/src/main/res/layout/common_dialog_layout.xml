@@ -13,11 +13,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/no_history_tips"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="暂时没有聊天记录"
+        android:textColor="@color/black"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <android.widget.Button
         android:id="@+id/custom_dialog_btn"
         android:layout_width="60dp"
         android:layout_height="40dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="25dp"
         android:background="@drawable/backduncoloi"
         android:text="确定"
         app:layout_constraintEnd_toEndOf="parent"

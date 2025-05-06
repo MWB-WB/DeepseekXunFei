@@ -11,6 +11,7 @@ public enum SceneType {
     MOVIE,      //电影
     VIDEO,      //视频
     SELECTION,  //选项
+    QUIT,       //退出语音
     CHITCHAT    //闲聊
 
 }

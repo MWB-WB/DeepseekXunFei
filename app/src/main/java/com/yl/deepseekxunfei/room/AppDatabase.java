@@ -48,6 +48,10 @@ public abstract class AppDatabase extends RoomDatabase {
         new InsertTask().execute(chatHistoryEntity);
     }
 
+    public static void Delete(ChatHistoryEntity chatHistoryEntity) {
+        new DeleteTask().execute(chatHistoryEntity);
+    }
+
     public static void query() {
         new QueryTask().execute();
     }
@@ -87,6 +91,19 @@ public abstract class AppDatabase extends RoomDatabase {
                     }
                 }
             }
+        }
+    }
+
+    private static class DeleteTask extends AsyncTask<ChatHistoryEntity, Void, Void> {
+        @Override
+        protected Void doInBackground(ChatHistoryEntity... chatHistoryEntities) {
+            instance.chatHistoryDao().deleteChatHistoryEntity(chatHistoryEntities[0]);
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            Log.e("TAG", "onPostExecute: 数据删除成功");
         }
     }
 

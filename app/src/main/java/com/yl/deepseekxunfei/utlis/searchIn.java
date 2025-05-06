@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -26,29 +27,29 @@ import okhttp3.*;
  * 关键字搜索
  */
 public class searchIn {
-    public static void searchInAmap(Context context, String keyword, OnPoiSearchListener listener) {
+    public static void searchInAmap(Context context, String keyword, String city, OnPoiSearchListener listener) {
         OkHttpClient client = new OkHttpClient();
-        positioning posit= new positioning();
+        positioning posit = new positioning();
         try {
             posit.initLocation(context);
         } catch (Exception e) {
-            Log.d("报错" ,"searchInAmap: "+e);
+            Log.d("报错", "searchInAmap: " + e);
             throw new RuntimeException(e);
-        }finally {
+        } finally {
             posit.release();
         }
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Location",MODE_PRIVATE);
-        String adcode = sharedPreferences.getString("adcode","");
-        String cityCode = sharedPreferences.getString("cityCode","");
-        String city = sharedPreferences.getString("city","");
-        float lat = sharedPreferences.getFloat("latitude",0);
-        float lot = sharedPreferences.getFloat("longitude",0);
-        Log.d("当前坐标", "区县adcode编码:: "+adcode+"\t纬度::"+lat+"\t经度"+lot+"\tcity"+city+"\t区县cityCode编码"+cityCode);
-        // 构造高德POI搜索URL"+"&cityCode="+cityCode+""&cityCode="+cityCode+
-        String adcodeTow = adcode.toString().trim();
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
+        String cityCode = sharedPreferences.getString("cityCode", "");
+        if (TextUtils.isEmpty(city)) {
+            city = sharedPreferences.getString("city", "");
+        }
+        float lat = sharedPreferences.getFloat("latitude", 0);
+        float lot = sharedPreferences.getFloat("longitude", 0);
+        Log.d("当前坐标", "纬度::" + lat + "\t经度" + lot + "\tcity" + city + "\t区县cityCode编码" + cityCode);
+        // 构造高德POI搜索URL
         String url = "https://restapi.amap.com/v3/place/text?key=b134db263b1cdde4d64d26dadbaf3e65&keywords="
-                + Uri.encode(keyword) +"&city="+city+"&adcode="+adcodeTow+"&offset=20&extensions=all&citylimit=true"; // 限定城市（可选）
-        Log.d("请求", "searchInAmap: "+url);
+                + Uri.encode(keyword) + "&city=" + city  + "&offset=20&extensions=all&citylimit=true"; // 限定城市（可选）
+        Log.d("请求", "searchInAmap: " + url);
         Request request = new Request.Builder()
                 .url(url)
                 .build();

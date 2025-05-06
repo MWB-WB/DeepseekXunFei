@@ -1,6 +1,7 @@
 package com.yl.deepseekxunfei.room.dao;
 
 import androidx.room.Dao;
+import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 
@@ -21,4 +22,8 @@ public interface ChatHistoryDao {
     //查询 chat_history 表
     @Query("SELECT * FROM chat_history")
     List<ChatHistoryEntity> getAll();
+
+    @Delete
+    void deleteChatHistoryEntity(ChatHistoryEntity chatHistoryEntity);
+
 }

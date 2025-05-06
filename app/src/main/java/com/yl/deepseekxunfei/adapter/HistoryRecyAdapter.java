@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.PopupMenu;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 
@@ -25,6 +24,7 @@ public class HistoryRecyAdapter extends RecyclerView.Adapter<HistoryRecyAdapter.
     private List<ChatHistoryEntity> mData;
     private Context mContext;
     private int clickPosition = 0;
+    private onButtonClick onButtonClick;
 
     public HistoryRecyAdapter(List<ChatHistoryEntity> mData, Context mContext) {
         this.mData = mData;
@@ -67,12 +67,16 @@ public class HistoryRecyAdapter extends RecyclerView.Adapter<HistoryRecyAdapter.
 
                     // 处理点击事件
                     menuView.findViewById(R.id.btn_rename).setOnClickListener(view -> {
-//                        showRenameDialog();
+                        if (onButtonClick != null) {
+                            onButtonClick.onRenameBtnClick(mData.get(position), position);
+                        }
                         popupWindow.dismiss();
                     });
 
                     menuView.findViewById(R.id.btn_delete).setOnClickListener(view -> {
-//                        confirmDelete();
+                        if (onButtonClick != null) {
+                            onButtonClick.onDeleteBtnClick(mData.get(position), position);
+                        }
                         popupWindow.dismiss();
                     });
                 }
@@ -88,6 +92,10 @@ public class HistoryRecyAdapter extends RecyclerView.Adapter<HistoryRecyAdapter.
                 notifyDataSetChanged();
             }
         });
+    }
+
+    public void setOnButtonClick(onButtonClick onButtonClick) {
+        this.onButtonClick = onButtonClick;
     }
 
     @Override
@@ -108,6 +116,12 @@ public class HistoryRecyAdapter extends RecyclerView.Adapter<HistoryRecyAdapter.
 
     public int getClickPosition() {
         return clickPosition;
+    }
+
+    public interface onButtonClick{
+        void onRenameBtnClick(ChatHistoryEntity chatHistoryEntity, int position);
+
+        void onDeleteBtnClick(ChatHistoryEntity chatHistoryEntity, int position);
     }
 
 }

@@ -10,7 +10,7 @@ public class MusicScene extends BaseChildScene{
         String text = sceneModel.getText();
         BaseChildModel baseChildModel = new BaseChildModel();
         baseChildModel.setText(text);
-        baseChildModel.setType(SceneTypeConst.MUSIC);
+        baseChildModel.addType(SceneTypeConst.MUSIC);
         return baseChildModel;
     }
 }

@@ -5,6 +5,7 @@ import static android.content.Context.MODE_PRIVATE;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -17,7 +18,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +35,54 @@ import okhttp3.Response;
 /**
  * 周边搜索
  */
-public class NeighborhoodSearch{
-   private static OkHttpClient okHttpClient = new OkHttpClient();
+public class NeighborhoodSearch {
+    private static OkHttpClient okHttpClient = new OkHttpClient();
+
+    /**
+     * 高德地图通过地址获取经纬度
+     */
+    public static void getLocation(String address, String city, LocationListener listener) {
+        if (TextUtils.isEmpty(address) && TextUtils.isEmpty(city)) {
+            if (listener != null) {
+                listener.onSuccess("");
+            }
+            return;
+        }
+        //"http://restapi.amap.com/v3/geocode/geo?address=上海市东方明珠&output=JSON&key=xxxxxxxxx";
+        String geturl;
+        if (city.isEmpty()) {
+            geturl = "http://restapi.amap.com/v3/geocode/geo?key=b134db263b1cdde4d64d26dadbaf3e65&address=" + address;
+        } else {
+            geturl = "http://restapi.amap.com/v3/geocode/geo?key=b134db263b1cdde4d64d26dadbaf3e65&address=" + address + "&city=" + city;
+        }
+
+        Request request = new Request.Builder().url(geturl).build();
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                listener.onSuccess("");
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String jsonData = response.body().string();
+                try {
+                    JSONObject json = new JSONObject(jsonData);
+                    JSONArray geocodes = json.getJSONArray("geocodes");
+                    JSONObject geocode = geocodes.getJSONObject(0);
+                    if (listener != null) {
+                        listener.onSuccess(geocode.get("location").toString());
+                    }
+                } catch (JSONException e) {
+                }
+            }
+        });
+    }
+
+    public interface LocationListener {
+        void onSuccess(String location);
+    }
+
 
     /**
      * 调用API 方法
@@ -41,7 +92,7 @@ public class NeighborhoodSearch{
      * @param lot      经度
      * @param radius   查询半径
      */
-    public static void search(String keywords, int radius, OnPoiSearchListener onPoiSearchListener, Context context)  {
+    public static void search(String keywords, String location, int radius, OnPoiSearchListener onPoiSearchListener, Context context) {
         positioning positioning = new positioning();
         try {
             positioning.initLocation(context);
@@ -50,50 +101,48 @@ public class NeighborhoodSearch{
         } finally {
             positioning.release();
         }
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Location",MODE_PRIVATE);
-        String address = sharedPreferences.getString("cityCode","");
-        String city = sharedPreferences.getString("city","");
-        float lat = sharedPreferences.getFloat("latitude",0);
-        float lot = sharedPreferences.getFloat("longitude",0);
-        Log.d("当前坐标", "城市:: "+address+"\t纬度::"+lat+"\t经度"+lot+"\tcity"+city);
-        String location = lot+","+lat;
-        Log.d("API坐标", "search: "+location);
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
+        if (TextUtils.isEmpty(location)) {
+            float lat = sharedPreferences.getFloat("latitude", 0);
+            float lot = sharedPreferences.getFloat("longitude", 0);
+            location = lot + "," + lat;
+        }
+        Log.d("API坐标", "search: " + location);
         // 构造高德POI搜索URL
         //https://restapi.amap.com/v3/place/around?parameters
-        String url = "https://restapi.amap.com/v3/place/around?key=b134db263b1cdde4d64d26dadbaf3e65&keywords="+Uri.encode(keywords)+"&radius=" + radius + "&location="+location+"&extensions=base";
-        Log.d("API请求", "search: "+url);
+        String url = "https://restapi.amap.com/v3/place/around?key=b134db263b1cdde4d64d26dadbaf3e65&keywords=" + Uri.encode(keywords) + "&radius=" + radius + "&location=" + location + "&extensions=base";
         Request request = new Request.Builder().url(url).build();
-         okHttpClient.newCall(request).enqueue(new Callback() {
-             @Override
-             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                 onPoiSearchListener.onError(e.getMessage());
-             }
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                onPoiSearchListener.onError(e.getMessage());
+            }
 
-             @Override
-             public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                 String jsonData = response.body().string();
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String jsonData = response.body().string();
 
-                 try {
-                     JSONObject json = new JSONObject(jsonData);
-                     JSONArray pois = json.getJSONArray("pois");
-                     List<LocationResult> results = new ArrayList<>();
-                     for (int i = 0; i < pois.length(); i++) {
-                         JSONObject poi = pois.getJSONObject(i);
-                         String name = poi.getString("name");
-                         String address = poi.getString("address");
-                         String location = poi.getString("location"); // 格式 "经度,纬度"
+                try {
+                    JSONObject json = new JSONObject(jsonData);
+                    JSONArray pois = json.getJSONArray("pois");
+                    List<LocationResult> results = new ArrayList<>();
+                    for (int i = 0; i < pois.length(); i++) {
+                        JSONObject poi = pois.getJSONObject(i);
+                        String name = poi.getString("name");
+                        String address = poi.getString("address");
+                        String location = poi.getString("location"); // 格式 "经度,纬度"
 
-                         String[] latLng = location.split(",");
-                         double longitude = Double.parseDouble(latLng[0]);
-                         double latitude = Double.parseDouble(latLng[1]);
+                        String[] latLng = location.split(",");
+                        double longitude = Double.parseDouble(latLng[0]);
+                        double latitude = Double.parseDouble(latLng[1]);
 
-                         results.add(new LocationResult(name, address, latitude, longitude));
-                     }
-                     onPoiSearchListener.onSuccess(results);
-                 } catch (JSONException e) {
-                     onPoiSearchListener.onError("解析失败");
-                 }
-             }
-         });
+                        results.add(new LocationResult(name, address, latitude, longitude));
+                    }
+                    onPoiSearchListener.onSuccess(results);
+                } catch (JSONException e) {
+                    onPoiSearchListener.onError("解析失败");
+                }
+            }
+        });
     }
 }

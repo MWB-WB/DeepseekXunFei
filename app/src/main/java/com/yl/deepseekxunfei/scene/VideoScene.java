@@ -11,7 +11,7 @@ public class VideoScene extends BaseChildScene {
         String text = sceneModel.getText();
         BaseChildModel baseChildModel = new BaseChildModel();
         baseChildModel.setText(text);
-        baseChildModel.setType(SceneTypeConst.VIDEO);
+        baseChildModel.addType(SceneTypeConst.VIDEO);
         return baseChildModel;
     }
 }

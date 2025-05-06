@@ -51,7 +51,7 @@ public class VoiceManager {
         mTts = SpeechSynthesizer.createSynthesizer(context, null);
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
+        mTts.setParameter(SpeechConstant.VOICE_NAME, "aisjiuxu");//设置发音人
         mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
         //设置合成音调
         mTts.setParameter(SpeechConstant.PITCH, "55");//设置音高
@@ -146,6 +146,7 @@ public class VoiceManager {
                         mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setSpeaking(false);
                         mainActivity.chatAdapter.notifyItemChanged(mainActivity.chatMessages.size() - 1);
                         release();
+                        mainActivity.TTSbutton.performClick();
                     }
                     mIsSpeaking = false;
                     Log.d("TAG", "onCompleted: " + error);

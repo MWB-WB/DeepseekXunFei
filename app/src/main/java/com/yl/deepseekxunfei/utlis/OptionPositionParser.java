@@ -1,13 +1,43 @@
 package com.yl.deepseekxunfei.utlis;
 
-import android.util.Log;
-
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.*;
 
 public class OptionPositionParser {
 
     // 中文数字映射表
     private static final String[] CN_NUMBERS = {"零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"};
+    private static final Map<Integer, String> NUMBER_MAP = new HashMap<>();
+
+    static {
+        NUMBER_MAP.put(0, "零");
+        NUMBER_MAP.put(1, "一");
+        NUMBER_MAP.put(2, "二");
+        NUMBER_MAP.put(3, "三");
+        NUMBER_MAP.put(4, "四");
+        NUMBER_MAP.put(5, "五");
+        NUMBER_MAP.put(6, "六");
+        NUMBER_MAP.put(7, "七");
+        NUMBER_MAP.put(8, "八");
+        NUMBER_MAP.put(9, "九");
+    }
+
+    public static String convertNumbersToText(String input) {
+        Pattern pattern = Pattern.compile("\\d");
+        Matcher matcher = pattern.matcher(input);
+        StringBuilder result = new StringBuilder();
+        int lastIndex = 0;
+
+        while (matcher.find()) {
+            result.append(input, lastIndex, matcher.start());
+            int number = Integer.parseInt(matcher.group());
+            result.append(NUMBER_MAP.getOrDefault(number, matcher.group()));
+            lastIndex = matcher.end();
+        }
+        result.append(input.substring(lastIndex));
+        return result.toString();
+    }
 
     /**
      * 解析用户输入的选项位置
@@ -62,9 +92,9 @@ public class OptionPositionParser {
 //        if (num == -1) {
 //            num = parseNumeric(text);
 //        }
-//        if (num == -1) {
-//            num = parseEnglishKeyword(text);
-//        }
+        if (num == -1) {
+            num = parseEnglishKeyword(text);
+        }
         return num != -1;
     }
 
@@ -80,6 +110,7 @@ public class OptionPositionParser {
 
     // 解析中文序数词（第X个）
     private static int parseChineseOrdinal(String text) {
+        text = convertNumbersToText(text);
         Matcher matcher = Pattern.compile("第([零一二三四五六七八九十]+)[个项条]?").matcher(text);
         if (matcher.find()) {
             String cnNum = matcher.group(1);

@@ -4,6 +4,8 @@ import static android.content.Context.MODE_PRIVATE;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.text.TextUtils;
+import android.util.Log;
 
 import com.amap.api.services.core.AMapException;
 import com.amap.api.services.weather.LocalWeatherForecastResult;
@@ -21,7 +23,7 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
     private LocalWeatherLive weatherlive;
     private Context context = ContextHolder.getContext();
 
-    public void weatherSearch(int type) {
+    public void weatherSearch(int type,String city) {
         //获取当前定位城市
         positioning positioning = new positioning();
         try {
@@ -31,8 +33,11 @@ public class WeatherAPI implements WeatherSearch.OnWeatherSearchListener {
         } finally {
             positioning.release();
         }
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
-        String city = sharedPreferences.getString("city", "");
+        if (TextUtils.isEmpty(city)) {
+            SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
+            city = sharedPreferences.getString("city", "");
+        }
+        Log.d("TAG", "weatherSearch: "+city);
         //检索参数为城市和天气类型，实况天气为WEATHER_TYPE_LIVE、天气预报为WEATHER_TYPE_FORECAST
         if (type == SceneTypeConst.TODAY_WEATHER) {
             mquery = new WeatherSearchQuery(city, WeatherSearchQuery.WEATHER_TYPE_LIVE);

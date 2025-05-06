@@ -5,23 +5,29 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.adapter.HistoryRecyAdapter;
+import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
+import com.yl.deepseekxunfei.utlis.DeleteDialogHelper;
 
 import java.util.List;
 
-public class HistoryDialog extends Dialog implements View.OnClickListener {
+public class HistoryDialog extends Dialog implements View.OnClickListener, HistoryRecyAdapter.onButtonClick {
 
     private RecyclerView recyclerView;
     private Button customDialogBtn;
     private HistoryRecyAdapter historyRecyAdapter;
     private List<ChatHistoryEntity> mData;
+    private onDialogDataBack onDialogDataBack;
+    private TextView noHistoryTips;
 
     public HistoryDialog(@NonNull Context context, List<ChatHistoryEntity> data) {
         super(context, R.style.CustomDialog);
@@ -38,16 +44,77 @@ public class HistoryDialog extends Dialog implements View.OnClickListener {
     private void initView() {
         recyclerView = findViewById(R.id.custom_dialog_recy);
         customDialogBtn = findViewById(R.id.custom_dialog_btn);
+        noHistoryTips = findViewById(R.id.no_history_tips);
+        if (!mData.isEmpty()) {
+            noHistoryTips.setVisibility(View.GONE);
+        } else {
+            noHistoryTips.setVisibility(View.VISIBLE);
+        }
         customDialogBtn.setOnClickListener(this);
         historyRecyAdapter = new HistoryRecyAdapter(mData, getContext());
+        historyRecyAdapter.setOnButtonClick(this);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(historyRecyAdapter);
     }
 
     @Override
     public void onClick(View v) {
-        if (v.getId() == R.id.custom_dialog_btn && !mData.isEmpty()) {
-            ChatHistoryEntity chatHistoryEntity = mData.get(historyRecyAdapter.getClickPosition());
+        if (v.getId() == R.id.custom_dialog_btn) {
+            if (!mData.isEmpty()) {
+                ChatHistoryEntity chatHistoryEntity = mData.get(historyRecyAdapter.getClickPosition());
+                if (onDialogDataBack != null) {
+                    onDialogDataBack.dataBack(chatHistoryEntity);
+                }
+            }
+            dismiss();
         }
     }
+
+    public void setOnDialogDataBack(onDialogDataBack onDialogDataBack) {
+        this.onDialogDataBack = onDialogDataBack;
+    }
+
+    @Override
+    public void onRenameBtnClick(ChatHistoryEntity chatHistoryEntity, int position) {
+
+    }
+
+    @Override
+    public void onDeleteBtnClick(ChatHistoryEntity chatHistoryEntity, int position) {
+        confirmDelete(chatHistoryEntity, position);
+    }
+
+    public interface onDialogDataBack {
+        void dataBack(ChatHistoryEntity chatHistoryEntity);
+    }
+
+
+    private void confirmDelete(ChatHistoryEntity chatHistoryEntity, int position) {
+        // 在Activity中调用
+        DeleteDialogHelper.showDeleteConfirmationDialog(
+                getContext(),
+                "永久删除对话",
+                "删除后，该对话将不可恢复。确认删除吗？",
+                ContextCompat.getDrawable(getContext(), R.drawable.wdxz),
+                new DeleteDialogHelper.DeleteDialogListener() {
+                    @Override
+                    public void onDeleteConfirmed() {
+                        // 执行删除操作
+                        AppDatabase.Delete(chatHistoryEntity);
+                        mData.remove(position);
+                        historyRecyAdapter.notifyItemRemoved(position);
+                        if (mData.isEmpty()) {
+                            noHistoryTips.setVisibility(View.VISIBLE);
+                        } else {
+                            noHistoryTips.setVisibility(View.GONE);
+                        }
+                    }
+
+                    @Override
+                    public void onDeleteCancelled() {
+                    }
+                }
+        );
+    }
+
 }

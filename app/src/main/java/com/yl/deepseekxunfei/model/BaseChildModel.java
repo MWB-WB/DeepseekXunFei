@@ -1,24 +1,28 @@
 package com.yl.deepseekxunfei.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class BaseChildModel {
 
-    protected int type;
+    protected List<Integer> type;
     protected String text;
 
     public BaseChildModel() {
+        type = new ArrayList<>();
     }
 
-    public BaseChildModel(int type, String text) {
-        this.type = type;
+    public BaseChildModel(String text) {
         this.text = text;
+        type = new ArrayList<>();
     }
 
-    public int getType() {
+    public List<Integer> getType() {
         return type;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void addType(int type) {
+        this.type.add(type);
     }
 
     public String getText() {

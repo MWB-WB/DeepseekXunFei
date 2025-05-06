@@ -16,8 +16,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url 'https://artifact.bytedance.com/repository/AwemeOpenSDK' }
         maven { url 'https://artifacts-cn-beijing.volces.com/repository/douyin-openapi' }
+        maven { url 'https://artifact.bytedance.com/repository/AwemeOpenSDK' }
         maven { url 'https://jitpack.io'}
     }
 }
