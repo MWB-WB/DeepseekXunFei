@@ -124,30 +124,55 @@
             app:layout_constraintStart_toStartOf="parent">
 
             <LinearLayout
-                android:id="@+id/deep_think_layout"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/text_selected_bg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:padding="5dp">
-
-                <ImageView
-                    android:id="@+id/deep_think_img"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/think_select" />
-
-                <TextView
-                    android:id="@+id/deep_think_text"
+                <!-- 深度思考 -->
+                <LinearLayout
+                    android:id="@+id/deep_think_layout"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:text=" 深度思考（R1）"
-                    android:textColor="#00BFFF"
-                    android:textSize="12sp" />
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/text_selected_bg"
+                    android:padding="5dp">  <!-- 右边距，避免紧贴 -->
 
+                    <ImageView
+                        android:id="@+id/deep_think_img"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/think_select" />
+
+                    <TextView
+                        android:id="@+id/deep_think_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text=" 深度思考（R1）"
+                        android:textColor="#00BFFF"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- 声纹验证 -->
+                <LinearLayout
+                    android:id="@+id/deep_crete_layout"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/text_selected_bg"
+                    android:padding="5dp">
+
+                    <TextView
+                        android:id="@+id/deep_crete_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text=" 是 否 开 启 声 纹 验 证 "
+                        android:textColor="#00BFFF"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
-
             <LinearLayout
                 android:id="@+id/submitLayout"
                 android:layout_width="match_parent"
@@ -183,7 +208,6 @@
                     android:layout_marginTop="10dp"
                     android:background="@drawable/backduncoloi"
                     android:src="@drawable/fason" />
-
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
