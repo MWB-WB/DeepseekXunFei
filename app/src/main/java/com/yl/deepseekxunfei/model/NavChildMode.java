@@ -7,8 +7,6 @@ public class NavChildMode extends BaseChildModel {
 
     private List<NavChildMode.GeoEntity> entities;
     private String location;
-    //是否有多个地点的标志
-    private boolean isMorePosition;
     //执行顺序
     private int order;
     private List<NavChildMode> navChildModes;
@@ -19,14 +17,6 @@ public class NavChildMode extends BaseChildModel {
 
     public List<GeoEntity> getEntities() {
         return entities;
-    }
-
-    public boolean isMorePosition() {
-        return isMorePosition;
-    }
-
-    public void setMorePosition(boolean morePosition) {
-        isMorePosition = morePosition;
     }
 
     public int getOrder() {
@@ -62,7 +52,6 @@ public class NavChildMode extends BaseChildModel {
         return "NavChildMode{" +
                 "entities=" + entities +
                 ", location='" + location + '\'' +
-                ", isMorePosition=" + isMorePosition +
                 ", order=" + order +
                 ", navChildModes=" + navChildModes +
                 '}';

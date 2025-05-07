@@ -6,7 +6,7 @@ import com.yl.deepseekxunfei.page.LocationResult;
 import java.util.List;
 
 //酷我回调接口
-public interface OnPoiSearchListenerMusccar {
+public interface OnMusicSearchListenerMusccar {
     void onSuccess(List<LocationMusccarResult> results);
     void onError(String error);
 }

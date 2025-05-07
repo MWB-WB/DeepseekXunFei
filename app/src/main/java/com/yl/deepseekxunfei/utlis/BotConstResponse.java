@@ -10,6 +10,7 @@ public class BotConstResponse {
     public static String ok = "好的";
     public static String searchMusic = "好的，正在为您查询...,请稍后";
     public static String searchForecastWeatherWaiting = "好的，正在为您查询最近的天气...";
+    public static String searchForecastWeatherSuccess = "好的，为您搜索到最近的天气";
     public static String searchWeatherError = "当前网络波动较大，请稍后尝试";
     public static String searchPositionEmpty = "您还没有选择目的地，请详细说明目的地。";
 

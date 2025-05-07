@@ -12,9 +12,9 @@ public class MovieScene extends BaseChildScene {
         BaseChildModel baseChildModel = new BaseChildModel();
         baseChildModel.setText(text);
         if (text.contains("最近")) {
-            baseChildModel.addType(SceneTypeConst.RECENT_FILMS);
+            baseChildModel.setType(SceneTypeConst.RECENT_FILMS);
         } else {
-            baseChildModel.addType(SceneTypeConst.CHITCHAT);
+            baseChildModel.setType(SceneTypeConst.CHITCHAT);
         }
         return baseChildModel;
     }

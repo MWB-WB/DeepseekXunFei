@@ -45,7 +45,7 @@ public class AmapNavigator {
      * @param endLon 终点经度
      * @param viaPoints 途经点列表（格式：lat1,lng1,name1|lat2,lng2,name2）
      */
-    public static void startNavigation(Context context,
+    public static void startNavigationWithWayPoint(Context context,
                                        String startName, double startLat, double startLon,
                                        String endName, double endLat, double endLon,
                                        String viaPoints) {

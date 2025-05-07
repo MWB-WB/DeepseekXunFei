@@ -15,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.github.ybq.android.spinkit.SpinKitView;
 import com.yl.deepseekxunfei.APICalls.MovieApiClient;
@@ -79,11 +80,70 @@ public class RecyFragment extends Fragment {
         searchResultsRecyclerView.setAdapter(adapter);
     }
 
+    public void showWaypointsResult(List<LocationResult> results, OnWayPointClick onWayPointClick) {
+        searchResultsRecyclerView.setVisibility(View.VISIBLE);
+        spinKitView.setVisibility(View.GONE);
+        SearchResultAdapter adapter = new SearchResultAdapter(results, onWayPointClick::onClick);
+        searchResultsRecyclerView.setAdapter(adapter);
+    }
+
+    public void showStartWaypointsResult(List<LocationResult> results, LocationResult wayPoint) {
+        searchResultsRecyclerView.setVisibility(View.VISIBLE);
+        spinKitView.setVisibility(View.GONE);
+        SearchResultAdapter adapter = new SearchResultAdapter(results, result -> {
+            AmapNavigator.startNavigationWithWayPoint(getContext()
+                    , null, 0.0, 0.0
+                    , result.getName(), result.getLongitude(), result.getLatitude(),
+                    wayPoint.getLongitude() + "," + wayPoint.getLatitude() + "," + wayPoint.getName());
+        });
+        searchResultsRecyclerView.setAdapter(adapter);
+    }
+
     public int getItemCount() {
         if (searchResultsRecyclerView != null) {
-            return searchResultsRecyclerView.getAdapter().getItemCount();
+            return getVisibleItemCount(searchResultsRecyclerView);
         }
         return -1;
+    }
+
+    private int getVisibleItemCount(RecyclerView recyclerView) {
+        RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
+        if (layoutManager instanceof LinearLayoutManager) {
+            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) layoutManager;
+            int firstVisibleItemPosition = linearLayoutManager.findFirstVisibleItemPosition();
+            int lastVisibleItemPosition = linearLayoutManager.findLastVisibleItemPosition();
+            return lastVisibleItemPosition - firstVisibleItemPosition + 1;
+        } else if (layoutManager instanceof StaggeredGridLayoutManager) {
+            StaggeredGridLayoutManager staggeredGridLayoutManager = (StaggeredGridLayoutManager) layoutManager;
+            int[] firstVisibleItemPositions = new int[staggeredGridLayoutManager.getSpanCount()];
+            int[] lastVisibleItemPositions = new int[staggeredGridLayoutManager.getSpanCount()];
+            staggeredGridLayoutManager.findFirstVisibleItemPositions(firstVisibleItemPositions);
+            staggeredGridLayoutManager.findLastVisibleItemPositions(lastVisibleItemPositions);
+            int firstVisibleItemPosition = getMinPosition(firstVisibleItemPositions);
+            int lastVisibleItemPosition = getMaxPosition(lastVisibleItemPositions);
+            return lastVisibleItemPosition - firstVisibleItemPosition + 1;
+        }
+        return 0;
+    }
+
+    private int getMinPosition(int[] positions) {
+        int minPosition = Integer.MAX_VALUE;
+        for (int position : positions) {
+            if (position < minPosition) {
+                minPosition = position;
+            }
+        }
+        return minPosition;
+    }
+
+    private int getMaxPosition(int[] positions) {
+        int maxPosition = Integer.MIN_VALUE;
+        for (int position : positions) {
+            if (position > maxPosition) {
+                maxPosition = position;
+            }
+        }
+        return maxPosition;
     }
 
     public void showMusicSearchResult(List<LocationMusccarResult> results) {
@@ -222,6 +282,10 @@ public class RecyFragment extends Fragment {
     public void setRecyGone() {
         searchResultsRecyclerView.setVisibility(View.GONE);
         spinKitView.setVisibility(View.VISIBLE);
+    }
+
+    public interface OnWayPointClick {
+        void onClick(LocationResult result);
     }
 
 }

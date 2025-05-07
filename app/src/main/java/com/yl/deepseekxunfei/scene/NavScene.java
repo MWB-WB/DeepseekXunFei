@@ -12,20 +12,10 @@ import com.yl.deepseekxunfei.utlis.CityDictionary;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 
 public class NavScene extends BaseChildScene {
 
-    // 连接词集合（可扩展）
-    private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
-            "然后", "之后", "接着", "再", "随后", "并", "和", "及", "还有"
-    ));
     private static final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
 
@@ -34,58 +24,27 @@ public class NavScene extends BaseChildScene {
         NavChildMode navChildMode = new NavChildMode();
         String text = sceneModel.getText();
         List<Term> terms = SEGMENT.seg(text);
-        Optional<Term> first = terms.stream().filter(term -> CONJUNCTIONS.contains(term.word)).findFirst();
-//        if (first.isEmpty()) {
-            List<NavChildMode.GeoEntity> entities = new ArrayList<>();
-            for (Term term : terms) {
-                String word = term.word;
-                Log.e("TAG", "parseSceneToChild: " + word);
-                String nature = term.nature.toString();
+        List<NavChildMode.GeoEntity> entities = new ArrayList<>();
+        for (Term term : terms) {
+            String word = term.word;
+            Log.e("TAG", "parseSceneToChild: " + word);
+            String nature = term.nature.toString();
 
-                NavChildMode.GeoEntityType type = determineGeoType(word, nature);
-                if (type != NavChildMode.GeoEntityType.UNKNOWN) {
-                    entities.add(new NavChildMode.GeoEntity(word, type));
-                }
+            NavChildMode.GeoEntityType type = determineGeoType(word, nature);
+            if (type != NavChildMode.GeoEntityType.UNKNOWN) {
+                entities.add(new NavChildMode.GeoEntity(word, type));
             }
-            navChildMode.setMorePosition(false);
-            navChildMode.setLocation(extractLocation(terms));
-            navChildMode.setEntities(entities);
-            if (isNearbySearch(entities)) {
-                navChildMode.addType(SceneTypeConst.NEARBY);
-            } else {
-                navChildMode.addType(SceneTypeConst.KEYWORD);
-            }
-//        } else {
-//            navChildMode.setMorePosition(true);
-//            Log.e("TAG", "parseSceneToChild: " + first.get().word);
-//            String[] split = text.split(first.get().word);
-//            Map<Integer, List<Term>> termMap = new HashMap<>();
-//            for (int i = 0; i < split.length; i++) {
-//                termMap.put(i, SEGMENT.seg(split[i]));
-//            }
-//            for (int i = 0; i < termMap.size(); i++) {
-//                List<NavChildMode.GeoEntity> entities = new ArrayList<>();
-//                NavChildMode navChildMode1 = new NavChildMode();
-//                for (Term term : termMap.get(i)) {
-//                    String word = term.word;
-//                    Log.e("TAG", "parseSceneToChild: " + word);
-//                    String nature = term.nature.toString();
-//
-//                    NavChildMode.GeoEntityType type = determineGeoType(word, nature);
-//                    if (type != NavChildMode.GeoEntityType.UNKNOWN) {
-//                        entities.add(new NavChildMode.GeoEntity(word, type));
-//                    }
-//                }
-//                navChildMode1.setLocation(extractLocation(terms));
-//                navChildMode1.setEntities(entities);
-//                if (isNearbySearch(entities)) {
-//                    navChildMode1.addType(SceneTypeConst.NEARBY);
-//                } else {
-//                    navChildMode1.addType(SceneTypeConst.KEYWORD);
-//                }
-//                navChildMode.addNavChildMode(navChildMode1);
-//            }
-//        }
+        }
+        navChildMode.setLocation(extractLocation(terms));
+        navChildMode.setEntities(entities);
+        if (isNearbySearch(entities)) {
+            navChildMode.setType(SceneTypeConst.NEARBY);
+        } else {
+            navChildMode.setType(SceneTypeConst.KEYWORD);
+        }
+        if (text.contains("攻略") || text.contains("规划") || text.contains("计划")) {
+            navChildMode.setType(SceneTypeConst.CHITCHAT);
+        }
         navChildMode.setText(text);
         return navChildMode;
     }

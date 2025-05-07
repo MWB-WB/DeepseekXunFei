@@ -1,28 +1,23 @@
 package com.yl.deepseekxunfei.model;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class BaseChildModel {
 
-    protected List<Integer> type;
+    protected Integer type;
     protected String text;
 
     public BaseChildModel() {
-        type = new ArrayList<>();
     }
 
     public BaseChildModel(String text) {
         this.text = text;
-        type = new ArrayList<>();
     }
 
-    public List<Integer> getType() {
+    public Integer getType() {
         return type;
     }
 
-    public void addType(int type) {
-        this.type.add(type);
+    public void setType(Integer type) {
+        this.type = type;
     }
 
     public String getText() {
@@ -31,5 +26,13 @@ public class BaseChildModel {
 
     public void setText(String text) {
         this.text = text;
+    }
+
+    @Override
+    public String toString() {
+        return "BaseChildModel{" +
+                "type=" + type +
+                ", text='" + text + '\'' +
+                '}';
     }
 }

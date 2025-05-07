@@ -28,11 +28,10 @@ public class WeatherScene extends BaseChildScene {
             }
         }
         weatherSceneModel.setText(text);
-        if (text.contains("最近") || text.contains("近几天") || text.contains("这几天")) {
-            weatherSceneModel.addType(SceneTypeConst.FEATHER_WEATHER);
-
+        if (text.contains("最近") || text.contains("近几天") || text.contains("这几天") || text.contains("明天") || text.contains("后天")) {
+            weatherSceneModel.setType(SceneTypeConst.FEATHER_WEATHER);
         } else {
-            weatherSceneModel.addType(SceneTypeConst.TODAY_WEATHER);
+            weatherSceneModel.setType(SceneTypeConst.TODAY_WEATHER);
         }
         return weatherSceneModel;
     }
