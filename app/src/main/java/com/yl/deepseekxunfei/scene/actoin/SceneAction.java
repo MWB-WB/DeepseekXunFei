@@ -59,17 +59,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             navChildModelList = baseChildModelList;
             waypointsAction(navChildModelList.get(0));
         } else {
-            //将导航模块放到最后处理，不然选择会出现问题
-            for (int i = 0; i < baseChildModelList.size(); i++) {
-                if ((baseChildModelList.get(i).getType() == SceneTypeConst.NEARBY || baseChildModelList.get(i).getType() == SceneTypeConst.KEYWORD)
-                        && (baseChildModelList.get(baseChildModelList.size() - 1).getType() != SceneTypeConst.NEARBY
-                        && baseChildModelList.get(baseChildModelList.size() - 1).getType() != SceneTypeConst.KEYWORD)) {
-                    if (i != baseChildModelList.size() - 1) {
-                        baseChildModelList.add(baseChildModelList.get(i));
-                        baseChildModelList.remove(i);
-                    }
-                }
-            }
             mainActivity.isNeedWakeUp = false;
             this.baseChildModelList.clear();
             this.baseChildModelList = baseChildModelList;

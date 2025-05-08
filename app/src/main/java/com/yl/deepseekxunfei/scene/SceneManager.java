@@ -31,7 +31,7 @@ public class SceneManager {
     private SceneType currentSceneType = SceneType.CHITCHAT;
     // 连接词集合（可扩展）
     private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
-            "然后", "之后", "接着", "再", "随后", "并", "和", "及", "还有"
+            "然后", "之后", "接着", "再", "随后"
     ));
     private static final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
@@ -58,9 +58,11 @@ public class SceneManager {
         List<SceneModel> sceneModelList = new ArrayList<>();
         List<Term> terms = SEGMENT.seg(text);
         Optional<Term> first = terms.stream().filter(term -> CONJUNCTIONS.contains(term.word)).findFirst();
+        boolean hasFen = text.contains("再");
         //如果有多分词，则会将给语句拆分成多个场景
-        if (!first.isEmpty()) {
+        if (!first.isEmpty() || hasFen) {
             String[] textSplit = text.split(first.get().word);
+            Log.e("TAG", "parseQuestionToScene:111 " + textSplit);
             WordNLPModel wordNLPModel = ChineseSegmentationUtil.SegmentWords(textSplit[0]);
             SceneModel sceneModel = getSceneModel(wordNLPModel, textSplit[0]);
             sceneModelList.add(sceneModel);
