@@ -16,6 +16,9 @@ import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.model.ChatMessage;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class VoiceManager {
     private final StringBuilder mTextBuffer = new StringBuilder();
     private final Object mLock = new Object();
@@ -24,6 +27,9 @@ public class VoiceManager {
     private HandlerThread mWorkThread;
     public MainActivity mainActivity;
     private Handler mHandler;
+    private static final List<String> SENSITIVE_WORDS = Arrays.asList(
+            "DeepSeek", "deepseek", "DEEPSEEK", "Deepseek", "deep seek", "Deep Seek"
+    );//敏感词列表
 
     // 初始化语音引擎
     public void init(Context context) {
@@ -109,9 +115,11 @@ public class VoiceManager {
     private void startSpeech(String text) {
         Log.e("1231231", "startSpeech: " + text);
         mIsSpeaking = true;
+        String TTSTexte = filterSensitiveContent(text);
+        String TTSBiao = TextLineBreaker.breakTextByPunctuation(TTSTexte);
         // 在主线程执行语音播报
         new Handler(Looper.getMainLooper()).post(() -> {
-            mTts.startSpeaking(text, new SynthesizerListener() {
+            mTts.startSpeaking(TTSBiao, new SynthesizerListener() {
                 @Override
                 public void onSpeakBegin() {
 
@@ -164,7 +172,7 @@ public class VoiceManager {
     }
 
     // 释放资源
-    public  void release() {
+    public void release() {
         mTextBuffer.delete(0, mTextBuffer.length());
         if (mWorkThread != null) {
             mWorkThread.interrupt();
@@ -173,5 +181,23 @@ public class VoiceManager {
         if (mTts != null) {
             mTts.destroy();
         }
+    }
+
+    private String filterSensitiveContent(String content) {
+        if (content == null || content.isEmpty()) {
+            return content;
+        }
+        // 这里假设SENSITIVE_WORDS是已定义好的敏感词列表
+        for (String word : SENSITIVE_WORDS) {
+            // 定义你想要保留的提示信息
+            String tipMessage = "实在不好意思，这个问题暂时难倒我啦。您可以换个方式提问，或者给我些相关线索，咱们一起探索答案～";
+            // 检查当前敏感词是否在content中（忽略大小写）
+            if (content.toLowerCase().contains(word.toLowerCase())) {
+                // 如果包含，直接返回提示信息
+                return tipMessage;
+            }
+        }
+        // 如果没有匹配到任何敏感词，返回原内容
+        return content;
     }
 }

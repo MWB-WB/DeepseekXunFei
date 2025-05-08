@@ -21,7 +21,14 @@ dependencyResolutionManagement {
         maven { url 'https://jitpack.io'}
     }
 }
-
+dependencyResolutionManagement {
+    repositories {
+        flatDir {
+            dirs 'libs'  // 指向父模块的 libs 目录
+        }
+    }
+}
 rootProject.name = "deepseekXunFei"
 include ':app'
 include ':DouyinApi'
+include ':creteModule'

@@ -55,6 +55,7 @@ dependencies {
     testImplementation libs.junit
     implementation(fileTree("libs"))
     implementation project(':DouyinApi')
+    implementation project(':creteModule')
 //    implementation files('..\\gradle\\wrapper\\gradle-wrapper.jar')
     // room
     def room_version = "2.2.5"
