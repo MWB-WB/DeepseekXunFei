@@ -92,4 +92,62 @@ public class KwmusiccarApi {
             }
         });
     }
+
+    public static void hotSongs(OnMusicSearchListenerMusccar onPoiSearchListenerMusccar) {
+        //构建酷狗歌曲查询API
+        String uri = "http://mobilecdnbj.kugou.com/api/v3/rank/song?version=9108&ranktype=2&plat=0&pagesize=100&area_code=1&page=1&volid=35050&rankid=6666&with_res_tag=1";
+        Request request = new Request.Builder().url(uri).build();
+        Log.d("查询URI", "musiccar: " + uri);
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                onPoiSearchListenerMusccar.onError(e.getMessage());
+            }
+
+            @Override
+            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                String jsonData = response.body().string();
+
+                String value_review = jsonData.replace("\\","");
+                Log.d("查询结果", "onResponse: " + jsonData);
+
+                try {
+                    JSONObject json = new JSONObject(value_review.substring(jsonData.indexOf("{"), value_review.lastIndexOf("}") + 1));
+                    JSONArray infoArray = json.getJSONObject("data").getJSONArray("info"); // 注意层级是 data -> info
+                    List<LocationMusccarResult> results = new ArrayList<>();
+
+                    for (int i = 0; i < infoArray.length(); i++) {
+                        JSONObject song = infoArray.getJSONObject(i);
+                        JSONArray authors = song.getJSONArray("authors");
+                        JSONObject authorsJsonObject = authors.getJSONObject(0);
+                        // 提取关键字段
+                        String songName = song.getString("songname");
+                        String artist = authorsJsonObject.getString("author_name");
+                        String album = song.getString("filename");
+                        String hash = song.getString("hash"); // 酷狗用 hash 作为歌曲唯一ID
+
+                        // 处理 musicId
+                        List<String> musicId = new ArrayList<>();
+                        musicId.add(hash);
+
+                        // 添加到结果列表
+                        results.add(new LocationMusccarResult(songName, album, artist, musicId));
+
+                        // 打印日志验证
+                        Log.d("歌曲信息",
+                                "歌曲名: " + songName +
+                                        ", 歌手: " + artist +
+                                        ", 专辑: " + album +
+                                        ", Hash: " + hash
+                        );
+                    }
+                    onPoiSearchListenerMusccar.onSuccess(results);
+                } catch (JSONException e) {
+                    Log.e("解析错误", "JSON解析失败: " + e.getMessage());
+                    onPoiSearchListenerMusccar.onError("解析失败");
+                }
+            }
+        });
+    }
+
 }

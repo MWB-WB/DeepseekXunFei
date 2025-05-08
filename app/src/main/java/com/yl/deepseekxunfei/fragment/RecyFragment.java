@@ -150,7 +150,7 @@ public class RecyFragment extends Fragment {
         searchResultsRecyclerView.setVisibility(View.VISIBLE);
         spinKitView.setVisibility(View.GONE);
         SearchResultAdapterMusical adapter = new SearchResultAdapterMusical(results, result -> {
-            // 点击结果后导航
+            // 点击结果后跳转
             showSearchResultsMusccar(results);
         });
         searchResultsRecyclerView.setAdapter(adapter);

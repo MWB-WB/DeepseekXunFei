@@ -118,8 +118,15 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.QUIT:
                 quitAction(baseChildModel);
                 break;
-            case SceneTypeConst.MUSIC:
-                musicAction(baseChildModel, botResponse);
+            case SceneTypeConst.MUSIC_SEARCH:
+                musicSearchAction(baseChildModel, botResponse);
+                break;
+            case SceneTypeConst.HOT_SONGS:
+            case SceneTypeConst.TODAY_RECOMMEND:
+                hotSongsAction(botResponse);
+                break;
+            case SceneTypeConst.MUSIC_UNKNOW:
+                musicUnknowAction();
                 break;
             case SceneTypeConst.VIDEO:
                 videoAction(baseChildModel);
@@ -127,11 +134,31 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         }
     }
 
+    private void musicUnknowAction() {
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.musicUnknow, false, "", false)
+                , BotConstResponse.musicUnknow);
+    }
+
+    private void hotSongsAction(String botResponse) {
+        mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false), botResponse);
+        KwmusiccarApi.hotSongs(new OnMusicSearchListenerMusccar() {
+            @Override
+            public void onSuccess(List<LocationMusccarResult> results) {
+                mainActivity.showMusicFragment(results);
+            }
+
+            @Override
+            public void onError(String error) {
+
+            }
+        });
+    }
+
     private void videoAction(BaseChildModel baseChildModel) {
         DouyinApi.requestAuth(mainActivity);
     }
 
-    private void musicAction(BaseChildModel baseChildModel, String botResponse) {
+    private void musicSearchAction(BaseChildModel baseChildModel, String botResponse) {
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false), botResponse);
         String musicName = ((MusicChildModel) baseChildModel).getMusicName();
         Log.e("TAG", "musicAction: " + musicName);

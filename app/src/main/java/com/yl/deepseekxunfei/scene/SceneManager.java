@@ -85,9 +85,16 @@ public class SceneManager {
         Log.e("test111", "getSceneModel: " + wordNLPModel.toString() + ":: text: " + text);
         SceneModel resultModel = new SceneModel();
         resultModel.setText(text);
-        if (wordNLPModel.getV().contains("导航") || wordNLPModel.getV().contains("去") || wordNLPModel.getV().contains("到") || wordNLPModel.getF().contains("附近")) {
+        if (currentSceneType.equals(SceneType.NAVIGATION) || currentSceneType.equals(SceneType.MUSIC)) {
+            if (OptionPositionParser.parsePosition(text)) {
+                resultModel.setScene(SceneType.SELECTION);
+                return resultModel;
+            }
+        }
+        if (wordNLPModel.getV().contains("导航") || wordNLPModel.getVn().contains("导航")
+                || text.contains("我要去") || text.contains("我想去") || text.contains("去") || wordNLPModel.getF().contains("附近")) {
             resultModel.setScene(SceneType.NAVIGATION);
-        } else if (text.startsWith("播放") || text.contains("音乐") || text.startsWith("我要听")) {
+        } else if (text.startsWith("播放") || text.contains("音乐") || text.startsWith("我要听") || text.contains("歌")) {
             resultModel.setScene(SceneType.MUSIC);
         } else if (text.contains("当前位置") || text.contains("我在哪")) {
             resultModel.setScene(SceneType.LOCATION);
@@ -97,12 +104,6 @@ public class SceneManager {
             resultModel.setScene(SceneType.MOVIE);
         } else if (wordNLPModel.getN().contains("视频")) {
             resultModel.setScene(SceneType.VIDEO);
-        } else if (OptionPositionParser.parsePosition(text)) {
-            if (currentSceneType.equals(SceneType.NAVIGATION) || currentSceneType.equals(SceneType.MUSIC)) {
-                resultModel.setScene(SceneType.SELECTION);
-            } else {
-                resultModel.setScene(SceneType.CHITCHAT);
-            }
         } else if (!Arrays.stream(BotConstResponse.quitCommand).filter(s -> s.contains(text)).findFirst().isEmpty()) {
             resultModel.setScene(SceneType.QUIT);
         } else {

@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.util.Log;
 
+import java.net.URLEncoder;
+import java.util.List;
+
 //com.autonavi.amapauto 高德包名
 // 导航工具类
 public class AmapNavigator {
@@ -51,7 +54,7 @@ public class AmapNavigator {
                                        String viaPoints) {
 
         // 构建URI参数
-        Uri.Builder builder = Uri.parse("amapuri://route/plan/").buildUpon();
+        Uri.Builder builder = Uri.parse("androidamapauto://navi?").buildUpon();
 
         // 起点参数（如果不需要起点可省略）
         if (startName != null) {
@@ -86,7 +89,7 @@ public class AmapNavigator {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             intent.addCategory(Intent.CATEGORY_DEFAULT);
-            intent.setPackage("com.autonavi.minimap");
+            intent.setPackage("com.autonavi.amapauto");
             context.startActivity(intent);
         } catch (Exception e) {
         }

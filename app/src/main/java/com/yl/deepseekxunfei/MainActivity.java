@@ -2,7 +2,6 @@ package com.yl.deepseekxunfei;
 
 
 import android.Manifest;
-import android.app.Dialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -74,8 +73,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import com.yl.cretemodule.crete.CreateMethod;
-import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
-import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.adapter.ChatAdapter;
 
 import com.yl.deepseekxunfei.fragment.MainFragment;
@@ -84,9 +81,7 @@ import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatHistory;
 import com.yl.deepseekxunfei.model.ChatMessage;
-import com.yl.deepseekxunfei.model.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MovieDetailModel;
-import com.yl.deepseekxunfei.model.SceneModel;
 import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.room.AppDatabase;
@@ -94,13 +89,10 @@ import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.scene.actoin.SceneAction;
-import com.yl.deepseekxunfei.sceneenum.SceneType;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
 import com.yl.deepseekxunfei.utlis.ContextHolder;
-import com.yl.deepseekxunfei.utlis.CreteUtlis;
 import com.yl.deepseekxunfei.utlis.JsonParser;
 import com.yl.deepseekxunfei.utlis.KeyboardUtils;
-import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
 import com.yl.deepseekxunfei.utlis.OptionPositionParser;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.TextLineBreaker;
@@ -114,22 +106,17 @@ import okio.BufferedSource;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String API_URL = "http://112.74.59.121:11434/api/chat";
+    private static final String API_URL = "http://47.106.73.32:11434/api/chat";
 
     public boolean isNeedWakeUp = true;
     private boolean selectGroupFig = true;
     private int seleteSize = 0;//判断是不是第一次进行唤醒
     CreateMethod createMethod = new CreateMethod();
     private EditText editTextQuestion;
-    private boolean deleteFig = false;//是否进入删除成功回调
-    private List<KnowledgeEntry> knowledgeBase;
     private SpeechSynthesizer mTts;
     private StringBuilder speakTts = new StringBuilder();
     private static final String TAG = "MainActivity";
@@ -150,8 +137,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public ImageButton button;
     private RecyclerView chatRecyclerView;
     public ChatAdapter chatAdapter;
-    public TextView textCrete;
-    public Button deleteCrete;
     public List<ChatMessage> chatMessages = new ArrayList<>();
 
     //是否停止输出
@@ -172,7 +157,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public boolean found = false;
     private List<ChatMessage> context = new ArrayList<>(); // 用于保存多轮对话的上下文
     public int i = 0;
-    private boolean isRecording = false;
     private String currentTitle = ""; // 当前对话的标题
     private ImageButton history;//历史对话
     private ImageButton newDialogue;//新建对话
@@ -190,12 +174,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isDuplicate = false;
     //是否开启声纹验证
     public boolean creteOkAndNo = true;
-    //声纹识别所需文件保存路径
-    private String creteFlies;
-    //对比声纹文件
-    String contrastFies;
-    //全局声纹识别创建文件工具类
-    private CreteUtlis creteUtlis = new CreteUtlis();
     //开始录音按钮
     private Button kaishiluyin;
     // media_ecorder_recording.xml 布局中的开始录音按钮
@@ -205,9 +183,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Call currentCall;
     // 获取选中的按钮文本
 
-    private List<SceneModel> sceneModelList = new ArrayList<>();
-
     private VoiceManager voiceManager = null;
+    private BackTextToAction backTextToAction = null;
 
 
     @Override
@@ -538,7 +515,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //初始话声纹识别必须参数
 
         // 加载本地知识库
-        knowledgeBase = KnowledgeBaseLoader.loadKnowledgeBase(this);
         positioning positioning = new positioning();
         try {
             positioning.initLocation(MainActivity.this);
@@ -609,8 +585,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             chatAdapter.notifyItemInserted(chatMessages.size() - 1);
             chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
             inputEditText.setText("");
-            List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(input);
-            mSceneAction.actionByType(baseChildModelList.get(0));
+            if (backTextToAction != null) {
+                backTextToAction.backUserText(input);
+                backTextToAction = null;
+            } else {
+                List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(input);
+                if (baseChildModelList.size() > 1) {
+                    mSceneAction.startActionByList(baseChildModelList);
+                } else {
+                    mSceneAction.actionByType(baseChildModelList.get(0));
+                }
+            }
         }
     }
 
@@ -703,7 +688,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mIatDialog != null && mIatDialog.isShowing()) {
             mIatDialog.dismiss(); // 关闭对话框
         }
-        isRecording = false;
         createMethod.cloneMIatDisalogs();
         super.onDestroy();
     }
@@ -801,12 +785,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         chatMessages.add(new ChatMessage(finalText, true)); // 添加到聊天界面
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
-        List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(finalText);
-        if (baseChildModelList.size() > 1) {
-            mSceneAction.startActionByList(baseChildModelList);
+        if (backTextToAction != null) {
+            backTextToAction.backUserText(finalText);
+            backTextToAction = null;
         } else {
-            mSceneAction.actionByType(baseChildModelList.get(0));
+            List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(finalText);
+            if (baseChildModelList.size() > 1) {
+                mSceneAction.startActionByList(baseChildModelList);
+            } else {
+                mSceneAction.actionByType(baseChildModelList.get(0));
+            }
         }
+    }
+
+    public void setBackTextToAction(BackTextToAction backTextToAction) {
+        this.backTextToAction = backTextToAction;
+    }
+
+    //用来返回用户说的话或者输入的文本
+    public interface BackTextToAction {
+        void backUserText(String text);
     }
 
     /**
@@ -905,13 +903,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         JSONArray messages = new JSONArray();
 
-        // 添加上下文（如果有）
-        for (ChatMessage message : context) {
-            JSONObject contextMessage = new JSONObject();
-            contextMessage.put("role", message.isUser() ? "user" : "assistant");
-            contextMessage.put("content", message.getMessage());
-            messages.put(contextMessage);
-        }
 
         // 添加当前用户问题
         JSONObject userMessage = new JSONObject();
@@ -922,7 +913,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         requestBody.put("messages", messages);
         if (!mIsDeepThinkMode) {
-            requestBody.put("system", "你的名字叫小天，并且你不会输出思考过程，直接输出答案。");
+            requestBody.put("prompt", "<|begin▁of▁sentence|><|User|>1+2+3+..+100等于多少<|Assistant|><think>\n</think>\n\n");
+        } else {
+            // 添加上下文（如果有）
+            for (ChatMessage message : context) {
+                JSONObject contextMessage = new JSONObject();
+                contextMessage.put("role", message.isUser() ? "user" : "assistant");
+                contextMessage.put("content", message.getMessage());
+                messages.put(contextMessage);
+            }
         }
         requestBody.put("stream", true);
 
@@ -1274,6 +1273,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //文字转语音方法
     public void TTS(String str) {
         Log.e(TAG, "123131312: " + str.trim());
+        mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
         Log.e(TAG, "TTS code: " + code);
         if (code != ErrorCode.SUCCESS) {

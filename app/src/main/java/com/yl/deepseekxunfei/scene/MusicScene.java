@@ -57,13 +57,17 @@ public class MusicScene extends BaseChildScene {
                 result.musicNames.add(word);
             }
         }
+        if (text.contains("来首歌") || text.contains("来一首歌") || text.contains("放一首歌") || text.contains("放首歌")) {
+            result.hasHotSongs = true;
+        }
         if (result.musicNames.size() == 0) {
             Optional<String> first = Arrays.stream(musicV).filter(t -> {
                 return text.contains(t);
             }).findFirst();
             if (!first.isEmpty()) {
                 String musicName = text.split(first.get())[1];
-                result.musicNames.add(musicName);
+                if (!musicName.equals("。"))
+                    result.musicNames.add(musicName);
             }
         }
         return result;
@@ -85,13 +89,19 @@ public class MusicScene extends BaseChildScene {
         MusicData musicData = extract(text);
         MusicChildModel musicChildModel = new MusicChildModel();
         musicChildModel.setText(text);
-        musicChildModel.setMusicName(musicData.musicNames.get(0));
         if (musicData.hasHotSongs) {
             musicChildModel.setKeyWord("热门推荐");
+            musicChildModel.setType(SceneTypeConst.HOT_SONGS);
         } else if (musicData.hasTodayRecommend) {
             musicChildModel.setKeyWord("今日推荐");
+            musicChildModel.setType(SceneTypeConst.TODAY_RECOMMEND);
+        } else if (musicData.musicNames.size() > 0) {
+            musicChildModel.setMusicName(musicData.musicNames.get(0));
+            musicChildModel.setKeyWord(musicData.musicNames.get(0));
+            musicChildModel.setType(SceneTypeConst.MUSIC_SEARCH);
+        } else {
+            musicChildModel.setType(SceneTypeConst.MUSIC_UNKNOW);
         }
-        musicChildModel.setType(SceneTypeConst.MUSIC);
         return musicChildModel;
     }
 }

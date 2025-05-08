@@ -7,6 +7,9 @@ public class BotConstResponse {
     public static String[] quitCommand = new String[]{"退出。", "再见。", "拜拜。", "你走吧。", "退下。"};
     public static String[] quitResponse = new String[]{"好的，有事再叫我", "再见", "拜拜", "我走啦"};
     public static String searchWeatherWaiting = "好的，正在为您查询今天的天气...";
+    public static String musicUnknow = "您是不是没有说歌曲名称呀，小天不知道该怎么操作呢，您可以说播放稻香试试";
+    public static String wantNavigation = "您是不是想要小天帮您导航过去？";
+    public static String[] yes = new String[]{"是的。", "没错。", "嗯。", "可以。", "要的。", "要。", "需要。"};
     public static String ok = "好的";
     public static String searchMusic = "好的，正在为您查询...,请稍后";
     public static String searchForecastWeatherWaiting = "好的，正在为您查询最近的天气...";

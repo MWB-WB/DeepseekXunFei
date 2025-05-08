@@ -27,7 +27,6 @@ public class NavScene extends BaseChildScene {
         List<NavChildMode.GeoEntity> entities = new ArrayList<>();
         for (Term term : terms) {
             String word = term.word;
-            Log.e("TAG", "parseSceneToChild: " + word);
             String nature = term.nature.toString();
 
             NavChildMode.GeoEntityType type = determineGeoType(word, nature);
