@@ -30,7 +30,7 @@ public class CreteUtlis {
     private int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
     private Thread recordingThread;
 
-    // 创建录音文件路径
+    // 创建声纹文件路径
     public String createAudioFilePath(Context context,String fileName) {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         fileName = fileName + "_" + timeStamp + ".pcm";
@@ -83,7 +83,58 @@ public class CreteUtlis {
         }
     }
 
+    // 创建声纹比对文件路径
+    public String contrastFiesAudioFilePath(Context context,String fileName) {
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        fileName = "对比"+fileName + "_" + timeStamp + ".pcm";
+        Log.e("TAG", "createAudioFilePath: " +context.getExternalCacheDir().getAbsolutePath() );
+        return context.getExternalCacheDir().getAbsolutePath() + "/" + fileName;
+    }
 
+    public void contrastFiesStartRecord(WeakReference<Context> weakReference,String filePath) {
+        this.weakReference = weakReference;
+        recordFile = new File(filePath);
+        //如果存在，就先删除再创建
+        if (recordFile.exists()) {
+            recordFile.delete();
+        }
+        try {
+            recordFile.createNewFile();
+        } catch (IOException e) {
+            throw new IllegalStateException("未能创建" + recordFile.toString());
+        }
+        if (filePathList.size() == 2) {
+            filePathList.clear();
+        }
+        filePathList.add(recordFile);
+        try {
+            //输出流
+            OutputStream os = new FileOutputStream(recordFile);
+            BufferedOutputStream bos = new BufferedOutputStream(os);
+            DataOutputStream dos = new DataOutputStream(bos);
+            int bufferSize = AudioRecord.getMinBufferSize(sampleRateInHz, AudioFormat.CHANNEL_IN_MONO, audioEncoding);
+            audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC, sampleRateInHz, AudioFormat.CHANNEL_IN_MONO, audioEncoding, bufferSize);
+            isRecording = true;
+            audioRecord.startRecording();
+            recordingThread = new Thread(() -> {
+                try (FileOutputStream fos = new FileOutputStream(filePath)) {
+                    byte[] buffer = new byte[bufferSize];
+                    while (isRecording) {
+                        int bytesRead = audioRecord.read(buffer, 0, buffer.length);
+                        if (bytesRead > 0) {
+                            fos.write(buffer, 0, bytesRead);
+                        }
+                    }
+                } catch (IOException e) {
+                    Log.d("错误", "startRecord: "+e);
+                }
+            });
+            recordingThread.start();
+            dos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     // 开始录音
     public static void startRecording(String filePath) {
         try {

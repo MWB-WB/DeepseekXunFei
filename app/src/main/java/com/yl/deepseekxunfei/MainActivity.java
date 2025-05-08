@@ -940,9 +940,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
         // 异步执行请求
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(3, TimeUnit.SECONDS)//连接超时
-                .readTimeout(3, TimeUnit.SECONDS)//读取超时
-                .writeTimeout(3, TimeUnit.SECONDS)//写入超时
+                .connectTimeout(5, TimeUnit.SECONDS)//连接超时
+                .readTimeout(5, TimeUnit.SECONDS)//读取超时
+                .writeTimeout(5, TimeUnit.SECONDS)//写入超时
                 .build();
         currentCall = client.newCall(requestRound1);
         currentCall.enqueue(new Callback() {

@@ -86,6 +86,7 @@ public class CreateMethod extends AppCompatActivity {
     public RecognizerDialog mIatDialog;// 语音听写UI
     public Context contexts;
     Button closeDialogButton;
+    public int biaoshi = 1;
 
     public CreateMethod() {
 
@@ -98,7 +99,6 @@ public class CreateMethod extends AppCompatActivity {
         APIKey = "06224092793087296b1f47c96e0133bc";
         requestUrl = "http://api.xf-yun.com/v1/private/s782b4996";
     }
-
     //查询声纹特征的方法
     public boolean seleteCrete() {
         // 检查groupId是否存在
@@ -189,7 +189,6 @@ public class CreateMethod extends AppCompatActivity {
                             createLogotype.getFeatureInfo().remove(createLogotype.getGroupId().indexOf(groupId));
                             createLogotype.getFeatureId().remove(featureId);
                             createLogotype.getGroupId().remove(groupId);
-                            Log.d(TAG, "OnSuccessGroup: " + createLogotype);
                             boolean fig = seleteCrete();
                             //u1FamilyMember0
                             if (!fig) {
@@ -413,11 +412,11 @@ public class CreateMethod extends AppCompatActivity {
                 return;
             }
             //创建声纹文件
-            creteFlies = creteUtlis.createAudioFilePath(contexts, selectedText + "_" + i);
+            creteFlies = creteUtlis.createAudioFilePath(contexts, selectedText + "_" + biaoshi);
             creteUtlis.startRecord(new WeakReference<>(this), creteFlies);
             //对比声纹文件
-            contrastFies = creteUtlis.createAudioFilePath(contexts, selectedText + "_" + i);
-            creteUtlis.startRecord(new WeakReference<>(this), contrastFies);
+            contrastFies = creteUtlis.contrastFiesAudioFilePath(contexts, selectedText + "_" + biaoshi);
+            creteUtlis.contrastFiesStartRecord(new WeakReference<>(this), contrastFies);
             mIatDialog.setListener(new RecognizerDialogListener() {
                 @Override
                 public void onResult(RecognizerResult recognizerResult, boolean b) {
@@ -446,7 +445,10 @@ public class CreateMethod extends AppCompatActivity {
         });
         //查询声纹信息
         selectCrete.setOnClickListener(select -> {
-            seleteCrete();
+            if (seleteCrete()) {
+                radio_teacher.setVisibility(View.GONE);
+                closeDialogButton.setVisibility(View.GONE);
+            }
         });
         // 显示自定义 Dialog
         customDialog.show();
@@ -538,6 +540,7 @@ public class CreateMethod extends AppCompatActivity {
                     if (!name.equals("车主") && che != 0) {
                         i++;
                     }
+                    biaoshi++;
                     creteUtlis.stopRecording();
                 }
             });
