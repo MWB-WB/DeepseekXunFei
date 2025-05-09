@@ -4,6 +4,7 @@ package com.yl.deepseekxunfei;
 import android.app.Application;
 
 import com.amap.api.location.AMapLocationClient;
+import com.amap.api.maps.MapsInitializer;
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechUtility;
 import com.yl.douyinapi.DouyinApi;

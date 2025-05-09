@@ -62,6 +62,7 @@ dependencies {
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version"
     implementation libs.glide
+    implementation 'net.objecthunter:exp4j:0.4.8'
     implementation "com.squareup.okhttp3:okhttp:4.9.3"
     implementation 'com.hankcs:hanlp:portable-1.8.2'
     implementation 'com.google.android.material:material:1.8.0'

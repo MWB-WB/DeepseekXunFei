@@ -10,6 +10,8 @@ public enum SceneType {
     MUSIC,      //音乐
     WANT_NAVIGATION, //想要导航场景
     NAVIGATION, //导航
+    COMPUTE, //计算
+    SELFINTRODUCE,//自我介绍
     MOVIE,      //电影
     VIDEO,      //视频
     SELECTION,  //选项

@@ -14,6 +14,7 @@ import com.yl.deepseekxunfei.OnPoiSearchListener;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
+import com.yl.deepseekxunfei.model.ComputeChildModel;
 import com.yl.deepseekxunfei.model.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MusicChildModel;
 import com.yl.deepseekxunfei.model.NavChildMode;
@@ -31,8 +32,6 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
@@ -89,6 +88,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.KEYWORD:
                 keyWordAction(baseChildModel, botResponse);
                 break;
+            case SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS:
+                navigationUnknownAddressAction();
+                break;
             case SceneTypeConst.RECENT_FILMS:
                 filmAction(baseChildModel, botResponse);
                 break;
@@ -121,7 +123,31 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.VIDEO:
                 videoAction(baseChildModel);
                 break;
+            case SceneTypeConst.COMPUTE:
+                computeAction(baseChildModel);
+                break;
+            case SceneTypeConst.SELFINTRODUCE:
+                selfIntroduceAction();
+                break;
         }
+    }
+
+    private void navigationUnknownAddressAction() {
+        // 先让机器人回复固定内容
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.searchPositionEmpty, false, "", false),
+                BotConstResponse.searchPositionEmpty);
+    }
+
+    private void selfIntroduceAction() {
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.selfIntroduce, false, "", false),
+                BotConstResponse.selfIntroduce);
+    }
+
+    private void computeAction(BaseChildModel baseChildModel) {
+        StringBuilder response = new StringBuilder(((ComputeChildModel) baseChildModel).getResultText());
+        response.append("等于").append(((ComputeChildModel) baseChildModel).getResult());
+        mainActivity.addMessageAndTTS(new ChatMessage(response.toString(), false, "", false),
+                response.toString());
     }
 
     private void musicUnknowAction() {
@@ -336,13 +362,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void keyWordAction(BaseChildModel baseChildModel, String botResponse) {
         mainActivity.isStopRequested = true;
-        String address = extractLocation(baseChildModel.getText());
-        if (address.isEmpty() || address.equals("。")) {
-            // 先让机器人回复固定内容
-            mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.searchPositionEmpty, false, "", false),
-                    BotConstResponse.searchPositionEmpty);
-            return;
-        }
         botResponse = botResponse + "\n您可以说第一个，最后一个";
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
@@ -354,7 +373,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 .findFirst()
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
-        searchIn.searchInAmap(mainActivity, address, city, new OnPoiSearchListener() {
+        searchIn.searchInAmap(mainActivity, ((NavChildMode) baseChildModel).getLocation(), city, new OnPoiSearchListener() {
             @Override
             public void onSuccess(List<LocationResult> results) {
                 mainActivity.setCurrentChatOver();
@@ -373,19 +392,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setCurrentChatOver();
             }
         });
-    }
-
-
-    private static String extractLocation(String input) {
-        // 匹配 "导航到XXX"、"去XXX"、"我要去XXX" 等模式
-        String pattern = "(导航到|去|我要去|带我去|帮我找|附近有|我想去|附近的|导航去|导航)(.+?)(。|$)";
-        Pattern r = Pattern.compile(pattern);
-        Matcher m = r.matcher(input);
-        if (m.find()) {
-            Log.d("地名", "extractLocation: " + m.group(2).trim());
-            return m.group(2).trim(); // 返回匹配的地名
-        }
-        return input; // 如果没有匹配到，返回原输入（可能已经是纯地名）
     }
 
 

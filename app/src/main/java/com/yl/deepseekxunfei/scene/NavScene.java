@@ -13,10 +13,12 @@ import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NavScene extends BaseChildScene {
 
-    private static final Segment SEGMENT = HanLP.newSegment()
+    private final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
 
     @Override
@@ -34,22 +36,25 @@ public class NavScene extends BaseChildScene {
                 entities.add(new NavChildMode.GeoEntity(word, type));
             }
         }
-        navChildMode.setLocation(extractLocation(terms));
         navChildMode.setEntities(entities);
         if (isNearbySearch(entities)) {
+            navChildMode.setLocation(extractLocation(terms));
             navChildMode.setType(SceneTypeConst.NEARBY);
         } else {
-            navChildMode.setType(SceneTypeConst.KEYWORD);
-        }
-        if (text.contains("攻略") || text.contains("规划") || text.contains("计划")) {
-            navChildMode.setType(SceneTypeConst.CHITCHAT);
+            String address = extractLocation(text);
+            if (address.isEmpty() || address.equals("。")) {
+                navChildMode.setType(SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS);
+            } else {
+                navChildMode.setLocation(address);
+                navChildMode.setType(SceneTypeConst.KEYWORD);
+            }
         }
         navChildMode.setText(text);
         return navChildMode;
     }
 
     // 提取地点
-    private static String extractLocation(List<Term> terms) {
+    private String extractLocation(List<Term> terms) {
         StringBuilder location = new StringBuilder();
         for (Term term : terms) {
             // 识别地名（需要加载地名词典）
@@ -67,7 +72,19 @@ public class NavScene extends BaseChildScene {
         return location.toString();
     }
 
-    private static NavChildMode.GeoEntityType determineGeoType(String word, String nature) {
+    private String extractLocation(String input) {
+        // 匹配 "导航到XXX"、"去XXX"、"我要去XXX" 等模式
+        String pattern = "(导航到|去|我要去|带我去|帮我找|附近有|我想去|附近的|导航去|导航)(.+?)(。|$)";
+        Pattern r = Pattern.compile(pattern);
+        Matcher m = r.matcher(input);
+        if (m.find()) {
+            Log.d("地名", "extractLocation: " + m.group(2).trim());
+            return m.group(2).trim(); // 返回匹配的地名
+        }
+        return input; // 如果没有匹配到，返回原输入（可能已经是纯地名）
+    }
+
+    private NavChildMode.GeoEntityType determineGeoType(String word, String nature) {
         // 规则1：优先匹配城市
         if (CityDictionary.isCity(word)) {
             return NavChildMode.GeoEntityType.CITY;
@@ -94,7 +111,7 @@ public class NavScene extends BaseChildScene {
         return NavChildMode.GeoEntityType.UNKNOWN;
     }
 
-    private static boolean isGeneralArea(String word) {
+    private boolean isGeneralArea(String word) {
         return word.matches("附近|周围|周边|这里|那里|当前位置");
     }
 

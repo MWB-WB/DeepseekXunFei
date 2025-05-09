@@ -200,7 +200,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         initThirdApi();
         registerBroadCast();
         myHandler = new MyHandler(this);
-        sceneManager = new SceneManager();
+        sceneManager = new SceneManager(this);
         mSceneAction = new SceneAction(this);
         textFig = false;
         setParam();
@@ -509,8 +509,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (!chatMessages.get(chatMessages.size() - 1).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
                 Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
             } else {
+                mTts.stopSpeaking();
+                if (voiceManager != null) {
+                    voiceManager.release();
+                }
+                chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
+                chatAdapter.notifyItemChanged(chatMessages.size() - 1);
                 chatMessages.add(new ChatMessage(text, true, "", false));
                 chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+                chatRecyclerView.scrollToPosition(chatMessages.size() - 1);
                 List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
                 mSceneAction.actionByType(baseChildModelList.get(0));
             }
