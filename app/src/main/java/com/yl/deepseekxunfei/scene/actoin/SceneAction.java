@@ -78,6 +78,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     }
 
     public void actionByType(BaseChildModel baseChildModel) {
+        mainActivity.replaceFragment(0);
         String botResponse = BotConstResponse.getSuccessResponse();
         switch (baseChildModel.getType()) {
             // 附近搜索
@@ -302,6 +303,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
+        mainActivity.updateContext(baseChildModel.getText(), botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)
@@ -345,6 +347,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
+        mainActivity.updateContext(baseChildModel.getText(), botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)

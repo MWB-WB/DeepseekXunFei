@@ -14,6 +14,12 @@ android {
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
+        //指定room.schemaLocation生成的文件路径
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemasCrete".toString()]
+            }
+        }
     }
     //资源设置
     sourceSets {
@@ -34,6 +40,9 @@ android {
 }
 
 dependencies {
+    def room_version = "2.2.5"
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
     implementation files("${rootProject.projectDir}/app/libs/Msc.jar")
     implementation libs.appcompat
     implementation libs.material
@@ -42,4 +51,9 @@ dependencies {
     androidTestImplementation libs.espresso.core
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'com.alibaba:fastjson:1.2.83' // 使用最新版本
+
+    // 可选 - Kotlin 扩展和协程支持
+    implementation "androidx.room:room-ktx:$room_version"
+    // 可选 - RxJava 支持
+    implementation "androidx.room:room-rxjava2:$room_version"
 }

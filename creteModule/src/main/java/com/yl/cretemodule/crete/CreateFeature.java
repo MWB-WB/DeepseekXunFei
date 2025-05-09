@@ -19,8 +19,14 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * 添加音频特征
@@ -35,44 +41,56 @@ public class CreateFeature {
     //解析Json
     private static Gson json = new Gson();
     private CreateLogotype createLogotype;
+    static boolean fig = false;
+
 
     //构造函数,为成员变量赋值
-    public CreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,CreateLogotype createLogotype) {
+    public CreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
         this.AUDIO_PATH = AUDIO_PATH;
-        this.createLogotype =createLogotype;
+        this.createLogotype = createLogotype;
     }
 
     //提供给主函数调用的方法
-    public static void doCreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,CreateLogotype createLogotype) {
-        CreateFeature createFeature = new CreateFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH,createLogotype);
-        try {
-          createFeature.doRequest(new NetCall() {
-                @Override
-                public void OnSuccess(String success) {
-                    try {
-                        Log.d("添加音频特征服务 ", "resp=>" + success);
-                        JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
-                        String textBase64Decode = null;
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createFeatureRes.text), "UTF-8");
-                        }
-                        JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                        Log.d("添加音频特征解码：", "text字段Base64解码后=>" + jsonObject);
-                    }catch (Exception e){
-                        Log.d("特征创建失败",e.getMessage());
+    public static Map<String, String> doCreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype) {
+        CreateFeature createFeature = new CreateFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, createLogotype);
+        CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
+        createFeature.doRequest(new NetCall() {
+            @Override
+            public void OnSuccess(String success) {
+                try {
+                    Map<String, String> map = new HashMap<>();
+                    Log.d("添加音频特征服务 ", "resp=>" + success);
+                    JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
+                    String textBase64Decode = null;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createFeatureRes.text), "UTF-8");
                     }
+                    JSONObject jsonObject = JSON.parseObject(textBase64Decode);
+                    Log.d("添加音频特征解码：", "text字段Base64解码后=>" + jsonObject);
+                    map.put("code", myJsonParse.header.code);
+                    map.put("message", myJsonParse.header.message);
+                    future.complete(map);
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                    Log.d("特征创建失败", e.getMessage());
                 }
-                @Override
-                public void OnError() {
-                    Log.d("失败", "声纹特征创建失败");
-                }
-            });
+            }
+
+            @Override
+            public void OnError() {
+                Log.d("失败", "声纹特征创建失败");
+            }
+        });
+        try {
+            return future.get(1, TimeUnit.SECONDS);
         } catch (Exception e) {
-            e.printStackTrace();
+            Map<String, String> errMap = new HashMap<>();
+            errMap.put("error", "请求失败");
+            return errMap;
         }
     }
 
@@ -184,9 +202,9 @@ public class CreateFeature {
      */
     private String buildParam() throws IOException {
         String param = null;
-        String id =null;
-        String featureId =null;
-        String featureInfo =null;
+        String id = null;
+        String featureId = null;
+        String featureInfo = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             for (int i = 0; i < createLogotype.getGroupId().size(); i++) {
                 id = createLogotype.getGroupId().get(i).toString();
@@ -197,7 +215,7 @@ public class CreateFeature {
             for (int i = 0; i < createLogotype.getFeatureInfo().size(); i++) {
                 featureInfo = createLogotype.getFeatureInfo().get(i).toString();
             }
-            Log.d("创建id 标识 描述", "buildParam: "+id+"\t"+featureId+"\t"+featureInfo);
+            Log.d("创建id 标识 描述", "buildParam: " + id + "\t" + featureId + "\t" + featureInfo);
             param = "{" +
                     "    \"header\": {" +
                     "        \"app_id\": \"" + APPID + "\"," +
@@ -209,9 +227,9 @@ public class CreateFeature {
                     //这里填上所需要的groupId
                     "            \"groupId\": \"" + id + "\"," +
                     //特征表示
-                    "            \"featureId\": \""+featureId+"\"," +
+                    "            \"featureId\": \"" + featureId + "\"," +
                     //特征描述
-                    "            \"featureInfo\": \""+featureInfo+"\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
+                    "            \"featureInfo\": \"" + featureInfo + "\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
                     "            \"createFeatureRes\": {" +
                     "                \"encoding\": \"utf8\"," +
                     "                \"compress\": \"raw\"," +
@@ -275,7 +293,7 @@ public class CreateFeature {
     }
 
     class Header {
-        public int code;
+        public String code;
         public String message;
         public String sid;
         public int status;

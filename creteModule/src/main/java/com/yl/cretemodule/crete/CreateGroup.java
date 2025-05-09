@@ -86,7 +86,7 @@ public class CreateGroup {
             }
         });
         try {
-            return future.get(5, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
+            return future.get(1, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
         } catch (Exception e) {
             Map<String, String> errorMap = new HashMap<>();
             errorMap.put("error", "请求失败: " + e.getMessage());
@@ -105,7 +105,6 @@ public class CreateGroup {
             HttpURLConnection httpURLConnection = null;
             OutputStream out = null;
             InputStream is = null;
-
             try {
                 URL realUrl = new URL(buildRequetUrl());
                 httpURLConnection = (HttpURLConnection) realUrl.openConnection();

@@ -396,6 +396,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
+            chatMessages.get(chatMessages.size() - 1).setOver(true);
+            mTts.stopSpeaking();
+            if (voiceManager != null) {
+                voiceManager.mTts.stopSpeaking();
+            }
+            if (currentCall != null) {
+                currentCall.cancel();
+            }
             startVoiceRecognize();
         });
         //输入框
@@ -1050,12 +1058,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                     } else {
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
                                                         //缩进
+                                                        if (huida.contains(startTag)) {
+                                                            huida = huida.replace(startTag, "");
+                                                        }
                                                         if (huida.length() <= 0) {
                                                             huida = "对不起，这个问题我暂时不能回答哦";
                                                             // 更新机器人消息记录的内容
                                                             String result = huida.replace("\n", "").replace("\n\n", "");
                                                             chatMessages.get(botMessageIndexRound1).setMessage(result);
-
                                                             TTS(huida);
                                                         } else {
                                                             // 更新机器人消息记录的内容
@@ -1183,6 +1193,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 显示历史记录对话框
             myHandler.postDelayed(this::showHistoryDialog, 500);
         } else if (v.getId() == R.id.xjianduihua) {
+            context.clear();
+            if (voiceManager!=null){
+                voiceManager.mTts.stopSpeaking();
+            }
             stopSpeaking();
             setCurrentChatOver();
             isStopRequested = true;
@@ -1337,7 +1351,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void updateContext(String userQuestion, String modelResponse) {
         context.add(new ChatMessage(userQuestion, true)); // 用户问题
         context.add(new ChatMessage(modelResponse, false)); // 模型回答
-
         // 限制上下文长度（避免过长）
         if (context.size() > 10) { // 保留最近的 10 轮对话
             context.remove(0);

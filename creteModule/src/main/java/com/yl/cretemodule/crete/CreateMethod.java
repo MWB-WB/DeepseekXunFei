@@ -45,6 +45,7 @@ import org.json.JSONArray;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+
 public class CreateMethod extends AppCompatActivity {
     //初始话科大讯飞声纹识别
     public String APP_ID;
@@ -67,6 +68,7 @@ public class CreateMethod extends AppCompatActivity {
     final Map<String, String>[] SearchOneFeatureList = new Map[]{new HashMap<>()}; //1:1服务结果
     final Map<String, String>[] result = new Map[]{new HashMap<>()};//1:N服务结果
     final Map<String, String>[] group = new Map[]{new HashMap<>()};//创建特征库服务结果
+    final Map<String, String>[] creteFeature = new Map[]{new HashMap<>()};//创建声纹特征服务结果
     List<String> groupIdList = new ArrayList<>();//分组标识
     List<String> groupNameList = new ArrayList<>();//声纹分组名称
     List<String> groupInfoLsit = new ArrayList<>();//分组描述信息
@@ -482,37 +484,12 @@ public class CreateMethod extends AppCompatActivity {
                         createLogotype.setFeatureId(featureIdList);//特征唯一标识
                         createLogotype.setFeatureInfo(featureInfoList); //特征描述
                         group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
-                        if (group[0] != null) {
-                            if (group[0].get("code").equals("0") && group[0].get("message").equals("success")) {
-                                // 关闭弹窗
-                                customDialog.dismiss();
-                                if (isRecording) {
-                                    try {
-                                        mediaRecorder.stop();
-                                        mediaRecorder.release();
-                                        isRecording = false;
-                                    } catch (IllegalStateException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
-//                                Intent intent = new Intent("com.yl.deepseekxunfei.cretemodule.CUSTOM_ACTION");
-//                                intent.putExtra("key", creteFlies); // 可携带数据
-//                                sendBroadcast(intent);
-                            } else {
-                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
-                            }
-                        }
-                    } else {
-                        createOne = 1;
-                        featureIdList.add(translateToEnglish(name) + "number" + i);
-                        featureInfoList.add(name + i);
-                        createLogotype.setFeatureId(featureIdList);//特征唯一标识
-                        createLogotype.setFeatureInfo(featureInfoList); //特征描述
-                        if (name.equals("车主") && che == 0) {
-                            group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
-                            if (group[0] != null) {
-                                if (group[0].get("code").equals("0") && group[0].get("message").equals("success")) {
+                        creteFeature[0] =  CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
+                        Log.d(TAG, "creteFig: "+creteFeature[0]);
+                        if (creteFeature[0] != null) {
+                            Log.d(TAG, "creteFig: "+creteFeature[0]);
+                            if (!creteFeature[0].get("error").equals("请求失败")){
+                                if (creteFeature[0].get("code").equals("0") && creteFeature[0].get("message").equals("success")) {
                                     // 关闭弹窗
                                     customDialog.dismiss();
                                     if (isRecording) {
@@ -525,18 +502,57 @@ public class CreateMethod extends AppCompatActivity {
                                         }
                                     }
                                     runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
-                                    che++;
-                                    i++;
                                 } else {
                                     runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                                 }
+                            }else {
+                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                            }
+                        }else {
+                            runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                        }
+                    } else {
+                        createOne = 1;
+                        featureIdList.add(translateToEnglish(name) + "number" + i);
+                        featureInfoList.add(name + i);
+                        createLogotype.setFeatureId(featureIdList);//特征唯一标识
+                        createLogotype.setFeatureInfo(featureInfoList); //特征描述
+                        if (name.equals("车主") && che == 0) {
+                            group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
+                            creteFeature[0] =  CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
+                            Log.d(TAG, "creteFig: "+creteFeature[0]);
+                            if (creteFeature[0] != null) {
+                                Log.d(TAG, "creteFig: "+creteFeature[0]);
+                                if (!creteFeature[0].get("error").equals("请求失败")){
+                                    if (creteFeature[0].get("code").equals("0") && creteFeature[0].get("message").equals("success")) {
+                                        // 关闭弹窗
+                                        customDialog.dismiss();
+                                        if (isRecording) {
+                                            try {
+                                                mediaRecorder.stop();
+                                                mediaRecorder.release();
+                                                isRecording = false;
+                                            } catch (IllegalStateException e) {
+                                                e.printStackTrace();
+                                            }
+                                        }
+                                        runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
+                                        che++;
+                                        i++;
+                                    } else {
+                                        runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                                    }
+                                }else {
+                                    runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                                }
+                            }else {
+                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                             }
                         } else {
                             runOnUiThread(() -> Toast.makeText(contexts, "只能注册一个车主声纹", Toast.LENGTH_SHORT).show());
                             return;
                         }
                     }
-                    CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
                     if (!name.equals("车主") && che != 0) {
                         i++;
                     }
