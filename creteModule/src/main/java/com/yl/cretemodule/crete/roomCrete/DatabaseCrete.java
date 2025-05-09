@@ -14,7 +14,7 @@ public abstract class DatabaseCrete extends RoomDatabase {
     private static volatile DatabaseCrete mAppDatabase;
 
     // TODO 在实例化 AppDatabase 对象时应遵循单例设计模式。每个 RoomDatabase 实例的成本相当高，几乎不需要在单个进程中访问多个实例。
-    static DatabaseCrete getInstance(Context context) {
+    public static DatabaseCrete getInstance(Context context) {
         if (mAppDatabase == null) {
             synchronized (DatabaseCrete.class) {
                 if (mAppDatabase == null) {

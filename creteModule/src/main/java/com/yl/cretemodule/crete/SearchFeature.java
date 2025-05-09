@@ -46,19 +46,18 @@ public class SearchFeature {
     private static String groupId;
 
     //构造函数,为成员变量赋值
-    public SearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype,String  groupId) {
+    public SearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,  String  groupId) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
-        this.AUDIO_PATH = AUDIO_PATH;
-        this.createLogotype = createLogotype;
-        this.groupId = groupId;
+        SearchFeature.AUDIO_PATH = AUDIO_PATH;
+        SearchFeature.groupId = groupId;
     }
 
     //提供给主函数调用的方法
-    public static Map<String, String> doSearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype,String  groupId) {
-        SearchFeature searchFeature = new SearchFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, createLogotype,groupId);
+    public static Map<String, String> doSearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,  String  groupId) {
+        SearchFeature searchFeature = new SearchFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, groupId);
         CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
         searchFeature.doRequest(new NetCall1_N() {
             @Override
@@ -98,7 +97,7 @@ public class SearchFeature {
             }
         });
         try {
-            return future.get(5, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
+            return future.get(1, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
         } catch (Exception e) {
             Map<String, String> errorMap = new HashMap<>();
             errorMap.put("error", "请求失败: " + e.getMessage());
@@ -219,7 +218,6 @@ public class SearchFeature {
         String param = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Log.d("1:N比对", "buildParam: "+groupId);
-            Log.d("1:N比对List", "1:N比对List: "+createLogotype.getGroupId());
             param = "{" +
                     "    \"header\": {" +
                     "        \"app_id\": \"" + APPID + "\"," +

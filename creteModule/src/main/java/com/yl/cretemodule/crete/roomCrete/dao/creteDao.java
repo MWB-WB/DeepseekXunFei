@@ -16,6 +16,6 @@ public interface  creteDao {
     @Query("SELECT * FROM crete_entity")
     List<creteEntity> listCreteEntity();
 
-    @Delete
-    void deleteCreteEntity(creteEntity creteEntity);
+    @Query("DELETE FROM crete_entity WHERE groupId = :groupId ")
+    void deleteCreteEntity(String groupId);
 }

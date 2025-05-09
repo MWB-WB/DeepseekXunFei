@@ -48,20 +48,20 @@ public class SearchOneFeature {
 
 
     //构造函数,为成员变量赋值
-    public SearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype,String  groupId,String featureId) {
+    public SearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
-        this.AUDIO_PATH = AUDIO_PATH;
-        this.createLogotype = createLogotype;
-        this.groupId = groupId;
-        this.featureId = featureId;
+        SearchOneFeature.AUDIO_PATH = AUDIO_PATH;
+        SearchOneFeature.groupId = groupId;
+        SearchOneFeature.featureId = featureId;
     }
 
     //提供给主函数调用的方法
-    public static Map<String, String> doSearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype,String  groupId,String featureId) {
-        SearchOneFeature searchOneFeature = new SearchOneFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, createLogotype,groupId,featureId);
+    public static Map<String, String> doSearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
+        SearchOneFeature searchOneFeature = new SearchOneFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, groupId,featureId);
+        Log.d("searchOneFeature", "doSearchOneFeature: "+searchOneFeature);
         CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
         try {
             searchOneFeature.doRequest(new NetSuccess() {
@@ -98,7 +98,7 @@ public class SearchOneFeature {
             e.printStackTrace();
         }
         try {
-            return future.get(5, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
+            return future.get(1, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
         } catch (Exception e) {
             Map<String, String> errorMap = new HashMap<>();
             errorMap.put("error", "请求失败: " + e.getMessage());
@@ -215,8 +215,6 @@ public class SearchOneFeature {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Log.d("1:1比对", "buildParam: "+groupId);
             Log.d("1:1比对", "buildParam: "+featureId);
-            Log.d("1:1比对List", "1:N比对List: "+createLogotype.getGroupId());
-            Log.d("1:1比对List", "1:N比对List: "+createLogotype.getFeatureId());
             param = "{" +
                     "    \"header\": {" +
                     "        \"app_id\": \"" + APPID + "\"," +

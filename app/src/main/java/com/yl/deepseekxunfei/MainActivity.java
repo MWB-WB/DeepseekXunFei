@@ -400,6 +400,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mTts.stopSpeaking();
             if (voiceManager != null) {
                 voiceManager.mTts.stopSpeaking();
+                voiceManager.release();
             }
             if (currentCall != null) {
                 currentCall.cancel();

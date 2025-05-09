@@ -75,4 +75,16 @@ public class creteEntity {
     public void setFeatureInfo(String featureInfo) {
         this.featureInfo = featureInfo;
     }
+
+    @Override
+    public String toString() {
+        return "creteEntity{" +
+                "id=" + id +
+                ", featureInfo='" + featureInfo + '\'' +
+                ", featureId='" + featureId + '\'' +
+                ", groupName='" + groupName + '\'' +
+                ", groupInfo='" + groupInfo + '\'' +
+                ", groupId='" + groupId + '\'' +
+                '}';
+    }
 }

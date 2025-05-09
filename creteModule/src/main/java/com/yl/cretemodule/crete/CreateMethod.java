@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.room.RoomDatabase;
 
 import com.iflytek.cloud.ErrorCode;
 import com.iflytek.cloud.InitListener;
@@ -29,6 +30,8 @@ import com.iflytek.cloud.SpeechError;
 import com.iflytek.cloud.ui.RecognizerDialog;
 import com.iflytek.cloud.ui.RecognizerDialogListener;
 import com.yl.cretemodule.R;
+import com.yl.cretemodule.crete.roomCrete.DatabaseCrete;
+import com.yl.cretemodule.crete.roomCrete.entity.creteEntity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -74,6 +77,7 @@ public class CreateMethod extends AppCompatActivity {
     List<String> groupInfoLsit = new ArrayList<>();//分组描述信息
     List<String> featureIdList = new ArrayList<>();//特征唯一标识
     List<String> featureInfoList = new ArrayList<>();//特征描述
+    List<creteEntity> creteSelectRoomLIst = new ArrayList<>();//保存数据库查询结果
     public RelativeLayout relativeLayout;
     Dialog customDialog;
     RadioGroup radio_teacher;
@@ -89,6 +93,7 @@ public class CreateMethod extends AppCompatActivity {
     public Context contexts;
     Button closeDialogButton;
     public int biaoshi = 1;
+    DatabaseCrete dselect;
 
     public CreateMethod() {
 
@@ -100,33 +105,47 @@ public class CreateMethod extends AppCompatActivity {
         APISecret = "MGNhOTM2Yjg3MmVhMTFjYzhhODQzMTYw";
         APIKey = "06224092793087296b1f47c96e0133bc";
         requestUrl = "http://api.xf-yun.com/v1/private/s782b4996";
+        dselect = DatabaseCrete.getInstance(contexts);
+        mIatDialog = new RecognizerDialog(contexts, mInitListener);
+        customDialog = new Dialog(contexts);
+        customDialog.setContentView(R.layout.media_ecorder_recording);
+        //初始化单选按钮
+        radio_teacher = customDialog.findViewById(R.id.radio_group_identity);
+        radioButtonChe = customDialog.findViewById(R.id.radio_teacher);
+        radioButtonPy = customDialog.findViewById(R.id.radio_friend);
+        radioButtonJr = customDialog.findViewById(R.id.radio_student);
+        // 获取 media_ecorder_recording.xml 布局中的按钮和文本控件
+        btnStart = customDialog.findViewById(R.id.btn_start);
+        // 找到关闭按钮
+        closeDialogButton = customDialog.findViewById(R.id.btn_stop);
+        selectCrete = customDialog.findViewById(R.id.query_selete);
+        relativeLayout = customDialog.findViewById(R.id.pathRelative);
     }
+
     //查询声纹特征的方法
     public boolean seleteCrete() {
+        SelectCrete();//查询数据库
+        Log.d(TAG, "seleteCrete: " + groupIdList.toString());
         // 检查groupId是否存在
-        if (createLogotype.getGroupId() != null && !createLogotype.getGroupId().isEmpty()) {
+        if (!groupIdList.isEmpty()) {
             // 开始查询前清空并显示容器
             relativeLayout.removeAllViews();
             relativeLayout.setVisibility(View.VISIBLE);
-
             // 用于存储所有结果的列表
             final List<JSONObject> allResults = new ArrayList<>();
-
-
             // 记录groupId总数和已完成的查询数
-            final int totalGroups = createLogotype.getGroupId().size();
+            final int totalGroups = groupIdList.size();
             final AtomicInteger completedGroups = new AtomicInteger(0);
 
             // 遍历所有groupId进行查询
             for (int j = 0; j < totalGroups; j++) {
-                final String groupId = createLogotype.getGroupId().get(j);
+                final String groupId = groupIdList.get(j);
                 QueryFeatureList.doQueryFeatureList(requestUrl, APP_ID, APISecret, APIKey, createLogotype, groupId,
                         new QueryFeatureList.NetCall() {
                             @Override
                             public void OnSuccess(String success) {
                                 try {
                                     JSONArray jsonArray = new JSONArray(success);
-
                                     // 将当前groupId的结果添加到总结果列表
                                     for (int i = 0; i < jsonArray.length(); i++) {
                                         JSONObject item = jsonArray.getJSONObject(i);
@@ -186,11 +205,6 @@ public class CreateMethod extends AppCompatActivity {
                             che = 0;
                             i = 1;
                             //根据删除的id获取到对应的下标，在根据下标删除对应的描述信息和声纹唯一标识
-                            createLogotype.getGroupInfo().remove(createLogotype.getGroupId().indexOf(groupId));
-                            createLogotype.getGroupName().remove(createLogotype.getGroupId().indexOf(groupId));
-                            createLogotype.getFeatureInfo().remove(createLogotype.getGroupId().indexOf(groupId));
-                            createLogotype.getFeatureId().remove(featureId);
-                            createLogotype.getGroupId().remove(groupId);
                             boolean fig = seleteCrete();
                             //u1FamilyMember0
                             if (!fig) {
@@ -244,7 +258,6 @@ public class CreateMethod extends AppCompatActivity {
                 String featureInfo = item.getString("featureInfo");
                 String featureId = item.getString("featureId");
                 String groupId = item.getString("groupId"); // 获取保存的groupId
-
                 // 创建一个线性布局作为条目容器
                 LinearLayout itemLayout = new LinearLayout(contexts);
                 itemLayout.setOrientation(LinearLayout.HORIZONTAL);
@@ -306,6 +319,7 @@ public class CreateMethod extends AppCompatActivity {
                                 .setPositiveButton("确认", (dialog, which) -> {
                                     // 执行删除操作
                                     deleteFeature(groupId, featureId, itemViewId);
+                                    deleteCrete(groupId);
                                 })
                                 .setNegativeButton("取消", null)
                                 .show();
@@ -331,10 +345,15 @@ public class CreateMethod extends AppCompatActivity {
 
     //判断是否已注册声纹
     public boolean createFig() {
-        if (createLogotype.getGroupId() != null) {
-            if (createLogotype.getGroupId().size() > 1) {
-                for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
-                    result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j));//1:N比对
+        Log.d(TAG, "createFig: " + groupIdList.size());
+        Log.d(TAG, "createFig: " + groupIdList.toString());
+        SelectCrete();//查询数据库
+        Log.d(TAG, "查询数据库: " + groupIdList.size());
+        Log.d(TAG, "查询数据库: " + groupIdList.toString());
+        if (groupIdList.size() > 0) {
+            if (groupIdList.size() > 1) {
+                for (int j = 0; j < groupIdList.size(); j++) {
+                    result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies,  groupIdList.get(j));//1:N比对
                     if (result[0] != null) {
                         if (Double.parseDouble(Objects.requireNonNull(result[0].get("score"))) >= 0.35) {
                             fig = false;
@@ -345,11 +364,11 @@ public class CreateMethod extends AppCompatActivity {
                         fig = true;
                     }
                 }
-            } else if (createLogotype.getGroupId().size() == 1) {
-                for (int j = 0; j < createLogotype.getGroupId().size(); j++) {
-                    for (int k = 0; k < createLogotype.getFeatureId().size(); k++) {
-                        SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, createLogotype, createLogotype.getGroupId().get(j), createLogotype.getFeatureId().get(k));//1:1
-                        if (SearchOneFeatureList[0] != null && SearchOneFeatureList[0].get("score") != null) {
+            } else if (groupIdList.size() == 1) {
+                for (int j = 0; j < groupIdList.size(); j++) {
+                    for (int k = 0; k < groupInfoLsit.size(); k++) {
+                        SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, groupIdList.get(j), groupInfoLsit.get(k));//1:1
+                        if (SearchOneFeatureList[0] != null ) {
                             if (Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score"))) >= 0.35) {
                                 fig = false;
                             }
@@ -368,7 +387,6 @@ public class CreateMethod extends AppCompatActivity {
     }
 
     public void kaishi() {
-        mIatDialog = new RecognizerDialog(contexts, mInitListener);
         customDialog = new Dialog(contexts);
         customDialog.setContentView(R.layout.media_ecorder_recording);
         //初始化单选按钮
@@ -376,7 +394,6 @@ public class CreateMethod extends AppCompatActivity {
         radioButtonChe = customDialog.findViewById(R.id.radio_teacher);
         radioButtonPy = customDialog.findViewById(R.id.radio_friend);
         radioButtonJr = customDialog.findViewById(R.id.radio_student);
-
         // 获取 media_ecorder_recording.xml 布局中的按钮和文本控件
         btnStart = customDialog.findViewById(R.id.btn_start);
         // 找到关闭按钮
@@ -460,13 +477,12 @@ public class CreateMethod extends AppCompatActivity {
     public void create() {
         boolean createEnrollFig = true;
         // 判断是否已注册声纹信息
-//        if (createOne == 1) {
-//            createEnrollFig = createFig();
-//        }
+        if (createOne == 1) {
+            createEnrollFig = createFig();
+        }
         if (createEnrollFig) {
             //匹配成功返回false失败返回true
             // 打印或使用选中的按钮文本
-
             String name = selectedText;
             Thread thread = new Thread(new Runnable() {
                 @Override
@@ -484,12 +500,12 @@ public class CreateMethod extends AppCompatActivity {
                         createLogotype.setFeatureId(featureIdList);//特征唯一标识
                         createLogotype.setFeatureInfo(featureInfoList); //特征描述
                         group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
-                        creteFeature[0] =  CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
-                        Log.d(TAG, "creteFig: "+creteFeature[0]);
+                        creteFeature[0] = CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
+                        Log.d(TAG, "creteFig: " + creteFeature[0]);
                         if (creteFeature[0] != null) {
-                            Log.d(TAG, "creteFig: "+creteFeature[0]);
-                            if (!creteFeature[0].get("error").equals("请求失败")){
-                                if (creteFeature[0].get("code").equals("0") && creteFeature[0].get("message").equals("success")) {
+                            Log.d(TAG, "creteFig: " + creteFeature[0]);
+                            if (!Objects.equals(creteFeature[0].get("error"), "请求失败")) {
+                                if (Objects.equals(creteFeature[0].get("code"), "0") && Objects.equals(creteFeature[0].get("message"), "success")) {
                                     // 关闭弹窗
                                     customDialog.dismiss();
                                     if (isRecording) {
@@ -502,14 +518,16 @@ public class CreateMethod extends AppCompatActivity {
                                         }
                                     }
                                     runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
+                                    //添加数据到数据库里
+                                    dselect.creteDao().insertCrete(new creteEntity(name + "Num" + i, translateToEnglish(name) + "number" + i, name + i, name + "hello" + i, "u1" + translateToEnglish(name) + i));
                                 } else {
-                                    runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                                    runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册1", Toast.LENGTH_SHORT).show());
                                 }
-                            }else {
-                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                            } else {
+                                runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册2", Toast.LENGTH_SHORT).show());
                             }
-                        }else {
-                            runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
+                        } else {
+                            runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册3", Toast.LENGTH_SHORT).show());
                         }
                     } else {
                         createOne = 1;
@@ -519,12 +537,12 @@ public class CreateMethod extends AppCompatActivity {
                         createLogotype.setFeatureInfo(featureInfoList); //特征描述
                         if (name.equals("车主") && che == 0) {
                             group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
-                            creteFeature[0] =  CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
-                            Log.d(TAG, "creteFig: "+creteFeature[0]);
+                            creteFeature[0] = CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
+                            Log.d(TAG, "creteFig: " + creteFeature[0]);
                             if (creteFeature[0] != null) {
-                                Log.d(TAG, "creteFig: "+creteFeature[0]);
-                                if (!creteFeature[0].get("error").equals("请求失败")){
-                                    if (creteFeature[0].get("code").equals("0") && creteFeature[0].get("message").equals("success")) {
+                                Log.d(TAG, "creteFig: " + creteFeature[0]);
+                                if (!Objects.equals(creteFeature[0].get("error"), "请求失败")) {
+                                    if (Objects.equals(creteFeature[0].get("code"), "0") && Objects.equals(creteFeature[0].get("message"), "success")) {
                                         // 关闭弹窗
                                         customDialog.dismiss();
                                         if (isRecording) {
@@ -537,15 +555,17 @@ public class CreateMethod extends AppCompatActivity {
                                             }
                                         }
                                         runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
+                                        DatabaseCrete databaseCrete = DatabaseCrete.getInstance(contexts);
+                                        databaseCrete.creteDao().insertCrete(new creteEntity(name + "Num" + i, translateToEnglish(name) + "number" + i, name + i, name + "hello" + i, "u1" + translateToEnglish(name) + i));
                                         che++;
                                         i++;
                                     } else {
                                         runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                                     }
-                                }else {
+                                } else {
                                     runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                                 }
-                            }else {
+                            } else {
                                 runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册", Toast.LENGTH_SHORT).show());
                             }
                         } else {
@@ -613,4 +633,27 @@ public class CreateMethod extends AppCompatActivity {
             Log.d(TAG, "初始化失败，错误码：\" + " + code + " + \",请联系开发人员解决方案\": ");
         }
     };
+
+    public void SelectCrete() {
+        creteSelectRoomLIst = dselect.creteDao().listCreteEntity();
+        Log.d(TAG, "seleteCrete: " + dselect.creteDao().listCreteEntity().toString());
+        Log.d(TAG, "creteSelectRoomLIst: " + creteSelectRoomLIst);
+        //先清空在查询
+        groupIdList.clear();
+        groupNameList.clear();
+        groupInfoLsit.clear();
+        featureIdList.clear();
+        featureInfoList.clear();
+        for (creteEntity c : creteSelectRoomLIst) {
+            groupIdList.add(c.getGroupId());
+            groupNameList.add(c.getGroupName());
+            groupInfoLsit.add(c.getGroupInfo());
+            featureIdList.add(c.getFeatureId());
+            featureInfoList.add(c.getFeatureInfo());
+        }
+    }
+
+    public void deleteCrete(String groupId) {
+        dselect.creteDao().deleteCreteEntity(groupId);
+    }
 }
