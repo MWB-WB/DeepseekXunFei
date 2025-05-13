@@ -1,88 +1,94 @@
-package com.yl.cretemodule.crete;
-
-import static android.content.ContentValues.TAG;
+package com.yl.creteEntity.crete;
 
 import android.os.Build;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
- * <p>Title : 非实时引擎demo</p>
- * <p>Description : http服务通用demo</p>
- * <p>Date : 2020/8/4 </p>
- *
- * @author : aicloud
+ * 添加音频特征
  */
-public class DeleteFeature {
+public class CreateFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
+    //音频存放位置
+    private static String AUDIO_PATH;
     //解析Json
     private static Gson json = new Gson();
-    public String featureId;
-    public String groupId;
-    public CreateLogotype createLogotype;
+    private CreateLogotype createLogotype;
+    static boolean fig = false;
+
 
     //构造函数,为成员变量赋值
-    public DeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId) {
+    public CreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
+        this.AUDIO_PATH = AUDIO_PATH;
         this.createLogotype = createLogotype;
-        this.groupId = groupId;
-        this.featureId = featureId;
     }
 
     //提供给主函数调用的方法
-    public static void doDeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId, NetCallDeleteCrete netCallDeleteCrete) {
-        DeleteFeature deleteFeature = new DeleteFeature(requestUrl, APPID, apiSecret, apiKey, createLogotype,groupId,featureId);
-        deleteFeature.doRequest(new NetCallDeleteCrete() {
+    public static Map<String, String> doCreateFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, CreateLogotype createLogotype) {
+        CreateFeature createFeature = new CreateFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, createLogotype);
+        CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
+        createFeature.doRequest(new NetCall() {
             @Override
             public void OnSuccess(String success) {
                 try {
-                    System.out.println("resp=>" + success);
+                    Map<String, String> map = new HashMap<>();
+                    Log.d("添加音频特征服务 ", "resp=>" + success);
                     JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
                     String textBase64Decode = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.deleteFeatureRes.text), "UTF-8");
+                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createFeatureRes.text), "UTF-8");
                     }
-                    Log.d("解码", "OnSuccess: "+textBase64Decode);
                     JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                    netCallDeleteCrete.OnSuccess(jsonObject.toString());
-                } catch (UnsupportedEncodingException e) {
-                    netCallDeleteCrete.OnError();
-                    throw new RuntimeException(e);
+                    Log.d("添加音频特征解码：", "text字段Base64解码后=>" + jsonObject);
+                    map.put("code", myJsonParse.header.code);
+                    map.put("message", myJsonParse.header.message);
+                    future.complete(map);
+                } catch (Exception e) {
+                    future.completeExceptionally(e);
+                    Log.d("特征创建失败", e.getMessage());
                 }
             }
+
             @Override
             public void OnError() {
-                netCallDeleteCrete.OnError();
+                Log.d("失败", "声纹特征创建失败");
             }
         });
+        try {
+            return future.get(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Map<String, String> errMap = new HashMap<>();
+            errMap.put("error", "请求失败");
+            return errMap;
+        }
     }
 
     /**
@@ -91,41 +97,41 @@ public class DeleteFeature {
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetCallDeleteCrete netCallDeleteCrete) {
+    public void doRequest(final NetCall call) {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
-            InputStream is = null;
             OutputStream out = null;
+            InputStream is = null;
             try {
                 URL realUrl = new URL(buildRequetUrl());
-                URLConnection connection = realUrl.openConnection();
-                httpURLConnection = (HttpURLConnection) connection;
+                httpURLConnection = (HttpURLConnection) realUrl.openConnection();
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setRequestProperty("Content-type", "application/json");
 
+                // 写入请求参数
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
-                System.out.println("params=>" + params);
+                Log.d("添加音频特征", "params=>" + params);
                 out.write(params.getBytes());
                 out.flush();
+                // 获取响应
                 int responseCode = httpURLConnection.getResponseCode();
-                if (responseCode == httpURLConnection.HTTP_OK) {
+                if (responseCode == HttpURLConnection.HTTP_OK) {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
-                    Log.d("查询结果", "doRequest: " + response);
-                    netCallDeleteCrete.OnSuccess(response);
+                    Log.d("添加音频特征服务结果", "doRequest()：\t" + response);
+                    call.OnSuccess(response);
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "删除声纹特征错误码：" + responseCode + ", 信息：" + readAllBytes(is);
-                    Log.e("错误", error);
-                    netCallDeleteCrete.OnError();
+                    String error = "Error code: " + responseCode + ", message: " + readAllBytes(is);
+                    Log.d("错误", "doRequest: " + error);
+                    call.OnError();
                 }
-            } catch (IOException e) {
-                Log.e("错误", "请求异常: " + e.getMessage());
-                netCallDeleteCrete.OnError();
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                Log.e("错误", "doRequest exception: " + e.getMessage());
+                call.OnError();
             } finally {
                 try {
                     if (out != null) out.close();
@@ -192,28 +198,54 @@ public class DeleteFeature {
      * @return 参数字符串
      */
     private String buildParam() throws IOException {
-        Log.d(TAG, "buildParam: "+groupId);
-        Log.d(TAG, "buildParam: "+featureId);
-        String param = "{" +
-                "    \"header\": {" +
-                "        \"app_id\": \"" + APPID + "\"," +
-                "        \"status\": 3" +
-                "    }," +
-                "    \"parameter\": {" +
-                "        \"s782b4996\": {" +
-                "            \"func\": \"deleteFeature\"," +
-                //这里填上所需要的groupId
-                "            \"groupId\": \""+groupId+"\"," +
-                //这里填上所需要的featureId
-                "            \"featureId\": \""+featureId+"\"," +
-                "            \"deleteFeatureRes\": {" +
-                "                \"encoding\": \"utf8\"," +
-                "                \"compress\": \"raw\"," +
-                "                \"format\": \"json\"" +
-                "            }" +
-                "        }" +
-                "    }" +
-                "}";
+        String param = null;
+        String id = null;
+        String featureId = null;
+        String featureInfo = null;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            for (int i = 0; i < createLogotype.getGroupId().size(); i++) {
+                id = createLogotype.getGroupId().get(i).toString();
+            }
+            for (int i = 0; i < createLogotype.getFeatureId().size(); i++) {
+                featureId = createLogotype.getFeatureId().get(i).toString();
+            }
+            for (int i = 0; i < createLogotype.getFeatureInfo().size(); i++) {
+                featureInfo = createLogotype.getFeatureInfo().get(i).toString();
+            }
+            Log.d("创建id 标识 描述", "buildParam: " + id + "\t" + featureId + "\t" + featureInfo);
+            param = "{" +
+                    "    \"header\": {" +
+                    "        \"app_id\": \"" + APPID + "\"," +
+                    "        \"status\": 3" +
+                    "    }," +
+                    "    \"parameter\": {" +
+                    "        \"s782b4996\": {" +
+                    "            \"func\": \"createFeature\"," +
+                    //这里填上所需要的groupId
+                    "            \"groupId\": \"" + id + "\"," +
+                    //特征表示
+                    "            \"featureId\": \"" + featureId + "\"," +
+                    //特征描述
+                    "            \"featureInfo\": \"" + featureInfo + "\"," + //之后需要动态传入（比如在录入声纹特征是提供车主，车主朋友，车主家人等选项）
+                    "            \"createFeatureRes\": {" +
+                    "                \"encoding\": \"utf8\"," +
+                    "                \"compress\": \"raw\"," +
+                    "                \"format\": \"json\"" +
+                    "            }" +
+                    "        }" +
+                    "    }," +
+                    "\"payload\":{" +
+                    "    \"resource\": {" +
+                    //这里根据不同的音频编码填写不同的编码格式
+                    "        \"encoding\": \"raw\"," +
+                    "        \"sample_rate\": 16000," + //采样率
+                    "        \"channels\": 1," +        //通道
+                    "        \"bit_depth\": 16," +      //量化
+                    "        \"status\": 3," +
+                    "        \"audio\": \"" + Base64.getEncoder().encodeToString(read(AUDIO_PATH)) + "\"" +
+                    "    }}" +
+                    "}";
+        }
         return param;
     }
 
@@ -234,6 +266,23 @@ public class DeleteFeature {
         return sb.toString();
     }
 
+    public static byte[] read(String filePath) throws IOException {
+        InputStream in = new FileInputStream(filePath);
+        byte[] data = inputStream2ByteArray(in);
+        in.close();
+        return data;
+    }
+
+    private static byte[] inputStream2ByteArray(InputStream in) throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[1024 * 4];
+        int n = 0;
+        while ((n = in.read(buffer)) != -1) {
+            out.write(buffer, 0, n);
+        }
+        return out.toByteArray();
+    }
+
     //Json解析
     class JsonParse {
         public Header header;
@@ -241,7 +290,7 @@ public class DeleteFeature {
     }
 
     class Header {
-        public int code;
+        public String code;
         public String message;
         public String sid;
         public int status;
@@ -249,19 +298,21 @@ public class DeleteFeature {
 
     class Payload {
         //根据model的取值不同,名字有所变动。
-        public DeleteFeatureRes deleteFeatureRes;
+        public CreateFeatureRes createFeatureRes;
     }
 
-    class DeleteFeatureRes {
+    class CreateFeatureRes {
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
 
-    public interface NetCallDeleteCrete {
+    //添加一个回调方法通过回调获取返回值
+    public interface NetCall {
         void OnSuccess(String success);
 
         void OnError();
     }
+
 }

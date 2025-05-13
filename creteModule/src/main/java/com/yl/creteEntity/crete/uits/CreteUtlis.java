@@ -1,4 +1,4 @@
-package com.yl.cretemodule.crete;
+package com.yl.creteEntity.crete.uits;
 
 import android.content.Context;
 import android.icu.text.SimpleDateFormat;
@@ -29,7 +29,7 @@ public class CreteUtlis {
     private int sampleRateInHz = 16000;
     private int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
     private Thread recordingThread;
-
+    int i = 1;
     // 创建声纹文件路径
     public String createAudioFilePath(Context context,String fileName) {
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -85,8 +85,9 @@ public class CreteUtlis {
 
     // 创建声纹比对文件路径
     public String contrastFiesAudioFilePath(Context context,String fileName) {
+        i++;
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        fileName = "对比"+fileName + "_" + timeStamp + ".pcm";
+        fileName = "对比"+i+"_"+"fileName" + "_" + timeStamp + ".pcm";
         Log.e("TAG", "createAudioFilePath: " +context.getExternalCacheDir().getAbsolutePath() );
         return context.getExternalCacheDir().getAbsolutePath() + "/" + fileName;
     }

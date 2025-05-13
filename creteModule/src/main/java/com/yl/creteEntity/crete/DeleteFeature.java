@@ -1,4 +1,4 @@
-package com.yl.cretemodule.crete;
+package com.yl.creteEntity.crete;
 
 import static android.content.ContentValues.TAG;
 
@@ -28,55 +28,60 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * 删除声纹特征库
+ * <p>Title : 非实时引擎demo</p>
+ * <p>Description : http服务通用demo</p>
+ * <p>Date : 2020/8/4 </p>
+ *
+ * @author : aicloud
  */
-public class DeleteGroup {
+public class DeleteFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
-    public String groupId;
     //解析Json
     private static Gson json = new Gson();
+    public String featureId;
+    public String groupId;
+    public CreateLogotype createLogotype;
 
     //构造函数,为成员变量赋值
-    public DeleteGroup(String requestUrl, String APPID, String apiSecret, String apiKey, String groupId) {
+    public DeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
+        this.createLogotype = createLogotype;
         this.groupId = groupId;
+        this.featureId = featureId;
     }
 
     //提供给主函数调用的方法
-    public static void doDeleteGroup(String requestUrl, String APPID, String apiSecret, String apiKey, String groupId,NetDeleteGroup netDeleteGroup) {
-        DeleteGroup deleteGroup = new DeleteGroup(requestUrl, APPID, apiSecret, apiKey, groupId);
-        deleteGroup.doRequest(new NetDeleteGroup() {
+    public static void doDeleteFeature(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype,String groupId,String featureId, NetCallDeleteCrete netCallDeleteCrete) {
+        DeleteFeature deleteFeature = new DeleteFeature(requestUrl, APPID, apiSecret, apiKey, createLogotype,groupId,featureId);
+        deleteFeature.doRequest(new NetCallDeleteCrete() {
             @Override
-            public void OnSuccessGroup(String success) {
+            public void OnSuccess(String success) {
                 try {
                     System.out.println("resp=>" + success);
                     JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
                     String textBase64Decode = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.deleteGroupRes.text), "UTF-8");
+                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.deleteFeatureRes.text), "UTF-8");
                     }
-                    Log.d("解码：", "OnSuccessGroup: "+textBase64Decode);
+                    Log.d("解码", "OnSuccess: "+textBase64Decode);
                     JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                    System.out.println("text字段Base64解码后=>" + jsonObject);
-                    netDeleteGroup.OnSuccessGroup(jsonObject.toString());
+                    netCallDeleteCrete.OnSuccess(jsonObject.toString());
                 } catch (UnsupportedEncodingException e) {
-                    netDeleteGroup.OnErrorGroup();
+                    netCallDeleteCrete.OnError();
                     throw new RuntimeException(e);
                 }
             }
-
             @Override
-            public void OnErrorGroup() {
-                netDeleteGroup.OnErrorGroup();
+            public void OnError() {
+                netCallDeleteCrete.OnError();
             }
         });
-
     }
 
     /**
@@ -85,7 +90,7 @@ public class DeleteGroup {
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetDeleteGroup netDeleteGroup) {
+    public void doRequest(final NetCallDeleteCrete netCallDeleteCrete) {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
             InputStream is = null;
@@ -98,6 +103,7 @@ public class DeleteGroup {
                 httpURLConnection.setDoOutput(true);
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setRequestProperty("Content-type", "application/json");
+
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
                 System.out.println("params=>" + params);
@@ -108,16 +114,16 @@ public class DeleteGroup {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
                     Log.d("查询结果", "doRequest: " + response);
-                    netDeleteGroup.OnSuccessGroup(response);
+                    netCallDeleteCrete.OnSuccess(response);
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "删除特征库错误码：" + responseCode + ", 信息：" + readAllBytes(is);
+                    String error = "删除声纹特征错误码：" + responseCode + ", 信息：" + readAllBytes(is);
                     Log.e("错误", error);
-                    netDeleteGroup.OnErrorGroup();
+                    netCallDeleteCrete.OnError();
                 }
             } catch (IOException e) {
                 Log.e("错误", "请求异常: " + e.getMessage());
-                netDeleteGroup.OnErrorGroup();
+                netCallDeleteCrete.OnError();
                 throw new RuntimeException(e);
             } finally {
                 try {
@@ -146,16 +152,15 @@ public class DeleteGroup {
             //获取当前日期并格式化
             SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             format.setTimeZone(TimeZone.getTimeZone("GMT"));
-            //String date = "Wed, 10 Jul 2019 07:35:43 GMT";
             String date = format.format(new Date());
+
             String host = url.getHost();
-           /* if (url.getPort()!=80 && url.getPort() !=443){
-                host = host +":"+String.valueOf(url.getPort());
-            }*/
+            if (url.getPort() != 80 && url.getPort() != 443) {
+                host = host + ":" + String.valueOf(url.getPort());
+            }
             StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").//
                     append("date: ").append(date).append("\n").//
                     append("POST ").append(url.getPath()).append(" HTTP/1.1");
-            System.err.println(builder);
             Charset charset = Charset.forName("UTF-8");
             Mac mac = Mac.getInstance("hmacsha256");
             SecretKeySpec spec = new SecretKeySpec(apiSecret.getBytes(charset), "hmacsha256");
@@ -165,16 +170,14 @@ public class DeleteGroup {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sha = Base64.getEncoder().encodeToString(hexDigits);
             }
-            System.out.println("sha:" + sha);
 
             String authorization = String.format("api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"", apiKey, "hmac-sha256", "host date request-line", sha);
             String authBase = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 authBase = Base64.getEncoder().encodeToString(authorization.getBytes(charset));
             }
-            System.out.println("authBase:" + authBase);
-            System.out.println(String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date)));
             return String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date));
+
         } catch (Exception e) {
             throw new RuntimeException("assemble requestUrl error:" + e.getMessage());
         }
@@ -187,8 +190,9 @@ public class DeleteGroup {
      *
      * @return 参数字符串
      */
-    private String buildParam() {
+    private String buildParam() throws IOException {
         Log.d(TAG, "buildParam: "+groupId);
+        Log.d(TAG, "buildParam: "+featureId);
         String param = "{" +
                 "    \"header\": {" +
                 "        \"app_id\": \"" + APPID + "\"," +
@@ -196,10 +200,12 @@ public class DeleteGroup {
                 "    }," +
                 "    \"parameter\": {" +
                 "        \"s782b4996\": {" +
-                "            \"func\": \"deleteGroup\"," +
+                "            \"func\": \"deleteFeature\"," +
                 //这里填上所需要的groupId
                 "            \"groupId\": \""+groupId+"\"," +
-                "            \"deleteGroupRes\": {" +
+                //这里填上所需要的featureId
+                "            \"featureId\": \""+featureId+"\"," +
+                "            \"deleteFeatureRes\": {" +
                 "                \"encoding\": \"utf8\"," +
                 "                \"compress\": \"raw\"," +
                 "                \"format\": \"json\"" +
@@ -242,20 +248,19 @@ public class DeleteGroup {
 
     class Payload {
         //根据model的取值不同,名字有所变动。
-        public DeleteGroupRes deleteGroupRes;
+        public DeleteFeatureRes deleteFeatureRes;
     }
 
-    class DeleteGroupRes {
+    class DeleteFeatureRes {
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
 
-    //添加删除回调方法，通过回调获取是否删除成功
-    public interface NetDeleteGroup {
-        void OnSuccessGroup(String success);
+    public interface NetCallDeleteCrete {
+        void OnSuccess(String success);
 
-        void OnErrorGroup();
+        void OnError();
     }
 }

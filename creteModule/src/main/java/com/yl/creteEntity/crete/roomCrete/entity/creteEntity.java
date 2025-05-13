@@ -1,24 +1,34 @@
-package com.yl.cretemodule.crete.roomCrete.entity;
+package com.yl.creteEntity.crete.roomCrete.entity;
 
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
+
 @Entity(tableName = "crete_entity")
-public class creteEntity {
+public class creteEntity implements Parcelable {
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
     public int id;//自增id
     @ColumnInfo(name = "featureInfo")
     private String featureInfo; //特征描述
     @ColumnInfo(name = "featureId")
-    private String  featureId;//特征唯一标识
+    private String featureId;//特征唯一标识
     @ColumnInfo(name = "groupName")
-    private String  groupName;//声纹分组名称
+    private String groupName;//声纹分组名称
     @ColumnInfo(name = "groupInfo")
-    private String  groupInfo;//分组描述信息
+    private String groupInfo;//分组描述信息
     @ColumnInfo(name = "groupId")
     private String groupId;// 分组标识
+
+    public creteEntity() {
+
+    }
 
     public creteEntity(String featureInfo, String featureId, String groupName, String groupInfo, String groupId) {
         this.featureInfo = featureInfo;
@@ -27,6 +37,28 @@ public class creteEntity {
         this.groupInfo = groupInfo;
         this.groupId = groupId;
     }
+
+    public static final Creator<creteEntity> CREATOR = new Creator<creteEntity>() {
+        @Override
+        public creteEntity createFromParcel(Parcel source) {
+            return new creteEntity(source);
+        }
+
+        @Override
+        public creteEntity[] newArray(int size) {
+            return new creteEntity[size];
+        }
+    };
+
+    protected creteEntity(Parcel in) {
+        id = in.readInt();
+        featureInfo = in.readString();
+        featureId = in.readString();
+        groupName = in.readString();
+        groupInfo = in.readString();
+        groupId = in.readString();
+    }
+
 
     public int getId() {
         return id;
@@ -76,6 +108,7 @@ public class creteEntity {
         this.featureInfo = featureInfo;
     }
 
+
     @Override
     public String toString() {
         return "creteEntity{" +
@@ -86,5 +119,21 @@ public class creteEntity {
                 ", groupInfo='" + groupInfo + '\'' +
                 ", groupId='" + groupId + '\'' +
                 '}';
+    }
+
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(@NonNull Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(featureInfo);
+        dest.writeString(featureId);
+        dest.writeString(groupName);
+        dest.writeString(groupInfo);
+        dest.writeString(groupId);
     }
 }

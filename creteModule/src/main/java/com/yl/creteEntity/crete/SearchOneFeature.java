@@ -1,10 +1,9 @@
-package com.yl.cretemodule.crete;
+package com.yl.creteEntity.crete;
 
 import android.os.Build;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 
@@ -14,6 +13,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -27,75 +27,75 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 声纹识别1:N
+ * 声纹识别1:1
  */
-public class SearchFeature {
+public class SearchOneFeature {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
     //音频存放位置
     private static String AUDIO_PATH;
-    private CreateLogotype createLogotype;
 
     //解析Json
     private static Gson json = new Gson();
-    private static double score;
+    private static String score;
     private static String featureInfo;
     private static String featureId;
-    private static String groupId;
+    private CreateLogotype createLogotype;
+    private static String  groupId;
+
 
     //构造函数,为成员变量赋值
-    public SearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,  String  groupId) {
+    public SearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
-        SearchFeature.AUDIO_PATH = AUDIO_PATH;
-        SearchFeature.groupId = groupId;
+        SearchOneFeature.AUDIO_PATH = AUDIO_PATH;
+        SearchOneFeature.groupId = groupId;
+        SearchOneFeature.featureId = featureId;
     }
 
     //提供给主函数调用的方法
-    public static Map<String, String> doSearchFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH,  String  groupId) {
-        SearchFeature searchFeature = new SearchFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, groupId);
+    public static Map<String, String> doSearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
+        SearchOneFeature searchOneFeature = new SearchOneFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, groupId,featureId);
+        Log.d("searchOneFeature", "doSearchOneFeature: "+searchOneFeature);
         CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
-        searchFeature.doRequest(new NetCall1_N() {
-            @Override
-            public void OnSuccess(String success) {
-                try {
+        try {
+            searchOneFeature.doRequest(new NetSuccess() {
+                @Override
+                public void OnSuccess(String success) {
                     Map<String, String> resultMap = new HashMap<>();
-                    Log.d("1:N比对", "resp=>" + success);
+                    Log.d("对比结果", "resp=>: " + success);
                     JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
                     String textBase64Decode = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.searchFeaRes.text), "UTF-8");
+                        try {
+                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.searchScoreFeaRes.text), "UTF-8");
+                        } catch (UnsupportedEncodingException e) {
+                            throw new RuntimeException(e);
+                        }
                     }
-                    Log.d("识别结果：", "OnSuccess: " + textBase64Decode);
                     JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                    JSONArray scoreList = jsonObject.getJSONArray("scoreList");
-                    for (int i = 0; i < scoreList.size(); i++) {
-                        JSONObject innerObj = scoreList.getJSONObject(i);
-                        // 获取字段和值
-                        score = innerObj.getDouble("score");
-                        featureInfo = innerObj.getString("featureInfo");
-                        featureId = innerObj.getString("featureId");
-                        resultMap.put("score", innerObj.getString("score"));
-                        resultMap.put("featureInfo", innerObj.getString("featureInfo"));
-                        resultMap.put("featureId", innerObj.getString("featureId"));
-                    }
-                    future.complete(resultMap); // 完成 Future
-                    Log.d("1:N比对", "text字段Base64解码后=>" + jsonObject);
-                } catch (Exception e) {
-                    future.completeExceptionally(e); // 传递异常
-                    Log.e("1:N比对", "解析错误: " + e.getMessage());
+                    Log.d("解码", "text字段Base64解码后=>" + jsonObject);
+                    JSONObject objectList = JSON.parseObject(textBase64Decode);
+                    resultMap.put("score", objectList.getString("score"));
+                    resultMap.put("featureId", objectList.getString("featureId"));
+                    resultMap.put("featureInfo", objectList.getString("featureInfo"));
+                    future.complete(resultMap);
+                    Log.d("解码", "text字段Base64解码后=>" + jsonObject);
                 }
-            }
-            @Override
-            public void OnError(String error) {
-                future.completeExceptionally(new IOException(error)); // 传递错误
-                Log.e("1:N比对", "请求失败: " + error);
-            }
-        });
+
+                @Override
+                public void OnError(String e) {
+
+                }
+            });
+        } catch (Exception e) {
+            future.completeExceptionally(e);
+            e.printStackTrace();
+        }
         try {
             return future.get(1, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
         } catch (Exception e) {
@@ -111,44 +111,40 @@ public class SearchFeature {
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetCall1_N call1N) {
+    public void doRequest(final NetSuccess netSuccess) throws Exception {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
             OutputStream out = null;
             InputStream is = null;
-
             try {
                 URL realUrl = new URL(buildRequetUrl());
-                httpURLConnection = (HttpURLConnection) realUrl.openConnection();
+                URLConnection connection = realUrl.openConnection();
+                httpURLConnection = (HttpURLConnection) connection;
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setRequestProperty("Content-type", "application/json");
 
-                // 写入请求参数
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
-                Log.d("1:N比对", "params=>" + params);
+                System.out.println("params=>" + params);
                 out.write(params.getBytes());
                 out.flush();
-
-                // 获取响应
                 int responseCode = httpURLConnection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
-                    Log.d("1:N比对", "1:N返回服务结果" + response);
-                    call1N.OnSuccess(response);
+                    Log.d("1:1", "1：1对比返回结果: " + response);
+                    netSuccess.OnSuccess(response);
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "HTTP错误: " + responseCode + " - " + readAllBytes(is);
-                    Log.e("1:N比对", error);
-                    call1N.OnError(error);
+                    String error = "HTTP错误" + responseCode + "_" + readAllBytes(is);
+                    Log.d("1:1错误", error);
+                    netSuccess.OnError(error);
                 }
             } catch (Exception e) {
-                String error = "请求异常: " + e.getMessage();
-                Log.e("1:N比对", error);
-                call1N.OnError(error);
+                String error = "请求异常" + e.getMessage();
+                netSuccess.OnError(error);
             } finally {
                 try {
                     if (out != null) out.close();
@@ -168,6 +164,7 @@ public class SearchFeature {
      * @return 处理后的URL
      */
     public String buildRequetUrl() {
+
         URL url = null;
         // 替换调schema前缀 ，原因是URL库不支持解析包含ws,wss schema的url
         String httpRequestUrl = requestUrl.replace("ws://", "http://").replace("wss://", "https://");
@@ -182,7 +179,7 @@ public class SearchFeature {
             if (url.getPort() != 80 && url.getPort() != 443) {
                 host = host + ":" + String.valueOf(url.getPort());
             }
-            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").//
+            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").
                     append("date: ").append(date).append("\n").//
                     append("POST ").append(url.getPath()).append(" HTTP/1.1");
             Charset charset = Charset.forName("UTF-8");
@@ -209,15 +206,14 @@ public class SearchFeature {
 
     /**
      * 组装请求参数
-     * 直接使用示例参数，
-     * 替换部分值
      *
      * @return 参数字符串
      */
     private String buildParam() throws IOException {
         String param = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Log.d("1:N比对", "buildParam: "+groupId);
+            Log.d("1:1比对", "buildParam: "+groupId);
+            Log.d("1:1比对", "buildParam: "+featureId);
             param = "{" +
                     "    \"header\": {" +
                     "        \"app_id\": \"" + APPID + "\"," +
@@ -225,12 +221,12 @@ public class SearchFeature {
                     "    }," +
                     "    \"parameter\": {" +
                     "        \"s782b4996\": {" +
-                    "            \"func\": \"searchFea\"," +
+                    "            \"func\": \"searchScoreFea\"," +
                     //这里填上所需要的groupId
-                    "            \"groupId\": \"" + groupId + "\"," +
-                    //这里填写期望返回的个数,最大为10,且groupId要有足够特征才会返回
-                    "            \"topK\": 10," +
-                    "            \"searchFeaRes\": {" +
+                    "            \"groupId\": \"" +groupId + "\"," +
+                    //这里填上所需要的featureId
+                    "            \"dstFeatureId\": \"" + featureId+ "\"," +
+                    "            \"searchScoreFeaRes\": {" +
                     "                \"encoding\": \"utf8\"," +
                     "                \"compress\": \"raw\"," +
                     "                \"format\": \"json\"" +
@@ -301,27 +297,20 @@ public class SearchFeature {
 
     class Payload {
         //根据model的取值不同,名字有所变动。
-        public SearchFeaRes searchFeaRes;
+        public SearchScoreFeaRes searchScoreFeaRes;
     }
 
-    class SearchFeaRes {
+    class SearchScoreFeaRes {
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
 
-    //添加回调方法获取返回值
-    public interface NetCall1_N {
+    //添加回调
+    public interface NetSuccess {
         void OnSuccess(String success);
 
-        void OnError(String error);
-    }
-
-    //获取识别结果
-    class scoreList {
-        public double score;
-        public String featureInfo;
-        public String featureId;
+        void OnError(String e);
     }
 }

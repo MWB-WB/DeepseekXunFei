@@ -1,4 +1,4 @@
-package com.yl.cretemodule.crete;
+package com.yl.creteEntity.crete;
 
 import java.util.List;
 

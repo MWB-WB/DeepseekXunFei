@@ -72,7 +72,7 @@ import android.app.Activity;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-import com.yl.cretemodule.crete.CreateMethod;
+import com.yl.creteEntity.crete.CreateMethod;
 import com.yl.deepseekxunfei.adapter.ChatAdapter;
 
 import com.yl.deepseekxunfei.fragment.MainFragment;
@@ -194,8 +194,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         initPermission(); // 权限请求
         ContextHolder.init(this); // 保存全局 Context
-//        voiceManager = new VoiceManager();
-//        voiceManager.init(MainActivity.this);
         initView();
         initThirdApi();
         registerBroadCast();
@@ -208,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         chatMessages.get(chatMessages.size() - 1).setOver(true);
         TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
+
     }
 
     @Override
@@ -257,6 +256,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.e(TAG, "registerBroadCast();: " + intent);
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
                     if (creteOkAndNo) {
+                        //对比声纹文件new WeakReference<>(this)
+                        byte[] last10Seconds = createMethod.tenSecondsOfAudio.getLast5Seconds();
+                        // 处理音频数据（如保存为WAV或上传服务器）
+                        String flies = createMethod.pcmUtils.savePcmToFile(last10Seconds, context.getExternalFilesDir("pcm"), "duibi.pcm");
+                        if (flies != null) {
+                            createMethod.contrastFies = flies;
+                        }
                         if (createMethod.seleteCrete()) {
                             if (!createMethod.createFig()) {
                                 startVoiceRecognize();
@@ -705,6 +711,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mIatDialog.dismiss(); // 关闭对话框
         }
         createMethod.cloneMIatDisalogs();
+        createMethod.tenSecondsOfAudio.stopRecording();
         super.onDestroy();
     }
 
@@ -1202,7 +1209,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             myHandler.postDelayed(this::showHistoryDialog, 500);
         } else if (v.getId() == R.id.xjianduihua) {
             context.clear();
-            if (voiceManager!=null){
+            if (voiceManager != null) {
                 voiceManager.mTts.stopSpeaking();
             }
             stopSpeaking();

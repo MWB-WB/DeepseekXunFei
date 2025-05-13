@@ -1,4 +1,4 @@
-package com.yl.cretemodule;
+package com.yl.creteEntity;
 
 import org.junit.Test;
 

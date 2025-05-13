@@ -1,20 +1,22 @@
-package com.yl.cretemodule.crete;
+package com.yl.creteEntity.crete;
+
 
 import android.os.Build;
 import android.util.Log;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -28,75 +30,60 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 声纹识别1:1
+ * 创建声纹特征库
  */
-public class SearchOneFeature {
+public class CreateGroup {
     private String requestUrl;
     private String APPID;
     private String apiSecret;
     private String apiKey;
-    //音频存放位置
-    private static String AUDIO_PATH;
-
+    private CreateLogotype createLogotype;
     //解析Json
     private static Gson json = new Gson();
-    private static String score;
-    private static String featureInfo;
-    private static String featureId;
-    private CreateLogotype createLogotype;
-    private static String  groupId;
-
 
     //构造函数,为成员变量赋值
-    public SearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
+    public CreateGroup(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype) {
         this.requestUrl = requestUrl;
         this.APPID = APPID;
         this.apiSecret = apiSecret;
         this.apiKey = apiKey;
-        SearchOneFeature.AUDIO_PATH = AUDIO_PATH;
-        SearchOneFeature.groupId = groupId;
-        SearchOneFeature.featureId = featureId;
+        this.createLogotype = createLogotype;
     }
 
     //提供给主函数调用的方法
-    public static Map<String, String> doSearchOneFeature(String requestUrl, String APPID, String apiSecret, String apiKey, String AUDIO_PATH, String  groupId,String featureId) {
-        SearchOneFeature searchOneFeature = new SearchOneFeature(requestUrl, APPID, apiSecret, apiKey, AUDIO_PATH, groupId,featureId);
-        Log.d("searchOneFeature", "doSearchOneFeature: "+searchOneFeature);
+    public static Map<String, String> doCreateGroup(String requestUrl, String APPID, String apiSecret, String apiKey, CreateLogotype createLogotype) {
+        CreateGroup createGroup = new CreateGroup(requestUrl, APPID, apiSecret, apiKey, createLogotype);
         CompletableFuture<Map<String, String>> future = new CompletableFuture<>();
-        try {
-            searchOneFeature.doRequest(new NetSuccess() {
-                @Override
-                public void OnSuccess(String success) {
+        createGroup.doRequest(new NetCallGroup() {
+            @Override
+            public void OnSuccess(String success) {
+                try {
                     Map<String, String> resultMap = new HashMap<>();
-                    Log.d("对比结果", "resp=>: " + success);
+                    Log.d("创建声纹特征库:", "resp=>" + success);
                     JsonParse myJsonParse = json.fromJson(success, JsonParse.class);
                     String textBase64Decode = null;
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        try {
-                            textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.searchScoreFeaRes.text), "UTF-8");
-                        } catch (UnsupportedEncodingException e) {
-                            throw new RuntimeException(e);
-                        }
+                        textBase64Decode = new String(Base64.getDecoder().decode(myJsonParse.payload.createGroupRes.text), "UTF-8");
                     }
                     JSONObject jsonObject = JSON.parseObject(textBase64Decode);
-                    Log.d("解码", "text字段Base64解码后=>" + jsonObject);
-                    JSONObject objectList = JSON.parseObject(textBase64Decode);
-                    resultMap.put("score", objectList.getString("score"));
-                    resultMap.put("featureId", objectList.getString("featureId"));
-                    resultMap.put("featureInfo", objectList.getString("featureInfo"));
-                    future.complete(resultMap);
-                    Log.d("解码", "text字段Base64解码后=>" + jsonObject);
+                    Log.d("创建声纹特征库", "text字段Base64解码后=>" + jsonObject);
+                    // 获取字段和值
+                    resultMap.put("code", myJsonParse.header.code);
+                    resultMap.put("message",  myJsonParse.header.message);
+                    Log.d("TAG", "OnSuccessresultMap: " + resultMap);
+                    future.complete(resultMap); // 完成 Future
+                } catch (UnsupportedEncodingException e) {
+                    future.completeExceptionally(e); // 完成 Future
+                    throw new RuntimeException(e);
                 }
+            }
 
-                @Override
-                public void OnError(String e) {
-
-                }
-            });
-        } catch (Exception e) {
-            future.completeExceptionally(e);
-            e.printStackTrace();
-        }
+            @Override
+            public void OnError(String err) {
+                future.completeExceptionally(new IOException(err)); // 传递错误
+                Log.e("1:N比对", "请求失败: " + err);
+            }
+        });
         try {
             return future.get(1, TimeUnit.SECONDS); // 阻塞等待，最多 5 秒
         } catch (Exception e) {
@@ -112,40 +99,39 @@ public class SearchOneFeature {
      * @return 返回服务结果
      * @throws Exception 异常
      */
-    public void doRequest(final NetSuccess netSuccess) throws Exception {
+    public void doRequest(final NetCallGroup callGroup) {
         new Thread(() -> {
             HttpURLConnection httpURLConnection = null;
             OutputStream out = null;
             InputStream is = null;
             try {
                 URL realUrl = new URL(buildRequetUrl());
-                URLConnection connection = realUrl.openConnection();
-                httpURLConnection = (HttpURLConnection) connection;
+                httpURLConnection = (HttpURLConnection) realUrl.openConnection();
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.setDoOutput(true);
                 httpURLConnection.setRequestMethod("POST");
                 httpURLConnection.setRequestProperty("Content-type", "application/json");
 
+                // 写入请求参数
                 out = httpURLConnection.getOutputStream();
                 String params = buildParam();
-                System.out.println("params=>" + params);
+                Log.d("创建声纹特征库", "params=>" + params);
                 out.write(params.getBytes());
                 out.flush();
+                // 获取响应
                 int responseCode = httpURLConnection.getResponseCode();
                 if (responseCode == HttpURLConnection.HTTP_OK) {
                     is = httpURLConnection.getInputStream();
                     String response = readAllBytes(is);
-                    Log.d("1:1", "1：1对比返回结果: " + response);
-                    netSuccess.OnSuccess(response);
+                    Log.d("创建声纹特征库结果", "readAllBytes(is)=>" + response);
+                    callGroup.OnSuccess(response); // 成功回调
                 } else {
                     is = httpURLConnection.getErrorStream();
-                    String error = "HTTP错误" + responseCode + "_" + readAllBytes(is);
-                    Log.d("1:1错误", error);
-                    netSuccess.OnError(error);
+                    String error = "Error code: " + responseCode + ", message: " + readAllBytes(is);
+                    Log.e("创建声纹特征库错误", error);
                 }
             } catch (Exception e) {
-                String error = "请求异常" + e.getMessage();
-                netSuccess.OnError(error);
+                Log.e("创建声纹特征库异常", "Exception: " + e.getMessage());
             } finally {
                 try {
                     if (out != null) out.close();
@@ -165,7 +151,6 @@ public class SearchOneFeature {
      * @return 处理后的URL
      */
     public String buildRequetUrl() {
-
         URL url = null;
         // 替换调schema前缀 ，原因是URL库不支持解析包含ws,wss schema的url
         String httpRequestUrl = requestUrl.replace("ws://", "http://").replace("wss://", "https://");
@@ -174,15 +159,16 @@ public class SearchOneFeature {
             //获取当前日期并格式化
             SimpleDateFormat format = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             format.setTimeZone(TimeZone.getTimeZone("GMT"));
+            //String date = "Wed, 10 Jul 2019 07:35:43 GMT";
             String date = format.format(new Date());
-
             String host = url.getHost();
-            if (url.getPort() != 80 && url.getPort() != 443) {
-                host = host + ":" + String.valueOf(url.getPort());
-            }
-            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").
+           /* if (url.getPort()!=80 && url.getPort() !=443){
+                host = host +":"+String.valueOf(url.getPort());
+            }*/
+            StringBuilder builder = new StringBuilder("host: ").append(host).append("\n").//
                     append("date: ").append(date).append("\n").//
                     append("POST ").append(url.getPath()).append(" HTTP/1.1");
+            System.err.println(builder);
             Charset charset = Charset.forName("UTF-8");
             Mac mac = Mac.getInstance("hmacsha256");
             SecretKeySpec spec = new SecretKeySpec(apiSecret.getBytes(charset), "hmacsha256");
@@ -192,14 +178,16 @@ public class SearchOneFeature {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 sha = Base64.getEncoder().encodeToString(hexDigits);
             }
+            System.out.println("sha:" + sha);
 
             String authorization = String.format("api_key=\"%s\", algorithm=\"%s\", headers=\"%s\", signature=\"%s\"", apiKey, "hmac-sha256", "host date request-line", sha);
             String authBase = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 authBase = Base64.getEncoder().encodeToString(authorization.getBytes(charset));
             }
+            System.out.println("authBase:" + authBase);
+            System.out.println(String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date)));
             return String.format("%s?authorization=%s&host=%s&date=%s", requestUrl, URLEncoder.encode(authBase), URLEncoder.encode(host), URLEncoder.encode(date));
-
         } catch (Exception e) {
             throw new RuntimeException("assemble requestUrl error:" + e.getMessage());
         }
@@ -207,45 +195,47 @@ public class SearchOneFeature {
 
     /**
      * 组装请求参数
+     * 直接使用示例参数，
+     * 替换部分值
      *
      * @return 参数字符串
      */
-    private String buildParam() throws IOException {
-        String param = null;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Log.d("1:1比对", "buildParam: "+groupId);
-            Log.d("1:1比对", "buildParam: "+featureId);
-            param = "{" +
-                    "    \"header\": {" +
-                    "        \"app_id\": \"" + APPID + "\"," +
-                    "        \"status\": 3" +
-                    "    }," +
-                    "    \"parameter\": {" +
-                    "        \"s782b4996\": {" +
-                    "            \"func\": \"searchScoreFea\"," +
-                    //这里填上所需要的groupId
-                    "            \"groupId\": \"" +groupId + "\"," +
-                    //这里填上所需要的featureId
-                    "            \"dstFeatureId\": \"" + featureId+ "\"," +
-                    "            \"searchScoreFeaRes\": {" +
-                    "                \"encoding\": \"utf8\"," +
-                    "                \"compress\": \"raw\"," +
-                    "                \"format\": \"json\"" +
-                    "            }" +
-                    "        }" +
-                    "    }," +
-                    "\"payload\":{" +
-                    "    \"resource\": {" +
-                    //这里根据不同的音频编码填写不同的编码格式
-                    "        \"encoding\": \"raw\"," +
-                    "        \"sample_rate\": 16000," +
-                    "        \"channels\": 1," +
-                    "        \"bit_depth\": 16," +
-                    "        \"status\": " + 3 + "," +
-                    "        \"audio\": \"" + Base64.getEncoder().encodeToString(read(AUDIO_PATH)) + "\"" +
-                    "    }}" +
-                    "}";
+    private String buildParam() {
+        String id = null;
+        String groupName = null;
+        String groupInfo = null;
+        for (int i = 0; i < createLogotype.getGroupId().size(); i++) {
+            id = createLogotype.getGroupId().get(i).toString();
         }
+        for (int i = 0; i < createLogotype.getGroupName().size(); i++) {
+            groupName = createLogotype.getGroupName().get(i).toString();
+        }
+        for (int i = 0; i < createLogotype.getGroupInfo().size(); i++) {
+            groupInfo = createLogotype.getGroupInfo().get(i).toString();
+        }
+        Log.d("创建id 标识 描述", "buildParam: " + id + "\t" + groupName + "\t" + groupInfo);
+        String param = "{" +
+                "    \"header\": {" +
+                "        \"app_id\": \"" + APPID + "\"," +
+                "        \"status\": 3" +
+                "    }," +
+                "    \"parameter\": {" +
+                "        \"s782b4996\": {" +
+                "            \"func\": \"createGroup\"," +
+                //分组ID
+                "            \"groupId\": \"" + id + "\"," +
+                //分组名称
+                "            \"groupName\": \"" + groupName + "\"," +
+                //分组描述
+                "            \"groupInfo\": \"" + groupInfo + "\"," +
+                "            \"createGroupRes\": {" +
+                "                \"encoding\": \"utf8\"," +
+                "                \"compress\": \"raw\"," +
+                "                \"format\": \"json\"" +
+                "            }" +
+                "        }" +
+                "    }" +
+                "}";
         return param;
     }
 
@@ -266,23 +256,6 @@ public class SearchOneFeature {
         return sb.toString();
     }
 
-    public static byte[] read(String filePath) throws IOException {
-        InputStream in = new FileInputStream(filePath);
-        byte[] data = inputStream2ByteArray(in);
-        in.close();
-        return data;
-    }
-
-    private static byte[] inputStream2ByteArray(InputStream in) throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        byte[] buffer = new byte[1024 * 4];
-        int n = 0;
-        while ((n = in.read(buffer)) != -1) {
-            out.write(buffer, 0, n);
-        }
-        return out.toByteArray();
-    }
-
     //Json解析
     class JsonParse {
         public Header header;
@@ -290,7 +263,7 @@ public class SearchOneFeature {
     }
 
     class Header {
-        public int code;
+        public String code;
         public String message;
         public String sid;
         public int status;
@@ -298,20 +271,19 @@ public class SearchOneFeature {
 
     class Payload {
         //根据model的取值不同,名字有所变动。
-        public SearchScoreFeaRes searchScoreFeaRes;
+        public CreateGroupRes createGroupRes;
     }
 
-    class SearchScoreFeaRes {
+    class CreateGroupRes {
         public String compress;
         public String encoding;
         public String format;
         public String text;
     }
 
-    //添加回调
-    public interface NetSuccess {
+    public interface NetCallGroup {
         void OnSuccess(String success);
 
-        void OnError(String e);
+        void OnError(String err);
     }
 }

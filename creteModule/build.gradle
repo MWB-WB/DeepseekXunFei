@@ -1,7 +1,7 @@
+
 plugins {
     alias(libs.plugins.android.library)
 }
-
 android {
     namespace 'com.yl.cretemodule'
     compileSdk 35
@@ -36,6 +36,15 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        compose true
+        // Disable unused AGP features
+        buildConfig false
+        aidl true
+        renderScript false
+        resValues false
+        shaders false
     }
 }
 

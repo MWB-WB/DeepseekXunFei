@@ -1,11 +1,10 @@
-package com.yl.cretemodule.crete.roomCrete.dao;
+package com.yl.creteEntity.crete.roomCrete.dao;
 
 import androidx.room.Dao;
-import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 
-import com.yl.cretemodule.crete.roomCrete.entity.creteEntity;
+import com.yl.creteEntity.crete.roomCrete.entity.creteEntity;
 
 import java.util.List;
 @Dao
@@ -17,5 +16,6 @@ public interface  creteDao {
     List<creteEntity> listCreteEntity();
 
     @Query("DELETE FROM crete_entity WHERE groupId = :groupId ")
-    void deleteCreteEntity(String groupId);
+    int deleteCreteEntity(String groupId);
+
 }
