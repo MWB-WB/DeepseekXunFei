@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -26,6 +27,7 @@ import android.widget.EditText;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
 import java.io.StringReader;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -87,6 +89,7 @@ import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
+//import com.yl.deepseekxunfei.scene.JokeClass;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.scene.actoin.SceneAction;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
@@ -97,6 +100,7 @@ import com.yl.deepseekxunfei.utlis.OptionPositionParser;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.TextLineBreaker;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
+import com.yl.deepseekxunfei.utlis.TtsApiClient;
 import com.yl.deepseekxunfei.utlis.VoiceManager;
 import com.yl.deepseekxunfei.utlis.positioning;
 import com.yl.deepseekxunfei.view.HistoryDialog;
@@ -123,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private SpeechRecognizer mIat;// 语音听写对象
     private RecognizerDialog mIatDialog;// 语音听写UI
+    String input;
 
     // 用HashMap存储听写结果
     private HashMap<String, String> mIatResults = new LinkedHashMap<>();
@@ -185,6 +190,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private VoiceManager voiceManager = null;
     private BackTextToAction backTextToAction = null;
+    TtsApiClient  ttsApiClient;
 
 
     @Override
@@ -202,6 +208,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSceneAction = new SceneAction(this);
         textFig = false;
         setParam();
+        ttsApiClient = new TtsApiClient(this);
         chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
         chatMessages.get(chatMessages.size() - 1).setOver(true);
         TTS("我是小天，很高兴见到你！");
@@ -255,27 +262,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onReceive(Context context, Intent intent) {
                 Log.e(TAG, "registerBroadCast();: " + intent);
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
-                    if (creteOkAndNo) {
-                        //对比声纹文件new WeakReference<>(this)
-                        byte[] last10Seconds = createMethod.tenSecondsOfAudio.getLast5Seconds();
-                        // 处理音频数据（如保存为WAV或上传服务器）
-                        String flies = createMethod.pcmUtils.savePcmToFile(last10Seconds, context.getExternalFilesDir("pcm"), "duibi.pcm");
-                        if (flies != null) {
-                            createMethod.contrastFies = flies;
-                        }
-                        if (createMethod.seleteCrete()) {
-                            if (!createMethod.createFig()) {
-                                startVoiceRecognize();
-                            }
-                        } else {
-                            if (seleteSize != 0) {
-                                Toast.makeText(MainActivity.this, "暂无声纹信息，请注册", Toast.LENGTH_SHORT).show();
-                                seleteSize++;
-                            }
-                        }
-                    } else {
-                        startVoiceRecognize();
-                    }
+                    startVoiceRecognize();
+//                    if (creteOkAndNo) {
+//                        //对比声纹文件new WeakReference<>(this)
+//                        byte[] last10Seconds = createMethod.tenSecondsOfAudio.getLast5Seconds();
+//                        // 处理音频数据（如保存为WAV或上传服务器）
+//                        String flies = createMethod.pcmUtils.savePcmToFile(last10Seconds, context.getExternalFilesDir("pcm"), "duibi.pcm");
+//                        if (flies != null) {
+//                            createMethod.contrastFies = flies;
+//                        }
+//                        if (createMethod.seleteCrete()) {
+//                            if (!createMethod.createFig()) {
+//                                startVoiceRecognize();
+//                            }
+//                        } else {
+//                            if (seleteSize != 0) {
+//                                Toast.makeText(MainActivity.this, "暂无声纹信息，请注册", Toast.LENGTH_SHORT).show();
+//                                seleteSize++;
+//                            }
+//                        }
+//                        startVoiceRecognize();
+//                    } else {
+//                        startVoiceRecognize();
+//                    }
                 } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
                     String result = intent.getStringExtra("result");
                     commitText(result);
@@ -331,6 +340,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        );
 
         button.setOnClickListener(v -> {
+            if (voiceManager != null) {
+                voiceManager.mTts.stopSpeaking();
+                voiceManager.release();
+            }
             Log.e(TAG, "button onclick: " + aiType);
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
                 Toast.makeText(MainActivity.this, "请输入一个问题", Toast.LENGTH_SHORT).show();
@@ -340,11 +353,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         replaceFragment(0);
                         sendMessage();
                     } else {
-                        if (!chatMessages.get(chatMessages.size() - 1).isOver()) {
-                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问（提交按钮）", Toast.LENGTH_SHORT).show();
-                        } else {
+                        Log.d(TAG, "initView: " + aiType);
+                        if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
                             replaceFragment(0);
                             sendMessage();
+                        } else {
+                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问（提交按钮）", Toast.LENGTH_SHORT).show();
                         }
                     }
                 } catch (JSONException e) {
@@ -595,7 +609,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //添加到对话列表
     private void sendMessage() throws JSONException {
         found = false;
-        String input = inputEditText.getText().toString().trim();
+        input = inputEditText.getText().toString().trim();
         if (!input.isEmpty()) {
             // 如果是第一次提问，将问题设置为对话标题
             if (currentTitle.isEmpty()) {
@@ -735,7 +749,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, "aisjiuxu");//设置发音人
+        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
         mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
         //设置合成音调
         mTts.setParameter(SpeechConstant.PITCH, "50");//设置音高
@@ -781,8 +795,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * @param results
      */
     private void printResult(RecognizerResult results, boolean isLast) {
-
-
         String text = JsonParser.parseIatResult(results.getResultString());
         String sn = null;
         try {
@@ -863,6 +875,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mSceneAction.startActionByPosition();
                 isNeedWakeUp = true;
             }
+            Log.d(TAG, "onCompleted: aiType " + aiType);
         }
 
         //缓冲进度回调
@@ -940,6 +953,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else {
             // 添加上下文（如果有）
             for (ChatMessage message : context) {
+
                 JSONObject contextMessage = new JSONObject();
                 contextMessage.put("role", message.isUser() ? "user" : "assistant");
                 contextMessage.put("content", message.getMessage());
@@ -952,9 +966,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         options.put("temperature", 0.6);
         options.put("mirostat_tau", 1.0);
         options.put("num_predict", -1);
-        options.put("repeat_penalty", 1.5);
-//        options.put("mirostat_eta", 1);//影响算法响应生成文本的反馈的速度。较低的学习率将导致较慢的调整，而较高的学习率将使算法的响应速度更快。（默认值：0.1）
-//        options.put("mirostat_tau", 4.0);//控制输出的连贯性和多样性之间的平衡。较低的值将导致文本更集中、更连贯。（默认值：5.0）
+        options.put("repeat_penalty", 1.5);//重复惩罚
+        options.put("mirostat_eta", 1);//影响算法响应生成文本的反馈的速度。较低的学习率将导致较慢的调整，而较高的学习率将使算法的响应速度更快。（默认值：0.1）
+        options.put("mirostat_tau", 1);//控制输出的连贯性和多样性之间的平衡。较低的值将导致文本更集中、更连贯。（默认值：5.0）
         requestBody.put("options", options);
         // 将 JSONObject 转换为字符串
         String jsonBodyRound1 = requestBody.toString();
@@ -1060,6 +1074,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                 } else {
                                                     //回答文本主题
                                                     fullResponseRound1.append(partialResponse);
+//                                                    TTSFish(partialResponse);
                                                     voiceManager.appendText(partialResponse);
                                                 }
                                                 // 更新 UI
@@ -1077,7 +1092,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                             huida = huida.replace(startTag, "");
                                                         }
                                                         if (huida.length() <= 0) {
-                                                            huida = "对不起，这个问题我暂时不能回答哦";
+                                                            huida = "对不起，这个问题我暂时不能回答";
                                                             // 更新机器人消息记录的内容
                                                             String result = huida.replace("\n", "").replace("\n\n", "");
                                                             chatMessages.get(botMessageIndexRound1).setMessage(result);
@@ -1157,6 +1172,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     public void onWeatherError(String message, int rCode) {
+        Log.d(TAG, "startTime: 超时");
         setCurrentChatOver();
         TimeDownUtil.clearTimeDown();
         chatMessages.remove(chatMessages.size() - 1);
@@ -1462,6 +1478,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //超时逻辑处理
     private void startTime(int position) {
+        Log.d(TAG, "startTime: 超时");
         TimeDownUtil.startTimeDown(new TimeDownUtil.CountTimeListener() {
             @Override
             public void onTimeFinish() {
@@ -1491,5 +1508,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
     }
+    private void TTSFish(String text){
+        Log.d(TAG, "TTSFish: "+text);
+        ttsApiClient.makeTtsRequest(text, new TtsApiClient.TtsCallback() {
+            @Override
+            public void onStart() {
 
+            }
+
+            @Override
+            public void onProgress(int progress) {
+
+            }
+
+            @Override
+            public void onSuccess() {
+
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                Log.d(TAG, "onPlaybackComplete: 播放失败"+e);
+            }
+        });
+    }
+    /**
+     * 播放音频文件
+     */
+    private void playAudioFile(File audioFile) {
+        MediaPlayer mediaPlayer = new MediaPlayer();
+        try {
+            mediaPlayer.setDataSource(audioFile.getAbsolutePath());
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

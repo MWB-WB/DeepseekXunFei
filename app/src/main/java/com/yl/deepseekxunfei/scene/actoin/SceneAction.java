@@ -22,6 +22,7 @@ import com.yl.deepseekxunfei.model.WeatherChildMode;
 import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
+import com.yl.deepseekxunfei.utlis.JokeUitl;
 import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
@@ -32,6 +33,7 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
@@ -129,6 +131,23 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.SELFINTRODUCE:
                 selfIntroduceAction();
                 break;
+//            case SceneTypeConst.JOKECLASS:
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                       List<String> list =  JokeUitl.init();
+//                        // 先让机器人回复固定内容
+//                        Random random = new Random();
+//                        int listId = random.nextInt(10);
+//                        if (list!=null){
+//                            mainActivity.runOnUiThread(()->{
+//                                mainActivity.addMessageAndTTS(new ChatMessage(list.get(listId), false, "", false),
+//                                        list.get(listId));
+//                            });
+//                        }
+//                    }
+//                }).start();
+//                break;
         }
     }
 

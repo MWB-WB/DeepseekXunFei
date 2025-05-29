@@ -78,7 +78,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="避开拥堵，重新规划。"
+                        android:text="导航到地铁站"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -134,7 +134,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:text="音乐播放"
+                        android:text="休闲娱乐"
                         android:textColor="#000000"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -151,7 +151,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="播放音乐。"
+                        android:text="搜索音乐。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -161,7 +161,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="调频到交通广播。"
+                        android:text="最近上映的电影。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -171,7 +171,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="我想听刘德华的歌。"
+                        android:text="今日推荐音乐。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -181,7 +181,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="播放稻香。"
+                        android:text="今日推荐电影。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
                 </LinearLayout>
@@ -195,7 +195,8 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:orientation="horizontal"
-            android:padding="11dp">
+            android:padding="11dp"
+            android:visibility="gone">
 
             <!-- 电话通讯 -->
             <LinearLayout
@@ -404,7 +405,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="10dp"
-                        android:text="气候控制"
+                        android:text="天气搜索"
                         android:textColor="#000000"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -431,7 +432,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="打开座椅加热。"
+                        android:text="今日天气。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -441,7 +442,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="打开内循环。"
+                        android:text="深圳天气怎么样。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -451,7 +452,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="切换成制热。"
+                        android:text="北京的天气怎么样。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
@@ -515,7 +516,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="推荐一家评分高的餐厅。"
+                        android:text="附近的餐厅。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 

@@ -95,9 +95,7 @@
             app:layout_constraintTop_toBottomOf="@id/introLayout" />
 
         <!-- 聊天消息列表 -->
-
         <!-- 输入框和发送按钮 -->
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/chat_recycler_view"
             android:layout_width="match_parent"

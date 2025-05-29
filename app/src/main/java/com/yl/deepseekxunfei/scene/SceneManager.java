@@ -42,9 +42,10 @@ public class SceneManager {
     private LocationValidator locationValidator;
     private Context mContext;
     private CountDownLatch countDownLatch;
+    private JokeScene jokeScene;
     // 连接词集合（可扩展）
     private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
-            "然后", "之后", "接着", "再", "随后"
+            "然后", "之后", "接着", "随后"
     ));
     private static final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
@@ -63,6 +64,7 @@ public class SceneManager {
         videoScene = new VideoScene();
         musicScene = new MusicScene();
         computeScene = new ComputeScene();
+        jokeScene = new JokeScene();
     }
 
     public List<BaseChildModel> parseToScene(String text) {
@@ -77,7 +79,6 @@ public class SceneManager {
         List<SceneModel> sceneModelList = new ArrayList<>();
         List<Term> terms = SEGMENT.seg(text);
         Optional<Term> first = terms.stream().filter(term -> CONJUNCTIONS.contains(term.word)).findFirst();
-        boolean hasFen = text.contains("再");
         //需要将上次的场景存储到列表中
         lastSceneTypeList.clear();
         lastSceneTypeList.addAll(sceneTypeList);
@@ -86,7 +87,7 @@ public class SceneManager {
         lastBaseChildModelList.addAll(baseChildModelList);
         baseChildModelList.clear();
         //如果有多分词，则会将给语句拆分成多个场景
-        if (!first.isEmpty() || hasFen) {
+        if (!first.isEmpty()) {
             isMultiIntent = true;
             String[] textSplit = text.split(first.get().word);
             Log.e("TAG", "parseQuestionToScene:111 " + textSplit);
@@ -134,7 +135,16 @@ public class SceneManager {
             resultModel.setScene(SceneType.MOVIE);
         } else if (wordNLPModel.getN().contains("视频")) {
             resultModel.setScene(SceneType.VIDEO);
-        } else if (!Arrays.stream(BotConstResponse.quitCommand).filter(s -> s.contains(text)).findFirst().isEmpty()) {
+        }
+//        else if (wordNLPModel.getN().contains("笑话")) {
+//            Log.d("笑话", "SceneManager: 笑话");
+//            resultModel.setScene(SceneType.JOKE);
+//        //修改为完全匹配，忽略标点符号
+//        }
+        else if (!Arrays.stream(BotConstResponse.quitCommand)
+                .filter(s -> s.replaceAll("[\\p{P}\\s]", "").equalsIgnoreCase(text.replaceAll("[\\p{P}\\s]", "")))
+                .findFirst()
+                .isEmpty()) {
             resultModel.setScene(SceneType.QUIT);
         } else if (isCalculationQuestion(text)) {
             resultModel.setScene(SceneType.COMPUTE);
@@ -239,6 +249,10 @@ public class SceneManager {
                 baseChildModel.setType(SceneTypeConst.SELFINTRODUCE);
                 baseChildModel.setText(sceneModel.getText());
                 break;
+            case JOKE:
+                Log.d("笑话：", "getChildModel: 笑话");
+                baseChildModel = jokeScene.parseSceneToChild(sceneModel);
+                break ;
             default:
                 baseChildModel = new BaseChildModel();
                 baseChildModel.setType(SceneTypeConst.CHITCHAT);

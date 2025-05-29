@@ -20,6 +20,7 @@ public class SceneTypeConst {
     public static final int QUIT = 10008;//退出
     public static final int SELECTION = 10009;//选择
     public static final int CHITCHAT = 10010;
+    public static final int JOKECLASS = 10011;//笑话
 
 
 }

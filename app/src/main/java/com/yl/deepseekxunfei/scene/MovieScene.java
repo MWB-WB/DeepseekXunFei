@@ -11,7 +11,7 @@ public class MovieScene extends BaseChildScene {
         String text = sceneModel.getText();
         BaseChildModel baseChildModel = new BaseChildModel();
         baseChildModel.setText(text);
-        if (text.contains("最近")) {
+        if (text.contains("最近")||text.contains("今日")) {
             baseChildModel.setType(SceneTypeConst.RECENT_FILMS);
         } else {
             baseChildModel.setType(SceneTypeConst.CHITCHAT);

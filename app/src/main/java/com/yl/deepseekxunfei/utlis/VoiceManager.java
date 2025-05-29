@@ -38,7 +38,7 @@ public class VoiceManager {
         mWorkThread.start();
         //初始化动画效果
         String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "55");
-        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "x4_lingfeizhe_emo");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "aisjiuxu");
         if (deepseekVoicespeaker.equals("许久")) {
             deepseekVoicespeaker = "aisjiuxu";
         } else if (deepseekVoicespeaker.equals("小萍")) {
@@ -57,7 +57,7 @@ public class VoiceManager {
         mTts = SpeechSynthesizer.createSynthesizer(context, null);
         mTts.setParameter(SpeechConstant.PARAMS, null);
         mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, "aisjiuxu");//设置发音人
+        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
         mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
         //设置合成音调
         mTts.setParameter(SpeechConstant.PITCH, "55");//设置音高

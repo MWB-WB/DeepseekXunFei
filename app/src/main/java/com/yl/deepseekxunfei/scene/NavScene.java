@@ -38,14 +38,19 @@ public class NavScene extends BaseChildScene {
         }
         navChildMode.setEntities(entities);
         if (isNearbySearch(entities)) {
+            Log.d("导航地址", "parseSceneToChild: "+entities);
             navChildMode.setLocation(extractLocation(terms));
             navChildMode.setType(SceneTypeConst.NEARBY);
         } else {
+            Log.d("地址1", "parseSceneToChild: "+sceneModel.getText());
+            Log.d("地址1", "parseSceneToChild: "+text);
             String address = extractLocation(text);
-            if (address.isEmpty() || address.equals("。")) {
+            Log.d("地址2", "parseSceneToChild: "+address);
+            if (address.isEmpty() || address.equals("。") || address.equals("导航到")) {
                 navChildMode.setType(SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS);
             } else {
-                navChildMode.setLocation(address);
+                Log.d("地址3", "parseSceneToChild: "+ extractLocation(address));
+                navChildMode.setLocation(extractLocation(address));
                 navChildMode.setType(SceneTypeConst.KEYWORD);
             }
         }
@@ -81,6 +86,7 @@ public class NavScene extends BaseChildScene {
             Log.d("地名", "extractLocation: " + m.group(2).trim());
             return m.group(2).trim(); // 返回匹配的地名
         }
+        Log.d("返回", "extractLocation: "+input);
         return input; // 如果没有匹配到，返回原输入（可能已经是纯地名）
     }
 

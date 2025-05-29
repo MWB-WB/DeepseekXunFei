@@ -12,6 +12,7 @@ import android.media.MediaRecorder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -27,6 +28,7 @@ import com.iflytek.cloud.RecognizerResult;
 import com.iflytek.cloud.SpeechError;
 import com.iflytek.cloud.ui.RecognizerDialog;
 import com.iflytek.cloud.ui.RecognizerDialogListener;
+import com.yl.creteEntity.crete.uits.DateTime;
 import com.yl.cretemodule.R;
 import com.yl.creteEntity.crete.CreateLogotype;
 import com.yl.creteEntity.crete.QueryFeatureList;
@@ -41,6 +43,7 @@ import org.json.JSONObject;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -91,15 +94,16 @@ public class CreateMethod extends AppCompatActivity {
     public Button selectCrete;//删除声纹信息
     public boolean isRecording = false;
     public MediaRecorder mediaRecorder = new MediaRecorder();
-    public String selectedText;
+    public String selectedText;//声纹注册身份
+    public String selectedName;//声纹注册姓名
     public RecognizerDialog mIatDialog;// 语音听写UI
     public Context contexts;
-    public Button closeDialogButton;
+    public EditText name_EditText;
     public int biaoshi = 1;
     public DatabaseCrete dselect;
     public TenSecondsOfAudio tenSecondsOfAudio;
     public PcmUtils pcmUtils;
-
+    public DateTime dateTime;//获取当前时间，用在声纹注册
 
     public CreateMethod() {
 
@@ -123,12 +127,13 @@ public class CreateMethod extends AppCompatActivity {
         // 获取 media_ecorder_recording.xml 布局中的按钮和文本控件
         btnStart = customDialog.findViewById(R.id.btn_start);
         // 找到关闭按钮
-        closeDialogButton = customDialog.findViewById(R.id.btn_stop);
+        name_EditText = customDialog.findViewById(R.id.text_input);
         selectCrete = customDialog.findViewById(R.id.query_selete);
         relativeLayout = customDialog.findViewById(R.id.pathRelative);
         tenSecondsOfAudio = new TenSecondsOfAudio(context);
         tenSecondsOfAudio.startRecording();
         pcmUtils = new PcmUtils();
+        dateTime = new DateTime();
     }
 
     //查询声纹特征的方法
@@ -324,7 +329,7 @@ public class CreateMethod extends AppCompatActivity {
                         // 显示确认对话框
                         new AlertDialog.Builder(contexts)
                                 .setTitle("确认删除")
-                                .setMessage("确定要删除此声纹吗？\nGroup ID: " + groupId + "\nFeature ID: " + featureId)
+                                .setMessage("确定要删除此声纹吗？\n名称" + groupId + "\nFeature ID: " + featureId)
                                 .setPositiveButton("确认", (dialog, which) -> {
                                     // 执行删除操作
                                     deleteFeature(groupId, featureId, itemViewId);
@@ -360,52 +365,49 @@ public class CreateMethod extends AppCompatActivity {
         Log.d(TAG, "查询数据库: " + groupIdList.size());
         Log.d(TAG, "查询数据库: " + groupIdList.toString());
         if (groupIdList != null) {
-            if (groupIdList.size() > 0) {
-                if (groupIdList.size() > 1) {
-                    for (int j = 0; j < groupIdList.size(); j++) {
-                        result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, groupIdList.get(j));//1:N比对
-                        if (result[0] != null) {
-                            if (result[0].get("score") != null) {
-                                if (Double.parseDouble(Objects.requireNonNull(result[0].get("score"))) >= 0.35) {
+            if (groupIdList.size() > 1) {
+                for (int j = 0; j < groupIdList.size(); j++) {
+                    result[0] = SearchFeature.doSearchFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, groupIdList.get(j));//1:N比对
+                    if (result[0] != null) {
+                        if (result[0].get("score") != null) {
+                            if (Double.parseDouble(Objects.requireNonNull(result[0].get("score"))) >= 0.35) {
+                                tenSecondsOfAudio.stopRecording();
+                                fig = false;
+                                break;
+                            }
+                        } else {
+                            runOnUiThread(() -> Toast.makeText(contexts, "音频无效，请稍后再试", Toast.LENGTH_SHORT).show());
+                        }
+                    } else {
+                        runOnUiThread(() -> Toast.makeText(contexts, "没有匹配的声纹信息，请注册1：N", Toast.LENGTH_SHORT).show());
+                        tenSecondsOfAudio.stopRecording();
+                        fig = true;
+                    }
+                }
+            } else if (groupIdList.size() == 1) {
+                for (int j = 0; j < groupIdList.size(); j++) {
+                    for (int k = 0; k < featureIdList.size(); k++) {
+                        SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, groupIdList.get(j), featureIdList.get(k));//1:1
+                        if (SearchOneFeatureList[0] != null) {
+                            if (SearchOneFeatureList[0].get("score") != null) {
+                                if (Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score"))) >= 0.35) {
                                     tenSecondsOfAudio.stopRecording();
                                     fig = false;
-                                    break;
                                 }
                             } else {
+                                Log.d(TAG, "createFig: " + SearchOneFeatureList[0]);
                                 runOnUiThread(() -> Toast.makeText(contexts, "音频无效，请稍后再试", Toast.LENGTH_SHORT).show());
                             }
                         } else {
-                            runOnUiThread(() -> Toast.makeText(contexts, "没有匹配的声纹信息，请注册1：N", Toast.LENGTH_SHORT).show());
+                            runOnUiThread(() -> Toast.makeText(contexts, "没有匹配的声纹信息，请注册1:1", Toast.LENGTH_SHORT).show());
                             tenSecondsOfAudio.stopRecording();
                             fig = true;
                         }
                     }
-                } else if (groupIdList.size() == 1) {
-                    for (int j = 0; j < groupIdList.size(); j++) {
-                        for (int k = 0; k < featureIdList.size(); k++) {
-                            SearchOneFeatureList[0] = SearchOneFeature.doSearchOneFeature(requestUrl, APP_ID, APISecret, APIKey, contrastFies, groupIdList.get(j), featureIdList.get(k));//1:1
-                            if (SearchOneFeatureList[0] != null) {
-                                if (SearchOneFeatureList[0].get("score") != null) {
-                                    if (Double.parseDouble(Objects.requireNonNull(SearchOneFeatureList[0].get("score"))) >= 0.35) {
-                                        tenSecondsOfAudio.stopRecording();
-                                        fig = false;
-                                    }
-                                } else {
-                                    Log.d(TAG, "createFig: " + SearchOneFeatureList[0]);
-                                    runOnUiThread(() -> Toast.makeText(contexts, "音频无效，请稍后再试", Toast.LENGTH_SHORT).show());
-                                }
-                            } else {
-                                runOnUiThread(() -> Toast.makeText(contexts, "没有匹配的声纹信息，请注册1:1", Toast.LENGTH_SHORT).show());
-                                tenSecondsOfAudio.stopRecording();
-                                fig = true;
-                            }
-                        }
-                    }
                 }
-            } else {
-                runOnUiThread(() -> Toast.makeText(contexts, "请先注册声纹信息", Toast.LENGTH_SHORT).show());
-                fig = true;
             }
+        }else {
+            fig = true;
         }
         return fig;
     }
@@ -421,27 +423,9 @@ public class CreateMethod extends AppCompatActivity {
         // 获取 media_ecorder_recording.xml 布局中的按钮和文本控件
         btnStart = customDialog.findViewById(R.id.btn_start);
         // 找到关闭按钮
-        closeDialogButton = customDialog.findViewById(R.id.btn_stop);
+        name_EditText = customDialog.findViewById(R.id.text_input);
         selectCrete = customDialog.findViewById(R.id.query_selete);
         relativeLayout = customDialog.findViewById(R.id.pathRelative);
-        // 设置关闭按钮点击事件
-        closeDialogButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // 关闭弹窗
-                customDialog.dismiss();
-                if (isRecording) {
-                    try {
-                        mediaRecorder.stop();
-                        mediaRecorder.release();
-                        isRecording = false;
-                    } catch (IllegalStateException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
         //开始录音
         btnStart.setOnClickListener(v1 -> {
             if (radioButtonChe.isChecked()) {
@@ -454,12 +438,18 @@ public class CreateMethod extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(contexts, "请先选择身份！！", Toast.LENGTH_SHORT).show());
                 return;
             }
+            if (!name_EditText.getText().toString().trim().isEmpty()) {
+                selectedName = name_EditText.getText().toString().trim();
+            } else {
+                runOnUiThread(() -> Toast.makeText(contexts, "请输入您的姓名！！", Toast.LENGTH_SHORT).show());
+                return;
+            }
             //创建声纹文件
             creteFlies = creteUtlis.createAudioFilePath(contexts, selectedText + "_" + biaoshi);
             creteUtlis.startRecord(new WeakReference<>(this), creteFlies);
-//            //对比声纹文件
-//            contrastFies = creteUtlis.contrastFiesAudioFilePath(contexts, selectedText + "_" + biaoshi);
-//            creteUtlis.contrastFiesStartRecord(new WeakReference<>(this), contrastFies);
+            //对比声纹文件
+            contrastFies = creteUtlis.contrastFiesAudioFilePath(contexts, selectedText + "_" + biaoshi);
+            creteUtlis.contrastFiesStartRecord(new WeakReference<>(this), contrastFies);
             mIatDialog.setListener(new RecognizerDialogListener() {
                 @Override
                 public void onResult(RecognizerResult recognizerResult, boolean b) {
@@ -490,7 +480,7 @@ public class CreateMethod extends AppCompatActivity {
         selectCrete.setOnClickListener(select -> {
             if (seleteCrete()) {
                 radio_teacher.setVisibility(View.GONE);
-                closeDialogButton.setVisibility(View.GONE);
+                name_EditText.setVisibility(View.GONE);
             }
         });
         // 显示自定义 Dialog
@@ -499,11 +489,9 @@ public class CreateMethod extends AppCompatActivity {
 
     //注册声纹
     public void create() {
-        boolean createEnrollFig = true;
-        // 判断是否已注册声纹信息
-//        if (createOne == 1) {
-//            createEnrollFig = createFig();
-//        }
+        long currentTimeMillis = System.currentTimeMillis();
+        //开启重复声纹验证
+        boolean createEnrollFig = createFig();
         if (createEnrollFig) {
             //匹配成功返回false失败返回true
             // 打印或使用选中的按钮文本
@@ -511,21 +499,21 @@ public class CreateMethod extends AppCompatActivity {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    groupIdList.add("u1" + translateToEnglish(name) + i);
-                    groupNameList.add(name + i);
-                    groupInfoLsit.add(name + "hello" + i);
+                    groupIdList.add("u1" + Long.toString(currentTimeMillis));
+                    groupNameList.add(name + "_" + selectedName);
+                    groupInfoLsit.add("身份：" + name + ",注册时间：" + dateTime.Time());
                     createLogotype.setGroupId(groupIdList);// 分组标识
                     createLogotype.setGroupName(groupNameList);//声纹分组名称
                     createLogotype.setGroupInfo(groupInfoLsit);//分组描述信息
                     if (!name.equals("车主")) {
-
-                        featureIdList.add(translateToEnglish(name) + "number" + i);
-                        featureInfoList.add(name + "Num" + i);
+                        featureIdList.add(translateToEnglish(name) + Long.toString(currentTimeMillis));//身份转换成英文加上当前时间戳
+                        featureInfoList.add("身份：" + name + ",名称：" + selectedName + ",注册时间：" + dateTime.Time());
                         createLogotype.setFeatureId(featureIdList);//特征唯一标识
                         createLogotype.setFeatureInfo(featureInfoList); //特征描述
+                        Log.d(TAG, "run: " + createLogotype);
                         group[0] = CreateGroup.doCreateGroup(requestUrl, APP_ID, APISecret, APIKey, createLogotype);//创建声纹特征库
                         creteFeature[0] = CreateFeature.doCreateFeature(requestUrl, APP_ID, APISecret, APIKey, creteFlies, createLogotype);// 添加声纹特征
-                        Log.d(TAG, "creteFig: " + creteFeature[0]);
+                        Log.d(TAG, "createLogotype: " + creteFeature[0]);
                         if (creteFeature[0] != null) {
                             Log.d(TAG, "creteFig: " + creteFeature[0]);
                             if (!Objects.equals(creteFeature[0].get("error"), "请求失败")) {
@@ -545,11 +533,12 @@ public class CreateMethod extends AppCompatActivity {
                                     createOne = 1;
                                     //添加数据到数据库里
                                     creteEntity creteEntityRoom = new creteEntity();
-                                    creteEntityRoom.setGroupId("u1" + translateToEnglish(name) + i);
-                                    creteEntityRoom.setGroupInfo(name + "hello" + i);
-                                    creteEntityRoom.setGroupName(name + i);
-                                    creteEntityRoom.setFeatureId(translateToEnglish(name) + "number" + i);
-                                    creteEntityRoom.setFeatureInfo(name + "Num" + i);
+                                    creteEntityRoom.setGroupId("u1" + Long.toString(currentTimeMillis));
+                                    creteEntityRoom.setGroupInfo("身份：" + name + ",注册时间：" + dateTime.Time());
+                                    creteEntityRoom.setGroupName(name + "_" + selectedName);
+                                    creteEntityRoom.setFeatureId(translateToEnglish(name) + Long.toString(currentTimeMillis));
+                                    creteEntityRoom.setFeatureInfo("身份：" + name + ",名称：" + selectedName + ",注册时间：" + dateTime.Time());
+                                    DatabaseCrete.getInstance(contexts).creteDao().insertCrete(creteEntityRoom);
                                     DatabaseCrete.getInstance(contexts).creteDao().insertCrete(creteEntityRoom);
                                 } else {
                                     runOnUiThread(() -> Toast.makeText(contexts, "注册声纹失败，请重新注册1", Toast.LENGTH_SHORT).show());
@@ -562,8 +551,8 @@ public class CreateMethod extends AppCompatActivity {
                         }
                     } else {
                         createOne = 1;
-                        featureIdList.add(translateToEnglish(name) + "number" + i);
-                        featureInfoList.add(name + i);
+                        featureIdList.add(translateToEnglish(name) + Long.toString(currentTimeMillis));//身份转换成英文加上当前时间戳
+                        featureInfoList.add("身份：" + name + ",名称：" + selectedName + ",注册时间：" + dateTime.Time());
                         createLogotype.setFeatureId(featureIdList);//特征唯一标识
                         createLogotype.setFeatureInfo(featureInfoList); //特征描述
                         if (name.equals("车主") && che == 0) {
@@ -589,11 +578,11 @@ public class CreateMethod extends AppCompatActivity {
                                         runOnUiThread(() -> Toast.makeText(contexts, "注册声纹成功", Toast.LENGTH_SHORT).show());
                                         //添加数据到数据库里
                                         creteEntity creteEntityRoom = new creteEntity();
-                                        creteEntityRoom.setGroupId("u1" + translateToEnglish(name) + i);
-                                        creteEntityRoom.setGroupInfo(name + "hello" + i);
-                                        creteEntityRoom.setGroupName(name + i);
-                                        creteEntityRoom.setFeatureId(translateToEnglish(name) + "number" + i);
-                                        creteEntityRoom.setFeatureInfo(name + "Num" + i);
+                                        creteEntityRoom.setGroupId("u1" + Long.toString(currentTimeMillis));
+                                        creteEntityRoom.setGroupInfo("身份：" + name + ",注册时间：" + dateTime.Time());
+                                        creteEntityRoom.setGroupName(name + "_" + selectedName);
+                                        creteEntityRoom.setFeatureId(translateToEnglish(name) + Long.toString(currentTimeMillis));
+                                        creteEntityRoom.setFeatureInfo("身份：" + name + ",名称：" + selectedName + ",注册时间：" + dateTime.Time());
                                         DatabaseCrete.getInstance(contexts).creteDao().insertCrete(creteEntityRoom);
                                         che++;
                                         i++;
