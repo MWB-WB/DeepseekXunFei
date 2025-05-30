@@ -1,13 +1,13 @@
 package com.yl.deepseekxunfei.scene.actoin;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
 import com.amap.api.services.weather.LocalWeatherForecastResult;
 import com.amap.api.services.weather.LocalWeatherLive;
-import com.yl.deepseekxunfei.APICalls.KwmusiccarApi;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
-import com.yl.deepseekxunfei.APICalls.OnMusicSearchListenerMusccar;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.OnPoiSearchListener;
@@ -18,11 +18,12 @@ import com.yl.deepseekxunfei.model.ComputeChildModel;
 import com.yl.deepseekxunfei.model.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MusicChildModel;
 import com.yl.deepseekxunfei.model.NavChildMode;
+import com.yl.deepseekxunfei.model.PluginMediaModel;
 import com.yl.deepseekxunfei.model.WeatherChildMode;
-import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
 import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
+import com.yl.deepseekxunfei.utlis.MusicKuwo;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
 import com.yl.deepseekxunfei.utlis.searchIn;
@@ -43,14 +44,18 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     private List<BaseChildModel> baseChildModelList = new ArrayList<>();
     private List<BaseChildModel> navChildModelList = new ArrayList<>();
     private LocationResult wayPoint;
+    private MusicKuwo musicKuwo;
+    private Handler mHandler;
 
     public SceneAction(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
+        musicKuwo = new MusicKuwo(mainActivity);
         // 加载本地知识库
         knowledgeBase = KnowledgeBaseLoader.loadKnowledgeBase(mainActivity);
         weatherAPI = new WeatherAPI();
         weatherAPI.setOnWeatherListener(this);
         weatherAPI.setOnForecastWeatherListener(this);
+        mHandler = new Handler(Looper.myLooper());
     }
 
     public void startActionByList(List<BaseChildModel> baseChildModelList) {
@@ -111,12 +116,18 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.QUIT:
                 quitAction(baseChildModel);
                 break;
+            case SceneTypeConst.STOP:
+                stopAction();
+                break;
             case SceneTypeConst.MUSIC_SEARCH:
-                musicSearchAction(baseChildModel, botResponse);
+                musicSearchAction(baseChildModel);
+                break;
+            case SceneTypeConst.MUSIC_START_AND_PLAY:
+                musicStartAndPlayAction();
                 break;
             case SceneTypeConst.HOT_SONGS:
             case SceneTypeConst.TODAY_RECOMMEND:
-                hotSongsAction(botResponse);
+                hotSongsAction();
                 break;
             case SceneTypeConst.MUSIC_UNKNOW:
                 musicUnknowAction();
@@ -150,6 +161,18 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         }
     }
 
+    private void musicStartAndPlayAction() {
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false), BotConstResponse.hotSongPlay);
+        mHandler.postDelayed(() -> {
+            musicKuwo.open(true);
+            musicKuwo.continuePlay();
+        }, 2000);
+    }
+
+    private void stopAction() {
+        mainActivity.stopTTSAndRequest();
+    }
+
     private void navigationUnknownAddressAction() {
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.searchPositionEmpty, false, "", false),
@@ -173,16 +196,24 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 , BotConstResponse.musicUnknow);
     }
 
-    private void hotSongsAction(String botResponse) {
-        mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false), botResponse);
-        KwmusiccarApi.hotSongs(new OnMusicSearchListenerMusccar() {
+    private void hotSongsAction() {
+        PluginMediaModel pluginMediaModel = new PluginMediaModel();
+        pluginMediaModel.setKeyWords("热门歌曲");
+        mainActivity.isNeedWakeUp = false;
+        musicKuwo.search(pluginMediaModel, new MusicKuwo.MediaSearchCallback() {
             @Override
-            public void onSuccess(List<LocationMusccarResult> results) {
-                mainActivity.showMusicFragment(results);
+            public void onSuccess(List<PluginMediaModel> resultList) {
+                mainActivity.runOnUiThread(() -> {
+                    String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
+                    mainActivity.addMessageAndTTS(new ChatMessage(response, false, "", false), response);
+                });
+                mHandler.postDelayed(() -> {
+                    musicKuwo.play(resultList, 0);
+                }, 3000);
             }
 
             @Override
-            public void onError(String error) {
+            public void onError(String text) {
 
             }
         });
@@ -192,18 +223,25 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         DouyinApi.requestAuth(mainActivity);
     }
 
-    private void musicSearchAction(BaseChildModel baseChildModel, String botResponse) {
-        mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false), botResponse);
+    private void musicSearchAction(BaseChildModel baseChildModel) {
         String musicName = ((MusicChildModel) baseChildModel).getMusicName();
         Log.e("TAG", "musicAction: " + musicName);
-        KwmusiccarApi.musiccar(mainActivity, musicName, new OnMusicSearchListenerMusccar() {
+        PluginMediaModel pluginMediaModel = new PluginMediaModel();
+        pluginMediaModel.setKeyWords(musicName);
+        musicKuwo.search(pluginMediaModel, new MusicKuwo.MediaSearchCallback() {
             @Override
-            public void onSuccess(List<LocationMusccarResult> results) {
-                mainActivity.showMusicFragment(results);
+            public void onSuccess(List<PluginMediaModel> resultList) {
+                mainActivity.runOnUiThread(() -> {
+                    String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
+                    mainActivity.addMessageAndTTS(new ChatMessage(response, false, "", false), response);
+                });
+                mHandler.postDelayed(() -> {
+                    musicKuwo.play(resultList, 0);
+                }, 3000);
             }
 
             @Override
-            public void onError(String error) {
+            public void onError(String text) {
 
             }
         });

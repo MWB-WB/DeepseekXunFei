@@ -26,12 +26,15 @@ public class MusicScene extends BaseChildScene {
     }
 
     private String[] musicV = new String[]{"播放", "播放一首", "我要听", "来一首", "放", "我想听"};
+    private String[] startAndPlayCommand = new String[]{"来首歌", "来一首歌", "放一首歌", "放首歌", "我想听歌", "播放歌曲", "播放音乐"
+            , "来首音乐", "来一首音乐", "放一首音乐", "放首音乐", "我想听音乐"};
 
     // 结果封装类
     public class MusicData {
         public List<String> musicNames = new ArrayList<>();
         public boolean hasHotSongs = false;
         public boolean hasTodayRecommend = false;
+        public boolean isStartAndPlay = false;
     }
 
     public MusicData extract(String text) {
@@ -45,9 +48,11 @@ public class MusicScene extends BaseChildScene {
             // 识别关键词标签
             switch (word) {
                 case "热门歌曲":
+                case "热歌榜":
                     result.hasHotSongs = true;
                     break;
                 case "今日推荐":
+                case "每日推荐":
                     result.hasTodayRecommend = true;
                     break;
             }
@@ -57,8 +62,8 @@ public class MusicScene extends BaseChildScene {
                 result.musicNames.add(word);
             }
         }
-        if (text.contains("来首歌") || text.contains("来一首歌") || text.contains("放一首歌") || text.contains("放首歌")) {
-            result.hasHotSongs = true;
+        if (Arrays.asList(startAndPlayCommand).contains(text)) {
+            result.isStartAndPlay = true;
         }
         if (result.musicNames.size() == 0) {
             Optional<String> first = Arrays.stream(musicV).filter(t -> {
@@ -95,6 +100,8 @@ public class MusicScene extends BaseChildScene {
         } else if (musicData.hasTodayRecommend) {
             musicChildModel.setKeyWord("今日推荐");
             musicChildModel.setType(SceneTypeConst.TODAY_RECOMMEND);
+        } else if (musicData.isStartAndPlay) {
+            musicChildModel.setType(SceneTypeConst.MUSIC_START_AND_PLAY);
         } else if (musicData.musicNames.size() > 0) {
             musicChildModel.setMusicName(musicData.musicNames.get(0));
             musicChildModel.setKeyWord(musicData.musicNames.get(0));

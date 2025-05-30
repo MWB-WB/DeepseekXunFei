@@ -123,7 +123,9 @@ public class SceneManager {
             } else {
                 resultModel.setScene(SceneType.NAVIGATION);
             }
-        } else if (text.startsWith("播放") || text.contains("音乐") || text.startsWith("我要听") || text.contains("歌")) {
+        } else if (text.startsWith("播放") || text.contains("音乐") ||
+                text.startsWith("我要听") || text.contains("歌") || text.contains("想听")
+                || text.startsWith("来一首")) {
             resultModel.setScene(SceneType.MUSIC);
         } else if (text.contains("当前位置") || text.contains("我在哪")) {
             resultModel.setScene(SceneType.LOCATION);
@@ -144,6 +146,8 @@ public class SceneManager {
                 .findFirst()
                 .isEmpty()) {
             resultModel.setScene(SceneType.QUIT);
+        } else if (!Arrays.stream(BotConstResponse.stopCommand).filter(s -> s.contains(text)).findFirst().isEmpty()) {
+            resultModel.setScene(SceneType.STOP);
         } else if (isCalculationQuestion(text)) {
             resultModel.setScene(SceneType.COMPUTE);
         } else if (isSelfIntroduction(text)) {
@@ -237,6 +241,11 @@ public class SceneManager {
             case QUIT:
                 baseChildModel = new BaseChildModel();
                 baseChildModel.setType(SceneTypeConst.QUIT);
+                baseChildModel.setText(sceneModel.getText());
+                break;
+            case STOP:
+                baseChildModel = new BaseChildModel();
+                baseChildModel.setType(SceneTypeConst.STOP);
                 baseChildModel.setText(sceneModel.getText());
                 break;
             case COMPUTE:

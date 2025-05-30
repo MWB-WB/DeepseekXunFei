@@ -84,7 +84,6 @@ import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatHistory;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.MovieDetailModel;
-import com.yl.deepseekxunfei.page.LocationMusccarResult;
 import com.yl.deepseekxunfei.page.LocationResult;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
@@ -217,6 +216,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
+        isPause = false;
         if (chatMessages.size() > 0) {
             chatAdapter.notifyDataSetChanged();
         }
@@ -260,15 +260,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onReceive(Context context, Intent intent) {
                 Log.e(TAG, "registerBroadCast();: " + intent);
                 if ("com.yl.voice.wakeup".equals(intent.getAction())) {
-                    startVoiceRecognize();
 //                    if (creteOkAndNo) {
-//                        //对比声纹文件new WeakReference<>(this)
-//                        byte[] last10Seconds = createMethod.tenSecondsOfAudio.getLast5Seconds();
-//                        // 处理音频数据（如保存为WAV或上传服务器）
-//                        String flies = createMethod.pcmUtils.savePcmToFile(last10Seconds, context.getExternalFilesDir("pcm"), "duibi.pcm");
-//                        if (flies != null) {
-//                            createMethod.contrastFies = flies;
-//                        }
 //                        if (createMethod.seleteCrete()) {
 //                            if (!createMethod.createFig()) {
 //                                startVoiceRecognize();
@@ -279,9 +271,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                                seleteSize++;
 //                            }
 //                        }
-//                        startVoiceRecognize();
 //                    } else {
-//                        startVoiceRecognize();
+                        startVoiceRecognize();
 //                    }
                 } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
                     String result = intent.getStringExtra("result");
@@ -292,18 +283,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             button.performClick();
                         }
                     }
+                } else if ("com.yl.voice.commit.text".equals(intent.getAction())) {
+                    String text = intent.getStringExtra("text");
+                    if (voiceManager != null) {
+                        voiceManager.mTts.stopSpeaking();
+                        voiceManager.release();
+                    }
+                    stopSpeaking();
+                    if (!chatMessages.isEmpty()) {
+                        chatMessages.get(chatMessages.size() - 1).setOver(true);
+                        aiType = BotConstResponse.AIType.FREE;
+                    }
+                    mIat.stopListening();
+                    commitText(text);
+                    isNeedWakeUp = false;
                 }
             }
         };
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
         filter.addAction("com.yl.voice.test.start");
         filter.addAction("com.yl.voice.test.stop");
+        filter.addAction("com.yl.voice.commit.text");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
         }
+    }
+
+    public void stopTTSAndRequest() {
+        stopSpeaking();
+        if (voiceManager != null) {
+            voiceManager.mTts.stopSpeaking();
+            voiceManager.release();
+        }
+        if (currentCall != null) {
+            currentCall.cancel();
+        }
+        if (!chatMessages.isEmpty()) {
+            chatMessages.get(chatMessages.size() - 1).setOver(true);
+        }
+        aiType = BotConstResponse.AIType.FREE;
     }
 
     private void initView() {
@@ -500,17 +521,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void showMovieFragment() {
         replaceFragment(1);
         recyFragment.getNowPlayingMovies();
-    }
-
-    public void showMusicFragment(List<LocationMusccarResult> results) {
-        //需要切换到主线程执行，我们的请求后台会在子线程
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                replaceFragment(1);
-                recyFragment.showMusicSearchResult(results);
-            }
-        });
     }
 
     public void showNearbyCinemaFragment() {
@@ -822,13 +832,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             backTextToAction.backUserText(finalText);
             backTextToAction = null;
         } else {
-            List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(finalText);
-            if (baseChildModelList.size() > 1) {
-                mSceneAction.startActionByList(baseChildModelList);
-            } else {
-                mSceneAction.actionByType(baseChildModelList.get(0));
+            if (!isPause){
+                List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(finalText);
+                if (baseChildModelList.size() > 1) {
+                    mSceneAction.startActionByList(baseChildModelList);
+                } else {
+                    mSceneAction.actionByType(baseChildModelList.get(0));
+                }
             }
         }
+    }
+
+    private boolean isPause = false;
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        isPause = true;
     }
 
     public void setBackTextToAction(BackTextToAction backTextToAction) {

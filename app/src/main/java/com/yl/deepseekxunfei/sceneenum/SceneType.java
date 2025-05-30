@@ -16,6 +16,7 @@ public enum SceneType {
     VIDEO,      //视频
     SELECTION,  //选项
     QUIT,       //退出语音
+    STOP,       //停止当前的播放
     CHITCHAT    //闲聊
 
 }

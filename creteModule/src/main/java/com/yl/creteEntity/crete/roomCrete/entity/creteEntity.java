@@ -7,6 +7,7 @@ import android.os.Parcelable;
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 
@@ -26,6 +27,7 @@ public class creteEntity implements Parcelable {
     @ColumnInfo(name = "groupId")
     private String groupId;// 分组标识
 
+    @Ignore
     public creteEntity() {
 
     }

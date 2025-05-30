@@ -20,4 +20,5 @@ public class MusicChildModel extends BaseChildModel {
     public void setKeyWord(String keyWord) {
         this.keyWord = keyWord;
     }
+
 }
