@@ -42,7 +42,6 @@ public class SceneManager {
     private LocationValidator locationValidator;
     private Context mContext;
     private CountDownLatch countDownLatch;
-    private JokeScene jokeScene;
     // 连接词集合（可扩展）
     private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
             "然后", "之后", "接着", "随后"
@@ -64,7 +63,6 @@ public class SceneManager {
         videoScene = new VideoScene();
         musicScene = new MusicScene();
         computeScene = new ComputeScene();
-        jokeScene = new JokeScene();
     }
 
     public List<BaseChildModel> parseToScene(String text) {
@@ -249,10 +247,6 @@ public class SceneManager {
                 baseChildModel.setType(SceneTypeConst.SELFINTRODUCE);
                 baseChildModel.setText(sceneModel.getText());
                 break;
-            case JOKE:
-                Log.d("笑话：", "getChildModel: 笑话");
-                baseChildModel = jokeScene.parseSceneToChild(sceneModel);
-                break ;
             default:
                 baseChildModel = new BaseChildModel();
                 baseChildModel.setType(SceneTypeConst.CHITCHAT);

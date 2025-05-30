@@ -100,7 +100,6 @@ import com.yl.deepseekxunfei.utlis.OptionPositionParser;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.TextLineBreaker;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
-import com.yl.deepseekxunfei.utlis.TtsApiClient;
 import com.yl.deepseekxunfei.utlis.VoiceManager;
 import com.yl.deepseekxunfei.utlis.positioning;
 import com.yl.deepseekxunfei.view.HistoryDialog;
@@ -190,7 +189,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private VoiceManager voiceManager = null;
     private BackTextToAction backTextToAction = null;
-    TtsApiClient  ttsApiClient;
 
 
     @Override
@@ -208,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSceneAction = new SceneAction(this);
         textFig = false;
         setParam();
-        ttsApiClient = new TtsApiClient(this);
+
         chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
         chatMessages.get(chatMessages.size() - 1).setOver(true);
         TTS("我是小天，很高兴见到你！");
@@ -1507,30 +1505,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
             chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
-    }
-    private void TTSFish(String text){
-        Log.d(TAG, "TTSFish: "+text);
-        ttsApiClient.makeTtsRequest(text, new TtsApiClient.TtsCallback() {
-            @Override
-            public void onStart() {
-
-            }
-
-            @Override
-            public void onProgress(int progress) {
-
-            }
-
-            @Override
-            public void onSuccess() {
-
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                Log.d(TAG, "onPlaybackComplete: 播放失败"+e);
-            }
-        });
     }
     /**
      * 播放音频文件
