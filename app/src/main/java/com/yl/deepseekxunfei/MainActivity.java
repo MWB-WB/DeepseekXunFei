@@ -30,8 +30,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.File;
 import java.io.StringReader;
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -108,12 +110,16 @@ import okio.BufferedSource;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String API_URL = "http://47.106.73.32:11434/api/chat";
 
+    private Deque<ChatMessage> contextQueue = new ArrayDeque<>();
+    private static final int MAX_CONTEXT_TOKENS = 30000; // 预留2K tokens给新问题
+    private static final int MAX_HISTORY_ROUNDS = 5; // 最多5轮对话
     public boolean isNeedWakeUp = true;
     private boolean selectGroupFig = true;
     private int seleteSize = 0;//判断是不是第一次进行唤醒
@@ -208,7 +214,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setParam();
 
         chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
-        chatMessages.get(chatMessages.size() - 1).setOver(true);
+//        chatMessages.get(chatMessages.size() - 1).setOver(true);
+        setLastItem(chatMessages, item -> item.setOver(true));
         TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
 
@@ -325,7 +332,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             currentCall.cancel();
         }
         if (!chatMessages.isEmpty()) {
-            chatMessages.get(chatMessages.size() - 1).setOver(true);
+            setLastItem(chatMessages, item -> item.setOver(true));
+//            chatMessages.get(chatMessages.size() - 1).setOver(true);
         }
         aiType = BotConstResponse.AIType.FREE;
     }
@@ -436,9 +444,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
-            chatMessages.get(chatMessages.size() - 1).setOver(true);
+            setLastItem(chatMessages, item -> item.setOver(true));
+//            chatMessages.get(chatMessages.size() - 1).setOver(true);
             mTts.stopSpeaking();
             if (voiceManager != null) {
                 voiceManager.mTts.stopSpeaking();
@@ -788,7 +798,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.e(TAG, "last language:" + mIat.getParameter(SpeechConstant.LANGUAGE));
 
         // 设置语音前端点:静音超时时间，即用户多长时间不说话则当做超时处理
-        mIat.setParameter(SpeechConstant.VAD_BOS, mSharedPreferences.getString("iat_vadbos_preference", "2000"));
+        mIat.setParameter(SpeechConstant.VAD_BOS, mSharedPreferences.getString("iat_vadbos_preference", "5000"));
 
         // 设置语音后端点:后端点静音检测时间，即用户停止说话多长时间内即认为不再输入， 自动停止录音
         mIat.setParameter(SpeechConstant.VAD_EOS, mSharedPreferences.getString("iat_vadeos_preference", "2000"));
@@ -958,38 +968,32 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         speakTts.delete(0, speakTts.length());
         // 使用 JSONObject 构建 JSON 请求体
         JSONObject requestBody = new JSONObject();
-        requestBody.put("model", "deepseek-r1:32b");
-
+        requestBody.put("model", "text");
         JSONArray messages = new JSONArray();
-
-
+        int currentTokens = 0;
+        // 1. 添加历史上下文（从旧到新）
+        for (ChatMessage msg : contextQueue) {
+            int msgTokens = estimateTokens(msg.getMessage());
+            if (currentTokens + msgTokens > MAX_CONTEXT_TOKENS) break;
+            JSONObject jsonMsg = new JSONObject();
+            jsonMsg.put("role", msg.isUser() ? "user" : "assistant");
+            jsonMsg.put("content", msg.getMessage());
+            messages.put(jsonMsg);
+            currentTokens += msgTokens;
+        }
         // 添加当前用户问题
         JSONObject userMessage = new JSONObject();
         userMessage.put("role", "user");
 //        userMessage.put("content", "请用最简洁的语言直接回答问题：\n" + userQuestion); // userQuestion 已经过转义处理
-        userMessage.put("content", userQuestion); // userQuestion 已经过转义处理
+        userMessage.put("content", userQuestion); // userQuestion 已经过转义处理ffc
         messages.put(userMessage);
-
         requestBody.put("messages", messages);
-        if (!mIsDeepThinkMode) {
-            requestBody.put("prompt", "<|begin▁of▁sentence|><|User|>1+2+3+..+100等于多少<|Assistant|><think>\n</think>\n\n");
-        } else {
-            // 添加上下文（如果有）
-            for (ChatMessage message : context) {
-
-                JSONObject contextMessage = new JSONObject();
-                contextMessage.put("role", message.isUser() ? "user" : "assistant");
-                contextMessage.put("content", message.getMessage());
-                messages.put(contextMessage);
-            }
-        }
         requestBody.put("stream", true);
-
         JSONObject options = new JSONObject();
-        options.put("temperature", 0.6);
+        options.put("temperature", 0.9);
         options.put("mirostat_tau", 1.0);
         options.put("num_predict", -1);
-        options.put("repeat_penalty", 1.5);//重复惩罚
+        options.put("repeat_penalty", 1.0);//重复惩罚
         options.put("mirostat_eta", 1);//影响算法响应生成文本的反馈的速度。较低的学习率将导致较慢的调整，而较高的学习率将使算法的响应速度更快。（默认值：0.1）
         options.put("mirostat_tau", 1);//控制输出的连贯性和多样性之间的平衡。较低的值将导致文本更集中、更连贯。（默认值：5.0）
         requestBody.put("options", options);
@@ -1104,12 +1108,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                 runOnUiThread(() -> {
                                                     String huida = "";
                                                     if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString()));
+                                                        huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString())).trim();
                                                         // 更新机器人消息记录的内容
-                                                        String reust = huida.replace("\n", "").replace("\n\n", "");
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(reust);
+//                                                        String reust = huida.replace("\n", "").replace("\n\n", "")
+                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(huida);
+                                                        Log.d(TAG, "onResponse: "+huida);
                                                     } else {
-                                                        huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString()));
+                                                        huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString())).trim();
                                                         //缩进
                                                         if (huida.contains(startTag)) {
                                                             huida = huida.replace(startTag, "");
@@ -1117,17 +1122,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         if (huida.length() <= 0) {
                                                             huida = "对不起，这个问题我暂时不能回答";
                                                             // 更新机器人消息记录的内容
-                                                            String result = huida.replace("\n", "").replace("\n\n", "");
-                                                            chatMessages.get(botMessageIndexRound1).setMessage(result);
+//                                                            String result = huida.replace("\n", "").replace("\n\n", "").trim();
+                                                            Log.d(TAG, "onResponse: "+huida);
+                                                            chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                             TTS(huida);
                                                         } else {
                                                             // 更新机器人消息记录的内容
-                                                            String result = huida.replace("\n", "").replace("\n\n", "");
-                                                            chatMessages.get(botMessageIndexRound1).setMessage(result);
+                                                            String result = huida.replace("\n", "").replace("\n\n", "").trim();
+                                                            chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                         }
                                                     }
                                                     // 如果完成，停止读取
-                                                    if (done) {
+                                                    if (done &&!isStopRequested) {
+                                                        // 添加本轮对话到队列
+                                                        contextQueue.add(new ChatMessage(userQuestion, true));
+                                                        contextQueue.add(new ChatMessage(fullResponseRound1.toString(), false));
+
+                                                        // 控制队列长度
+                                                        while (contextQueue.size() > MAX_HISTORY_ROUNDS * 2) {
+                                                            contextQueue.removeFirst();
+                                                        }
                                                         isStopRequested = true;
                                                         isNewChatCome = false;
                                                         textFig = false;
@@ -1247,6 +1261,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 显示历史记录对话框
             myHandler.postDelayed(this::showHistoryDialog, 500);
         } else if (v.getId() == R.id.xjianduihua) {
+            contextQueue.clear();
             context.clear();
             if (voiceManager != null) {
                 voiceManager.mTts.stopSpeaking();
@@ -1406,7 +1421,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         context.add(new ChatMessage(userQuestion, true)); // 用户问题
         context.add(new ChatMessage(modelResponse, false)); // 模型回答
         // 限制上下文长度（避免过长）
-        if (context.size() > 10) { // 保留最近的 10 轮对话
+        if (context.size() > 4) { // 保留最近的 10 轮对话
             context.remove(0);
             context.remove(0); // 同时移除一对问答
         }
@@ -1514,10 +1529,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
     }
-
+    // 简易估算token长度（实际应调用HuggingFace tokenizer）
+    private int estimateTokens(String text) {
+        return text.length() / 4; // 中文≈1token/2字，英文≈1token/4字符
+    }
     public void setCurrentChatOver() {
         if (chatMessages.size() > 0) {
-            chatMessages.get(chatMessages.size() - 1).setOver(true);
+            setLastItem(chatMessages, item -> item.setOver(true));
+//            chatMessages.get(chatMessages.size() - 1).setOver(true);
         }
     }
 
@@ -1542,6 +1561,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mediaPlayer.start();
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public static <T> void setLastItem(List<T> list, Consumer<T> action) {
+        if (list != null && !list.isEmpty()) {
+            action.accept(list.get(list.size() - 1));
         }
     }
 }

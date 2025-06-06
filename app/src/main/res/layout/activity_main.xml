@@ -126,7 +126,8 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="5dp">
+                android:padding="5dp"
+                android:visibility="gone">
                 <!-- 深度思考 -->
                 <LinearLayout
                     android:id="@+id/deep_think_layout"
@@ -150,7 +151,8 @@
                         android:layout_gravity="center"
                         android:text=" 深度思考（R1）"
                         android:textColor="#00BFFF"
-                        android:textSize="12sp" />
+                        android:textSize="12sp"
+                        />
                 </LinearLayout>
 
                 <!-- 声纹验证 -->

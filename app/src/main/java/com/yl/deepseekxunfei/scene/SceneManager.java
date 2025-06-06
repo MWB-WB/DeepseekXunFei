@@ -150,9 +150,11 @@ public class SceneManager {
             resultModel.setScene(SceneType.STOP);
         } else if (isCalculationQuestion(text)) {
             resultModel.setScene(SceneType.COMPUTE);
-        } else if (isSelfIntroduction(text)) {
-            resultModel.setScene(SceneType.SELFINTRODUCE);
-        } else {
+        }
+//        else if (isSelfIntroduction(text)) {
+//            resultModel.setScene(SceneType.SELFINTRODUCE);
+//        }
+        else {
             resultModel.setScene(SceneType.CHITCHAT);
         }
         return resultModel;

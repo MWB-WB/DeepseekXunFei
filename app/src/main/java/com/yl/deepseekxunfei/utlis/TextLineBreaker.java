@@ -25,14 +25,13 @@ public class TextLineBreaker {
     public static String breakTextByPunctuation(String text) {
         // 1. 去除特殊符号（保留中英文标点）
         String cleanedText = SPECIAL_CHARS.matcher(text).replaceAll("");
-        // 2. 中文标点后换行并缩进
+        // 2. 中文标点后换行
         String formattedText = CHINESE_PUNCTUATION.matcher(cleanedText)
-                .replaceAll("$0\n" + INDENT);
+                .replaceAll("" );
 
         // 3. 英文标点后换行并缩进
         formattedText = ENGLISH_PUNCTUATION.matcher(formattedText)
                 .replaceAll("$0\n" + INDENT);
-
         return formattedText;
     }
 }

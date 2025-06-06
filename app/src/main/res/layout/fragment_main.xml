@@ -151,7 +151,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="10dp"
                         android:background="@drawable/backduncoloi"
-                        android:text="搜索音乐。"
+                        android:text="播放毛不易的无名的人。"
                         android:textColor="#000000"
                         android:textSize="18sp" />
 
