@@ -177,6 +177,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isDuplicate = false;
     //是否开启声纹验证
     public boolean creteOkAndNo = true;
+    private boolean isRecognize = false;
     //开始录音按钮
     private Button kaishiluyin;
     // media_ecorder_recording.xml 布局中的开始录音按钮
@@ -284,19 +285,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                     }
                 } else if ("com.yl.voice.commit.text".equals(intent.getAction())) {
-                    String text = intent.getStringExtra("text");
-                    if (voiceManager != null) {
-                        voiceManager.mTts.stopSpeaking();
-                        voiceManager.release();
+                    if (!isRecognize){
+                        String text = intent.getStringExtra("text");
+                        if (voiceManager != null) {
+                            voiceManager.mTts.stopSpeaking();
+                            voiceManager.release();
+                        }
+                        stopSpeaking();
+                        if (!chatMessages.isEmpty()) {
+                            chatMessages.get(chatMessages.size() - 1).setOver(true);
+                            aiType = BotConstResponse.AIType.FREE;
+                        }
+                        mIat.stopListening();
+                        commitText(text);
+                        isNeedWakeUp = false;
                     }
-                    stopSpeaking();
-                    if (!chatMessages.isEmpty()) {
-                        chatMessages.get(chatMessages.size() - 1).setOver(true);
-                        aiType = BotConstResponse.AIType.FREE;
-                    }
-                    mIat.stopListening();
-                    commitText(text);
-                    isNeedWakeUp = false;
                 }
             }
         };
@@ -502,6 +505,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //带UI界面
         mIatDialog.setListener(mRecognizerDialogListener);
         mIatDialog.show();
+        isRecognize = true;
         //获取字体所在控件
         TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
         txt.setText("请说出您的问题！");
@@ -866,6 +870,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private final RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
         public void onResult(RecognizerResult results, boolean isLast) {
             printResult(results, isLast);//结果数据解析
+            isRecognize = false;
         }
 
         /**

@@ -1,5 +1,7 @@
 package com.yl.deepseekxunfei.scene;
 
+import android.util.Log;
+
 import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.dictionary.CustomDictionary;
 import com.hankcs.hanlp.seg.common.Term;
@@ -32,6 +34,7 @@ public class MusicScene extends BaseChildScene {
     // 结果封装类
     public class MusicData {
         public List<String> musicNames = new ArrayList<>();
+        public String artist;
         public boolean hasHotSongs = false;
         public boolean hasTodayRecommend = false;
         public boolean isStartAndPlay = false;
@@ -44,7 +47,7 @@ public class MusicScene extends BaseChildScene {
         List<Term> terms = HanLP.segment(text);
         for (Term term : terms) {
             String word = term.word;
-
+            Log.e("TAG123", "word: " + term.word + ":: nature: " + term.nature);
             // 识别关键词标签
             switch (word) {
                 case "热门歌曲":
@@ -60,6 +63,9 @@ public class MusicScene extends BaseChildScene {
             // 识别非书名号音乐名称（需要扩展规则）
             if (isMusicName(word, term.nature.toString())) {
                 result.musicNames.add(word);
+            }
+            if (term.nature.startsWith("nr")) {
+                result.artist = word;
             }
         }
         if (Arrays.asList(startAndPlayCommand).contains(text)) {
@@ -104,6 +110,7 @@ public class MusicScene extends BaseChildScene {
             musicChildModel.setType(SceneTypeConst.MUSIC_START_AND_PLAY);
         } else if (musicData.musicNames.size() > 0) {
             musicChildModel.setMusicName(musicData.musicNames.get(0));
+            musicChildModel.setArtist(musicData.artist);
             musicChildModel.setKeyWord(musicData.musicNames.get(0));
             musicChildModel.setType(SceneTypeConst.MUSIC_SEARCH);
         } else {

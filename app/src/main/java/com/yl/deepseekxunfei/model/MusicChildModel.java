@@ -4,6 +4,7 @@ public class MusicChildModel extends BaseChildModel {
 
     private String musicName;
     private String keyWord;
+    private String artist;
 
     public String getMusicName() {
         return musicName;
@@ -21,4 +22,11 @@ public class MusicChildModel extends BaseChildModel {
         this.keyWord = keyWord;
     }
 
+    public String getArtist() {
+        return artist;
+    }
+
+    public void setArtist(String artist) {
+        this.artist = artist;
+    }
 }

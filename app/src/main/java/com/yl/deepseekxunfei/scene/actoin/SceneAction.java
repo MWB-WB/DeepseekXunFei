@@ -225,9 +225,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void musicSearchAction(BaseChildModel baseChildModel) {
         String musicName = ((MusicChildModel) baseChildModel).getMusicName();
-        Log.e("TAG", "musicAction: " + musicName);
+        String artist = ((MusicChildModel) baseChildModel).getArtist();
+        Log.e("TAG", "musicAction: " + musicName + ":: artist: "+ artist);
         PluginMediaModel pluginMediaModel = new PluginMediaModel();
         pluginMediaModel.setKeyWords(musicName);
+        pluginMediaModel.setArtist(artist);
         musicKuwo.search(pluginMediaModel, new MusicKuwo.MediaSearchCallback() {
             @Override
             public void onSuccess(List<PluginMediaModel> resultList) {
