@@ -77,6 +77,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import com.yl.creteEntity.crete.CreateMethod;
+import com.yl.deepseekxunfei.APICalls.GeocodingApi;
 import com.yl.deepseekxunfei.adapter.ChatAdapter;
 
 import com.yl.deepseekxunfei.fragment.MainFragment;
@@ -98,6 +99,7 @@ import com.yl.deepseekxunfei.utlis.ContextHolder;
 import com.yl.deepseekxunfei.utlis.JsonParser;
 import com.yl.deepseekxunfei.utlis.KeyboardUtils;
 import com.yl.deepseekxunfei.utlis.OptionPositionParser;
+import com.yl.deepseekxunfei.utlis.PromptUtlis;
 import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.utlis.TextLineBreaker;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
@@ -116,7 +118,10 @@ import java.util.function.Consumer;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static final String API_URL = "http://47.106.73.32:11434/api/chat";
-
+    private boolean isWeatherOutputStopped = false;
+    private static final long DELAY_MILLIS = 5000; // 设置延迟时间，防止用户多次点击
+    PromptUtlis promptUtlis = null;
+    private boolean hasExecuted = false; // 标记是否已执行
     private Deque<ChatMessage> contextQueue = new ArrayDeque<>();
     private static final int MAX_CONTEXT_TOKENS = 30000; // 预留2K tokens给新问题
     private static final int MAX_HISTORY_ROUNDS = 5; // 最多5轮对话
@@ -214,11 +219,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setParam();
 
         chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
-//        chatMessages.get(chatMessages.size() - 1).setOver(true);
         setLastItem(chatMessages, item -> item.setOver(true));
         TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
-
+        //初始化提示工具类
+        promptUtlis = new PromptUtlis();
     }
 
     @Override
@@ -280,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                            }
 //                        }
 //                    } else {
-                        startVoiceRecognize();
+                    startVoiceRecognize();
 //                    }
                 } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
                     String result = intent.getStringExtra("result");
@@ -292,7 +297,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                     }
                 } else if ("com.yl.voice.commit.text".equals(intent.getAction())) {
-                    if (!isRecognize){
+                    if (!isRecognize) {
                         String text = intent.getStringExtra("text");
                         if (voiceManager != null) {
                             voiceManager.mTts.stopSpeaking();
@@ -300,7 +305,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         }
                         stopSpeaking();
                         if (!chatMessages.isEmpty()) {
-                            chatMessages.get(chatMessages.size() - 1).setOver(true);
+                            setLastItem(chatMessages, item -> item.setOver(true));
                             aiType = BotConstResponse.AIType.FREE;
                         }
                         mIat.stopListening();
@@ -333,7 +338,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if (!chatMessages.isEmpty()) {
             setLastItem(chatMessages, item -> item.setOver(true));
-//            chatMessages.get(chatMessages.size() - 1).setOver(true);
         }
         aiType = BotConstResponse.AIType.FREE;
     }
@@ -358,6 +362,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // 获取输入区域的布局
         inputLayout = findViewById(R.id.submitLayout); // 输入区域布局的 id 为 layoutInput
         button.setImageResource(R.drawable.jzfason);
+
         // 获取容器
 
         //获取录音弹出的布局
@@ -376,8 +381,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
             Log.e(TAG, "button onclick: " + aiType);
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-                Toast.makeText(MainActivity.this, "请输入一个问题", Toast.LENGTH_SHORT).show();
+                Log.d(TAG, "initView: 请输入一个问题");
+                promptUtlis.promptInput(MainActivity.this);
             } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
+                promptUtlis.promptInput(MainActivity.this);
                 try {
                     if (chatMessages.isEmpty()) {
                         replaceFragment(0);
@@ -388,13 +395,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             replaceFragment(0);
                             sendMessage();
                         } else {
-                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问（提交按钮）", Toast.LENGTH_SHORT).show();
+                            promptUtlis.promptReply(MainActivity.this);
                         }
                     }
                 } catch (JSONException e) {
                     throw new RuntimeException(e);
                 }
             } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+                // 停止天气输出
+                isWeatherOutputStopped = true;
+                myHandler.removeCallbacks(weatherStreamRunnable);
                 mTts.stopSpeaking();
                 if (currentCall != null) {
                     currentCall.cancel();
@@ -448,7 +458,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
             setLastItem(chatMessages, item -> item.setOver(true));
-//            chatMessages.get(chatMessages.size() - 1).setOver(true);
             mTts.stopSpeaking();
             if (voiceManager != null) {
                 voiceManager.mTts.stopSpeaking();
@@ -550,7 +559,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mSceneAction.actionByType(baseChildModelList.get(0));
         } else {
             if (!chatMessages.get(chatMessages.size() - 1).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
-                Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问", Toast.LENGTH_SHORT).show();
+                promptUtlis.promptReply(MainActivity.this);
             } else {
                 mTts.stopSpeaking();
                 if (voiceManager != null) {
@@ -846,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             backTextToAction.backUserText(finalText);
             backTextToAction = null;
         } else {
-            if (!isPause){
+            if (!isPause) {
                 List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(finalText);
                 if (baseChildModelList.size() > 1) {
                     mSceneAction.startActionByList(baseChildModelList);
@@ -903,6 +912,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 chatMessages.get(chatMessages.size() - 1).setSpeaking(false);
                 chatAdapter.notifyItemChanged(chatMessages.size() - 1);
                 if (isNeedWakeUp) {
+//                    if (BotConstResponse.searchWeatherWaiting)
                     TTSbutton.performClick();
                 }
                 mSceneAction.startActionByPosition();
@@ -1112,7 +1122,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         // 更新机器人消息记录的内容
 //                                                        String reust = huida.replace("\n", "").replace("\n\n", "")
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(huida);
-                                                        Log.d(TAG, "onResponse: "+huida);
+                                                        Log.d(TAG, "onResponse: " + huida);
                                                     } else {
                                                         huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString())).trim();
                                                         //缩进
@@ -1123,7 +1133,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                             huida = "对不起，这个问题我暂时不能回答";
                                                             // 更新机器人消息记录的内容
 //                                                            String result = huida.replace("\n", "").replace("\n\n", "").trim();
-                                                            Log.d(TAG, "onResponse: "+huida);
+                                                            Log.d(TAG, "onResponse: " + huida);
                                                             chatMessages.get(botMessageIndexRound1).setMessage(huida);
                                                             TTS(huida);
                                                         } else {
@@ -1133,7 +1143,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                                         }
                                                     }
                                                     // 如果完成，停止读取
-                                                    if (done &&!isStopRequested) {
+                                                    if (done && !isStopRequested) {
                                                         // 添加本轮对话到队列
                                                         contextQueue.add(new ChatMessage(userQuestion, true));
                                                         contextQueue.add(new ChatMessage(fullResponseRound1.toString(), false));
@@ -1181,24 +1191,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onTodayWeather(LocalWeatherLive weatherLive) {
         setCurrentChatOver();
         TimeDownUtil.clearTimeDown();
-        chatMessages.remove(chatMessages.size() - 1);
+        isWeatherOutputStopped = false;
         mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
                 "，当前的温度是" + weatherLive.getTemperature() + "摄氏度，" + weatherLive.getWindDirection() + "风"
                 + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
         ChatMessage chatMessage = new ChatMessage("", false);
         chatMessage.setOver(true);
-        chatMessages.add(chatMessage); // 添加到聊天界面
         chatAdapter.notifyDataSetChanged();
-        TTS(mWeatherResult);
-        weatherIndex = 0;
-        myHandler.post(weatherStreamRunnable);
+        // 只有在未被停止时才执行TTS和后续输出
+        if (!isWeatherOutputStopped) {
+            TTS(mWeatherResult);
+            weatherIndex = 0;
+            myHandler.post(weatherStreamRunnable);
+        }
     }
 
     private int weatherIndex = 0;
     Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            if (weatherIndex > mWeatherResult.length()) {
+            if (isWeatherOutputStopped ||  weatherIndex > mWeatherResult.length()) {
+                chatMessages.get(chatMessages.size() - 1).setOver(true);
                 return;
             }
             chatMessages.set(chatMessages.size() - 1, new ChatMessage(mWeatherResult.substring(0, weatherIndex), false));
@@ -1288,15 +1301,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         } else if (v.getId() == R.id.send_button) {
             isNeedWakeUp = true;
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-                Toast.makeText(MainActivity.this, "请输入一个问题", Toast.LENGTH_SHORT).show();
+                promptUtlis.promptInput(MainActivity.this);
             } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
+                Log.d(TAG, "请输入一个问题: ");
                 try {
                     if (chatMessages.isEmpty()) {
                         replaceFragment(0);
                         sendMessage();
                     } else {
                         if (!chatMessages.get(chatMessages.size() - 1).isOver()) {
-                            Toast.makeText(MainActivity.this, "请先等待上一个问题回复完成在进行提问（提交按钮）", Toast.LENGTH_SHORT).show();
+                            promptUtlis.promptReply(MainActivity.this);
                         } else {
                             replaceFragment(0);
                             sendMessage();
@@ -1529,14 +1543,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
     }
+
     // 简易估算token长度（实际应调用HuggingFace tokenizer）
     private int estimateTokens(String text) {
         return text.length() / 4; // 中文≈1token/2字，英文≈1token/4字符
     }
+
     public void setCurrentChatOver() {
         if (chatMessages.size() > 0) {
             setLastItem(chatMessages, item -> item.setOver(true));
-//            chatMessages.get(chatMessages.size() - 1).setOver(true);
         }
     }
 
@@ -1550,6 +1565,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             chatAdapter.notifyItemChanged(chatMessages.size() - 1);
         }
     }
+
     /**
      * 播放音频文件
      */
@@ -1563,6 +1579,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
     }
+
     public static <T> void setLastItem(List<T> list, Consumer<T> action) {
         if (list != null && !list.isEmpty()) {
             action.accept(list.get(list.size() - 1));

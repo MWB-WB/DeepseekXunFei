@@ -17,6 +17,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NavScene extends BaseChildScene {
+   public static String addressLocation;
+
 
     private final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
@@ -48,8 +50,10 @@ public class NavScene extends BaseChildScene {
             Log.d("地址2", "parseSceneToChild: "+address);
             if (address.isEmpty() || address.equals("。") || address.equals("导航到")) {
                 navChildMode.setType(SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS);
+                NavScene.addressLocation = address;
             } else {
                 Log.d("地址3", "parseSceneToChild: "+ extractLocation(address));
+                NavScene.addressLocation = address;
                 navChildMode.setLocation(extractLocation(address));
                 navChildMode.setType(SceneTypeConst.KEYWORD);
             }

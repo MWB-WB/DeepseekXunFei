@@ -7,6 +7,8 @@ import android.widget.Toast;
 
 import com.amap.api.services.weather.LocalWeatherForecastResult;
 import com.amap.api.services.weather.LocalWeatherLive;
+import com.google.gson.Gson;
+import com.yl.deepseekxunfei.APICalls.GeocodingApi;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.MainActivity;
@@ -21,6 +23,7 @@ import com.yl.deepseekxunfei.model.NavChildMode;
 import com.yl.deepseekxunfei.model.PluginMediaModel;
 import com.yl.deepseekxunfei.model.WeatherChildMode;
 import com.yl.deepseekxunfei.page.LocationResult;
+import com.yl.deepseekxunfei.scene.NavScene;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
 import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
 import com.yl.deepseekxunfei.utlis.MusicKuwo;
@@ -46,6 +49,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     private LocationResult wayPoint;
     private MusicKuwo musicKuwo;
     private Handler mHandler;
+    public static String  location;
 
     public SceneAction(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -81,7 +85,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             actionByType(baseChildModelList.get(currentPosition));
         }
     }
-
     public void actionByType(BaseChildModel baseChildModel) {
         mainActivity.replaceFragment(0);
         String botResponse = BotConstResponse.getSuccessResponse();
@@ -92,53 +95,77 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 break;
             // 关键字导航
             case SceneTypeConst.KEYWORD:
+                if (NavScene.addressLocation.toString()!=null){
+                    GeocodingApi geocodingApi = new GeocodingApi();
+                    geocodingApi.geocoding(NavScene.addressLocation.toString(), null, new GeocodingApi.success() {
+                        @Override
+                        public void SuccessAPI(String response) {
+                            SceneAction.location = response;
+                        }
+                    });
+                }
                 keyWordAction(baseChildModel, botResponse);
                 break;
             case SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS:
+                SceneAction.location = null;
                 navigationUnknownAddressAction();
                 break;
             case SceneTypeConst.RECENT_FILMS:
+                SceneAction.location = null;
                 filmAction(baseChildModel, botResponse);
                 break;
             //闲聊
             case SceneTypeConst.CHITCHAT:
+                SceneAction.location = null;
                 chitchatAction(baseChildModel);
                 break;
             case SceneTypeConst.TODAY_WEATHER:
+                SceneAction.location = null;
                 todayWeatherAction(baseChildModel);
                 break;
             case SceneTypeConst.FEATHER_WEATHER:
+                SceneAction.location = null;
                 featherWeatherAction(baseChildModel);
                 break;
             case SceneTypeConst.SELECTION:
+                SceneAction.location = null;
                 selectionAction(baseChildModel);
                 break;
             case SceneTypeConst.QUIT:
+                SceneAction.location = null;
                 quitAction(baseChildModel);
                 break;
             case SceneTypeConst.STOP:
+                SceneAction.location = null;
                 stopAction();
                 break;
             case SceneTypeConst.MUSIC_SEARCH:
+                SceneAction.location = null;
                 musicSearchAction(baseChildModel);
                 break;
             case SceneTypeConst.MUSIC_START_AND_PLAY:
+                SceneAction.location = null;
                 musicStartAndPlayAction();
                 break;
             case SceneTypeConst.HOT_SONGS:
             case SceneTypeConst.TODAY_RECOMMEND:
+                SceneAction.location = null;
                 hotSongsAction();
                 break;
             case SceneTypeConst.MUSIC_UNKNOW:
+                SceneAction.location = null;
                 musicUnknowAction();
                 break;
             case SceneTypeConst.VIDEO:
+                SceneAction.location = null;
                 videoAction(baseChildModel);
                 break;
             case SceneTypeConst.COMPUTE:
+                SceneAction.location = null;
                 computeAction(baseChildModel);
                 break;
             case SceneTypeConst.SELFINTRODUCE:
+                SceneAction.location = null;
                 selfIntroduceAction();
                 break;
 //            case SceneTypeConst.JOKECLASS:
@@ -395,6 +422,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
         NeighborhoodSearch.getLocation(city, city, cityLocation -> {
+            if (SceneAction.location!=null){
+                cityLocation = SceneAction.location;
+            }
+            Log.d("TAG", "nearbyActionLocation: "+location);
+            Log.d("TAG", "nearbyActionLocation: "+cityLocation.toString());
             NeighborhoodSearch.search(location, cityLocation, 5000, new OnPoiSearchListener() {
                 @Override
                 public void onSuccess(List<LocationResult> results) {
