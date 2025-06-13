@@ -17,6 +17,7 @@ public enum SceneType {
     SELECTION,  //选项
     QUIT,       //退出语音
     STOP,       //停止当前的播放
-    CHITCHAT    //闲聊
+    CHITCHAT,    //闲聊
+    SETHOMECOMPANY // 设置家或者公司
 
 }

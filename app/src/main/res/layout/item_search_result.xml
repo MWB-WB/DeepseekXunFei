@@ -6,15 +6,32 @@
     android:orientation="vertical"
     android:padding="16dp"
     android:background="?android:attr/selectableItemBackground">
-
-    <!-- 地点名称 -->
-    <TextView
-        android:id="@+id/nameText"
+    <!-- 第一行：图片和名称并排 -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:textColor="#000000"
-        android:textStyle="bold"/>
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <!-- 图片（固定大小或按比例缩放） -->
+        <ImageView
+            android:id="@+id/imgView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="centerCrop"
+            android:adjustViewBounds="true"/>
+
+        <!-- 地点名称 -->
+        <TextView
+            android:id="@+id/nameText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="16dp"
+            android:textSize="16sp"
+            android:textColor="#000000"
+            android:textStyle="bold"/>
+    </LinearLayout>
 
     <!-- 地址 -->
     <TextView

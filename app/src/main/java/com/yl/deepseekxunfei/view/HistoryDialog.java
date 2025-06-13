@@ -3,6 +3,7 @@ package com.yl.deepseekxunfei.view;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -12,8 +13,10 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.adapter.HistoryRecyAdapter;
+import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
 import com.yl.deepseekxunfei.utlis.DeleteDialogHelper;
@@ -28,10 +31,12 @@ public class HistoryDialog extends Dialog implements View.OnClickListener, Histo
     private List<ChatHistoryEntity> mData;
     private onDialogDataBack onDialogDataBack;
     private TextView noHistoryTips;
+    private MainActivity mainActivity;
 
-    public HistoryDialog(@NonNull Context context, List<ChatHistoryEntity> data) {
+    public HistoryDialog(@NonNull Context context, List<ChatHistoryEntity> data,MainActivity mainActivity) {
         super(context, R.style.CustomDialog);
         mData = data;
+        this.mainActivity = mainActivity;
     }
 
     @Override
@@ -42,6 +47,7 @@ public class HistoryDialog extends Dialog implements View.OnClickListener, Histo
     }
 
     private void initView() {
+
         recyclerView = findViewById(R.id.custom_dialog_recy);
         customDialogBtn = findViewById(R.id.custom_dialog_btn);
         noHistoryTips = findViewById(R.id.no_history_tips);
@@ -67,6 +73,7 @@ public class HistoryDialog extends Dialog implements View.OnClickListener, Histo
                 }
             }
             dismiss();
+            mainActivity.chatMessages.get(mainActivity.chatMessages.size() - 1).setOver(true);
         }
     }
 

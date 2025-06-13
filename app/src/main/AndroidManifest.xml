@@ -16,20 +16,20 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /><!--    定位权限-->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /><!--    定位权限-->
+
     <!-- 声明接收开机广播的权限 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission
         android:name="android.permission.INTERACT_ACROSS_USERS_FULL"
         tools:ignore="ProtectedPermissions" />
-
     <protected-broadcast android:name="com.yl.voice.wakeup" />
-
+    <protected-broadcast android:name="AUTONAVI_STANDARD_BROADCAST_RECV" />
+    <protected-broadcast android:name="AUTONAVI_STANDARD_BROADCAST_SEND" />
     <queries>
         <!--允许查询抖音和抖音极速版的软件包信息-->
         <package android:name="com.ss.android.ugc.aweme" />
         <package android:name="com.ss.android.ugc.aweme.lite" />
         <package android:name="com.ss.android.ugc.live" />
-
     </queries>
     <application
         android:name=".MyApplication"
@@ -51,18 +51,22 @@
             android:value="5c04f780c8748ab0d52f27608efa579f" />
         <!-- adjustPan -->
         <activity
+            android:name=".PrivacyPolicyActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="com.yl.deepseek.start" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MainActivity"
             android:enabled="true"
             android:exported="true"
             android:launchMode="singleInstance"
             android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <action android:name="com.yl.deepseek.start" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
         </activity>
         <service android:name="com.yl.creteEntity.crete.uits.DBService"
             android:enabled="true"

@@ -22,7 +22,6 @@ public class SceneTypeConst {
     public static final int STOP = 10009;//停止
     public static final int SELECTION = 10010;//选择
     public static final int CHITCHAT = 10011;
-    public static final int JOKECLASS = 10011;//笑话
-
+    public static final int HOMECOMPANY = 10012;//设置家或者公司
 
 }

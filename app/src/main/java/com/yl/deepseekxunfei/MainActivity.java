@@ -2,6 +2,7 @@ package com.yl.deepseekxunfei;
 
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,9 +12,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -25,6 +28,7 @@ import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.EditText;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.File;
@@ -80,14 +84,17 @@ import com.yl.creteEntity.crete.CreateMethod;
 import com.yl.deepseekxunfei.APICalls.GeocodingApi;
 import com.yl.deepseekxunfei.adapter.ChatAdapter;
 
+import com.yl.deepseekxunfei.broadcast.Broadcasting;
 import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.fragment.MovieDetailFragment;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
+
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatHistory;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.MovieDetailModel;
 import com.yl.deepseekxunfei.page.LocationResult;
+import com.yl.deepseekxunfei.page.SceneryPage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
@@ -121,7 +128,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isWeatherOutputStopped = false;
     private static final long DELAY_MILLIS = 5000; // 设置延迟时间，防止用户多次点击
     PromptUtlis promptUtlis = null;
-    private boolean hasExecuted = false; // 标记是否已执行
     private Deque<ChatMessage> contextQueue = new ArrayDeque<>();
     private static final int MAX_CONTEXT_TOKENS = 30000; // 预留2K tokens给新问题
     private static final int MAX_HISTORY_ROUNDS = 5; // 最多5轮对话
@@ -156,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     //是否停止输出
     public boolean isStopRequested = false;
     public boolean isNewChatCome = false;
-    private boolean textFig;
+    public boolean textFig;
     private SceneManager sceneManager;
 
     private LinearLayout inputLayout, mDeepThinkLayout, mDeepCreteLayout;
@@ -200,14 +206,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private VoiceManager voiceManager = null;
     private BackTextToAction backTextToAction = null;
-
+    Broadcasting broadcasting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         enableImmersiveMode();
         setContentView(R.layout.activity_main);
-        initPermission(); // 权限请求
+        requestStoragePermission();//请求文件存储权限 (包括读写)
+        requestLocationPermission();//位置权限
         ContextHolder.init(this); // 保存全局 Context
         initView();
         initThirdApi();
@@ -217,13 +224,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mSceneAction = new SceneAction(this);
         textFig = false;
         setParam();
-
         chatMessages.add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
         setLastItem(chatMessages, item -> item.setOver(true));
         TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         //初始化提示工具类
         promptUtlis = new PromptUtlis();
+
     }
 
     @Override
@@ -313,9 +320,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         isNeedWakeUp = false;
                     }
                 }
+                if (intent.getAction().equals("AUTONAVI_STANDARD_BROADCAST_SEND")) {
+                    int keyType = intent.getIntExtra("KEY_TYPE", -1);
+                    if (keyType == 10059) {
+                        int category = intent.getIntExtra("CATEGORY", -1);
+                        int responseCode = intent.getIntExtra("EXTRA_RESPONSE_CODE", -1);
+                        String result = responseCode == 0
+                                ? (category == 1 ? "家" : "公司") + "设置成功"
+                                : "设置失败";
+                        Log.d("AmapAuto", result);
+                    }
+                }
             }
         };
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
+        IntentFilter filters = new IntentFilter("AUTONAVI_STANDARD_BROADCAST_SEND");
         filter.addAction("com.yl.voice.test.start");
         filter.addAction("com.yl.voice.test.stop");
         filter.addAction("com.yl.voice.commit.text");
@@ -324,6 +343,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            registerReceiver(receiver, filters, Context.RECEIVER_EXPORTED);
         }
     }
 
@@ -343,7 +365,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initView() {
-        createMethod.init(MainActivity.this);
+//        createMethod.init(MainActivity.this);
         //标题置顶
         titleTextView = findViewById(R.id.titleTextView);
         titleTextView.bringToFront();
@@ -457,16 +479,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
-            setLastItem(chatMessages, item -> item.setOver(true));
-            mTts.stopSpeaking();
-            if (voiceManager != null) {
-                voiceManager.mTts.stopSpeaking();
-                voiceManager.release();
+            requestRecordAudioPermission();
+            // 检查录音权限
+            boolean hasRecordPermission = ContextCompat.checkSelfPermission(MainActivity.this,
+                    Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+            if (hasRecordPermission){
+                setLastItem(chatMessages, item -> item.setOver(true));
+                mTts.stopSpeaking();
+                if (voiceManager != null) {
+                    voiceManager.mTts.stopSpeaking();
+                    voiceManager.release();
+                }
+                if (currentCall != null) {
+                    currentCall.cancel();
+                }
+                startVoiceRecognize();
             }
-            if (currentCall != null) {
-                currentCall.cancel();
-            }
-            startVoiceRecognize();
         });
         //输入框
         inputEditText = findViewById(R.id.inputEditText);
@@ -497,7 +525,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         newDialogue.setOnClickListener(this);
         mainFragment = new MainFragment();
         recyFragment = new RecyFragment();
+        broadcasting = new Broadcasting();
         movieDetailFragment = new MovieDetailFragment();
+
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, mainFragment).commit();
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, recyFragment).commit();
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, movieDetailFragment).commit();
@@ -597,7 +627,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     private void showHistoryDialog() {
-        HistoryDialog dialog = new HistoryDialog(this, AppDatabase.getInstance(this).getChatHistoryEntities());
+        HistoryDialog dialog = new HistoryDialog(this, AppDatabase.getInstance(this).getChatHistoryEntities(), MainActivity.this);
         dialog.setOnDialogDataBack(new HistoryDialog.onDialogDataBack() {
             @Override
             public void dataBack(ChatHistoryEntity chatHistoryEntity) {
@@ -913,7 +943,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 chatAdapter.notifyItemChanged(chatMessages.size() - 1);
                 if (isNeedWakeUp) {
 //                    if (BotConstResponse.searchWeatherWaiting)
-                    TTSbutton.performClick();
+                    // 检查录音权限
+                    boolean hasRecordPermission = ContextCompat.checkSelfPermission(MainActivity.this,
+                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+                    if (hasRecordPermission){
+                        TTSbutton.performClick();
+                    }
                 }
                 mSceneAction.startActionByPosition();
                 isNeedWakeUp = true;
@@ -1210,7 +1245,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isWeatherOutputStopped ||  weatherIndex > mWeatherResult.length()) {
+            if (isWeatherOutputStopped || weatherIndex > mWeatherResult.length()) {
                 chatMessages.get(chatMessages.size() - 1).setOver(true);
                 return;
             }
@@ -1222,7 +1257,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     };
 
     public void onWeatherError(String message, int rCode) {
-        Log.d(TAG, "startTime: 超时");
         setCurrentChatOver();
         TimeDownUtil.clearTimeDown();
         chatMessages.remove(chatMessages.size() - 1);
@@ -1386,32 +1420,123 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     /**
      * android 6.0 以上需要动态申请权限
      */
-    private void initPermission() {
-        String[] permissions = {Manifest.permission.RECORD_AUDIO, Manifest.permission.ACCESS_NETWORK_STATE, Manifest.permission.INTERNET, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
-        ArrayList<String> toApplyList = new ArrayList<>();
-        for (String perm : permissions) {
-            if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this, perm)) {
-                toApplyList.add(perm);
-            }
-        }
-        String[] tmpList = new String[toApplyList.size()];
-        if (!toApplyList.isEmpty()) {
-            ActivityCompat.requestPermissions(this, toApplyList.toArray(tmpList), 123);
+    private static final int REQUEST_CODE_RECORD_AUDIO = 100;
+    private static final int REQUEST_CODE_STORAGE = 101;
+    private static final int REQUEST_CODE_LOCATION = 102;
+
+    /**
+     * 请求录音权限
+     */
+    private void requestRecordAudioPermission() {
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.RECORD_AUDIO)) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.RECORD_AUDIO},
+                    REQUEST_CODE_RECORD_AUDIO);
         }
     }
 
     /**
-     * 权限申请回调，可以作进一步处理
-     *
-     * @param requestCode
-     * @param permissions
-     * @param grantResults
+     * 请求文件存储权限 (包括读写)
+     */
+    private void requestStoragePermission() {
+        List<String> permissionsNeeded = new ArrayList<>();
+
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+
+        if (!permissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this,
+                    permissionsNeeded.toArray(new String[0]),
+                    REQUEST_CODE_STORAGE);
+        }
+    }
+
+    /**
+     * 请求定位权限 (包括精确和粗略定位)
+     */
+    public void requestLocationPermission() {
+        List<String> permissionsNeeded = new ArrayList<>();
+
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_COARSE_LOCATION)) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        if (!permissionsNeeded.isEmpty()) {
+            ActivityCompat.requestPermissions(this,
+                    permissionsNeeded.toArray(new String[0]),
+                    REQUEST_CODE_LOCATION);
+        }
+    }
+
+    /**
+     * 处理权限请求结果
      */
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                           int[] grantResults) {
-        // 此处为android 6.0以上动态授权的回调，用户自行实现。
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case REQUEST_CODE_RECORD_AUDIO:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // 录音权限已授予，执行相关操作
+                    Toast.makeText(this, "录音权限已授予", Toast.LENGTH_SHORT).show();
+                } else {
+                    // 录音权限被拒绝，提示用户或执行其他操作
+                    Toast.makeText(this, "录音权限被拒绝", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case REQUEST_CODE_STORAGE:
+                boolean allGranted = true;
+                for (int result : grantResults) {
+                    if (result != PackageManager.PERMISSION_GRANTED) {
+                        allGranted = false;
+                        break;
+                    }
+                }
+                if (allGranted) {
+                    // 存储权限已授予
+                    Toast.makeText(this, "存储权限已授予", Toast.LENGTH_SHORT).show();
+                } else {
+                    // 存储权限被拒绝
+                    Toast.makeText(this, "存储权限被拒绝", Toast.LENGTH_SHORT).show();
+                }
+                break;
+
+            case REQUEST_CODE_LOCATION:
+                boolean locationGranted = false;
+                for (int i = 0; i < permissions.length; i++) {
+                    if ((permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                            permissions[i].equals(Manifest.permission.ACCESS_COARSE_LOCATION)) &&
+                            grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        locationGranted = true;
+                        break;
+                    }
+                }
+                if (locationGranted) {
+                    // 定位权限已授予
+                    Toast.makeText(this, "定位权限已授予", Toast.LENGTH_SHORT).show();
+                } else {
+                    // 定位权限被拒绝
+                    Toast.makeText(this, "定位权限被拒绝", Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }
     }
 
     // 检查JSON格式是否正确的方法
@@ -1514,7 +1639,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void selectionAction(String text) {
         if (recyFragment != null && recyFragment.isVisible()) {
             int position = OptionPositionParser.parsePosition(text, recyFragment.getItemCount());
-            Log.e(TAG, "actionByType position: " + position);
             if (position == -1) {
 
             } else {
@@ -1530,7 +1654,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     //超时逻辑处理
     private void startTime(int position) {
-        Log.d(TAG, "startTime: 超时");
+        Log.d(TAG, "startTime12456888: 超时");
+        Log.d(TAG, "超时: " + position);
         TimeDownUtil.startTimeDown(new TimeDownUtil.CountTimeListener() {
             @Override
             public void onTimeFinish() {

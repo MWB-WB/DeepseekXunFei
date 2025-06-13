@@ -88,8 +88,6 @@ public class NeighborhoodSearch {
      * 调用API 方法
      *
      * @param keywords 查询关键字
-     * @param lat      纬度
-     * @param lot      经度
      * @param radius   查询半径
      */
     public static void search(String keywords, String location, int radius, OnPoiSearchListener onPoiSearchListener, Context context) {
@@ -107,10 +105,13 @@ public class NeighborhoodSearch {
             float lot = sharedPreferences.getFloat("longitude", 0);
             location = lot + "," + lat;
         }
-        Log.d("API坐标", "search: " + location);
+        Log.d("API坐标", "location: " + location);
+        Log.d("API坐标", "keywords: " + keywords);
+        Log.d("API坐标", "radius: " + radius);
         // 构造高德POI搜索URL
         //https://restapi.amap.com/v3/place/around?parameters
-        String url = "https://restapi.amap.com/v3/place/around?key=b134db263b1cdde4d64d26dadbaf3e65&keywords=" + Uri.encode(keywords) + "&radius=" + radius + "&location=" + location + "&extensions=base";
+        String url = "https://restapi.amap.com/v5/place/around?location=" + location + "&keywords=" + keywords + "&radius="+radius+"&key=b134db263b1cdde4d64d26dadbaf3e65&sortrule=distance&show_fields=photos";
+//        String url = "https://restapi.amap.com/v3/place/around?key=b134db263b1cdde4d64d26dadbaf3e65&keywords=" + Uri.encode(keywords) + "&radius=" + radius + "&location=" + location + "&extensions=base";
         Request request = new Request.Builder().url(url).build();
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
@@ -125,6 +126,7 @@ public class NeighborhoodSearch {
                 try {
                     JSONObject json = new JSONObject(jsonData);
                     JSONArray pois = json.getJSONArray("pois");
+                    Log.d("TAG", "onResponsepois: "+pois);
                     List<LocationResult> results = new ArrayList<>();
                     for (int i = 0; i < pois.length(); i++) {
                         JSONObject poi = pois.getJSONObject(i);
@@ -135,9 +137,21 @@ public class NeighborhoodSearch {
                         String[] latLng = location.split(",");
                         double longitude = Double.parseDouble(latLng[0]);
                         double latitude = Double.parseDouble(latLng[1]);
-
-                        results.add(new LocationResult(name, address, latitude, longitude));
+                       // 解析第一个.jpg图片
+                        String firstJpgUrl = null;
+                        if (poi.has("photos")) {
+                            JSONArray photos = poi.getJSONArray("photos");
+                            for (int j = 0; j < photos.length(); j++) {
+                                String photoUrl = photos.getJSONObject(j).optString("url", "");
+                                if (!photoUrl.isEmpty() && photoUrl.toLowerCase().endsWith(".jpg")) {
+                                    firstJpgUrl = photoUrl;
+                                    break; // 只取第一张
+                                }
+                            }
+                        }
+                        results.add(new LocationResult(name, address, latitude, longitude,firstJpgUrl));
                     }
+                    Log.d("TAG", "onResponse: "+results);
                     onPoiSearchListener.onSuccess(results);
                 } catch (JSONException e) {
                     onPoiSearchListener.onError("解析失败");

@@ -1,18 +1,29 @@
 package com.yl.deepseekxunfei.scene.actoin;
 
+import static android.content.Context.MODE_PRIVATE;
+
+import static com.yl.deepseekxunfei.utlis.PermissionManager.requestLocationPermission;
+
+import android.Manifest;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import com.amap.api.services.weather.LocalWeatherForecastResult;
 import com.amap.api.services.weather.LocalWeatherLive;
-import com.google.gson.Gson;
 import com.yl.deepseekxunfei.APICalls.GeocodingApi;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
+import com.yl.deepseekxunfei.APICalls.ScenerySpotApi;
 import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.OnPoiSearchListener;
+import com.yl.deepseekxunfei.broadcast.Broadcasting;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
@@ -23,12 +34,15 @@ import com.yl.deepseekxunfei.model.NavChildMode;
 import com.yl.deepseekxunfei.model.PluginMediaModel;
 import com.yl.deepseekxunfei.model.WeatherChildMode;
 import com.yl.deepseekxunfei.page.LocationResult;
+import com.yl.deepseekxunfei.page.SceneryPage;
 import com.yl.deepseekxunfei.scene.NavScene;
 import com.yl.deepseekxunfei.utlis.BotConstResponse;
+import com.yl.deepseekxunfei.utlis.ContextHolder;
 import com.yl.deepseekxunfei.utlis.KnowledgeBaseLoader;
 import com.yl.deepseekxunfei.utlis.MusicKuwo;
 import com.yl.deepseekxunfei.utlis.SceneTypeConst;
 import com.yl.deepseekxunfei.utlis.TimeDownUtil;
+import com.yl.deepseekxunfei.utlis.positioning;
 import com.yl.deepseekxunfei.utlis.searchIn;
 import com.yl.douyinapi.DouyinApi;
 
@@ -36,7 +50,6 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnForecastWeatherListener {
 
@@ -49,7 +62,10 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     private LocationResult wayPoint;
     private MusicKuwo musicKuwo;
     private Handler mHandler;
-    public static String  location;
+    public static String location;
+    public static String locationScenery;
+    public Context context = ContextHolder.getContext();
+    GeocodingApi geocodingApi = new GeocodingApi();
 
     public SceneAction(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -85,18 +101,19 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             actionByType(baseChildModelList.get(currentPosition));
         }
     }
+
     public void actionByType(BaseChildModel baseChildModel) {
         mainActivity.replaceFragment(0);
         String botResponse = BotConstResponse.getSuccessResponse();
         switch (baseChildModel.getType()) {
             // 附近搜索
             case SceneTypeConst.NEARBY:
+                Log.d("TAG", "actionByType: " + SceneAction.location);
                 nearbyAction(baseChildModel, botResponse);
                 break;
             // 关键字导航
             case SceneTypeConst.KEYWORD:
-                if (NavScene.addressLocation.toString()!=null){
-                    GeocodingApi geocodingApi = new GeocodingApi();
+                if (NavScene.addressLocation.toString() != null) {
                     geocodingApi.geocoding(NavScene.addressLocation.toString(), null, new GeocodingApi.success() {
                         @Override
                         public void SuccessAPI(String response) {
@@ -167,6 +184,13 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.SELFINTRODUCE:
                 SceneAction.location = null;
                 selfIntroduceAction();
+                break;
+            case SceneTypeConst.HOMECOMPANY:
+                SceneAction.location = null;
+                Log.d("", "actionByType: 设置家");
+                //1是否设置，2，设置的名称，3，纬度，4，经度，5，地址名称（），6，context对象
+                Broadcasting.top(context);
+//                Broadcasting.BroadcastingActivate(0,context);//设置家或者公司
                 break;
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
@@ -253,7 +277,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     private void musicSearchAction(BaseChildModel baseChildModel) {
         String musicName = ((MusicChildModel) baseChildModel).getMusicName();
         String artist = ((MusicChildModel) baseChildModel).getArtist();
-        Log.e("TAG", "musicAction: " + musicName + ":: artist: "+ artist);
+        Log.e("TAG", "musicAction: " + musicName + ":: artist: " + artist);
         PluginMediaModel pluginMediaModel = new PluginMediaModel();
         pluginMediaModel.setKeyWords(musicName);
         pluginMediaModel.setArtist(artist);
@@ -422,11 +446,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
         NeighborhoodSearch.getLocation(city, city, cityLocation -> {
-            if (SceneAction.location!=null){
+            if (SceneAction.location != null) {
                 cityLocation = SceneAction.location;
             }
-            Log.d("TAG", "nearbyActionLocation: "+location);
-            Log.d("TAG", "nearbyActionLocation: "+cityLocation.toString());
+            Log.d("TAG", "nearbyActionLocation: " + location);
+            Log.d("TAG", "nearbyActionLocation: " + cityLocation.toString());
             NeighborhoodSearch.search(location, cityLocation, 5000, new OnPoiSearchListener() {
                 @Override
                 public void onSuccess(List<LocationResult> results) {
@@ -500,4 +524,52 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.onForecastWeatherSuccess(localWeatherForecastResult);
     }
 
+    public void sceneryAction() {
+        //获取当前定位城市
+        positioning positioning = new positioning();
+        try {
+            positioning.initLocation(context);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            positioning.release();
+        }
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
+        String city = sharedPreferences.getString("city", "");
+        Log.d("TAG", "sceneryAction: " + city);
+        geocodingApi.geocoding(city, null, new GeocodingApi.success() {
+            @Override
+            public void SuccessAPI(String response) {
+                SceneAction.locationScenery = response;
+            }
+        });
+        if (SceneAction.location != null) {
+            //使用上次关键字导航目的地的经纬度
+            ScenerySpotApi.ScenerySpotAPi(SceneAction.location, "景点", new ScenerySpotApi.scenerySuccess() {
+                @Override
+                public void success(List<SceneryPage> list) {
+                    Log.d("TAG", "successlist结果：: " + list);
+                }
+
+                @Override
+                public void err(String e) {
+
+                }
+            });
+        } else {
+            //使用当前定位城市的经纬度
+            ScenerySpotApi.ScenerySpotAPi(SceneAction.locationScenery, "景点", new ScenerySpotApi.scenerySuccess() {
+                @Override
+                public void success(List<SceneryPage> list) {
+                    Log.d("TAG", "successlist结果：: " + list);
+                    SceneAction.locationScenery = null;
+                }
+
+                @Override
+                public void err(String e) {
+
+                }
+            });
+        }
+    }
 }

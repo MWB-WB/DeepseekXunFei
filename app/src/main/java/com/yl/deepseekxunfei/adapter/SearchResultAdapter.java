@@ -1,13 +1,16 @@
 package com.yl.deepseekxunfei.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.page.LocationResult;
 
@@ -38,6 +41,21 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
         LocationResult result = results.get(position);
         holder.nameText.setText(result.getName());
         holder.addressText.setText(result.getAddress());
+        // 加载图片（使用 Glide）
+        if (result.getPhotoUrl() != null && !result.getPhotoUrl().isEmpty()) {
+            Log.d("TAG", "onBindViewHolder: "+            result.getPhotoUrl());
+            Glide.with(holder.itemView.getContext())
+                    .load(result.getPhotoUrl())
+                    .placeholder(R.drawable.zanwu) // 占位图
+                    .error(R.drawable.zanwu)            // 错误图
+                    .centerCrop()                          // 图片裁剪方式
+                    .into(holder.imageView);
+
+        } else {
+            // 无图片时显示默认图或隐藏 ImageView
+            Log.d("TAG", "onBindViewHolder: "+            result.getPhotoUrl());
+            holder.imageView.setImageResource(R.drawable.zanwu);
+        }
         holder.itemView.setOnClickListener(v -> listener.onItemClick(result));
     }
 
@@ -49,11 +67,14 @@ public class SearchResultAdapter extends RecyclerView.Adapter<SearchResultAdapte
     public static class ViewHolder extends RecyclerView.ViewHolder {
         TextView nameText;
         TextView addressText;
+        ImageView imageView;
+
 
         public ViewHolder(View itemView) {
             super(itemView);
             nameText = itemView.findViewById(R.id.nameText);
             addressText = itemView.findViewById(R.id.addressText);
+            imageView = itemView.findViewById(R.id.imgView);
         }
     }
 

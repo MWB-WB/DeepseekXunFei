@@ -108,6 +108,7 @@ public class SceneManager {
     }
 
     private SceneModel getSceneModel(WordNLPModel wordNLPModel, String text) {
+        Log.d("设置家", "getSceneModel: "+text);
         SceneModel resultModel = new SceneModel();
         resultModel.setText(text);
         //可能有上下问关系的场景，主要用来处理一些特殊的逻辑
@@ -150,6 +151,10 @@ public class SceneManager {
             resultModel.setScene(SceneType.STOP);
         } else if (isCalculationQuestion(text)) {
             resultModel.setScene(SceneType.COMPUTE);
+        }else if (text.contains("设置家")||text.contains("设置公司") ){
+            Log.d("设置家", "getSceneModel: 设置家");
+
+            resultModel.setScene(SceneType.SETHOMECOMPANY);
         }
 //        else if (isSelfIntroduction(text)) {
 //            resultModel.setScene(SceneType.SELFINTRODUCE);
@@ -256,6 +261,11 @@ public class SceneManager {
             case SELFINTRODUCE:
                 baseChildModel = new BaseChildModel();
                 baseChildModel.setType(SceneTypeConst.SELFINTRODUCE);
+                baseChildModel.setText(sceneModel.getText());
+                break;
+            case SETHOMECOMPANY:
+                baseChildModel = new BaseChildModel();
+                baseChildModel.setType(SceneTypeConst.HOMECOMPANY);
                 baseChildModel.setText(sceneModel.getText());
                 break;
             default:
