@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    android:background="@android:color/white">
+    android:background="@android:color/white"
+    android:padding="16dp">
 
     <!-- 标题 -->
     <TextView
@@ -25,13 +24,13 @@
         android:id="@+id/updateDateTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="最后更新日期：2025年4月18日"
-        android:textSize="14sp"
+        android:layout_marginTop="4dp"
+        android:text="最后更新日期：2025年6月16日"
         android:textColor="@android:color/darker_gray"
-        app:layout_constraintTop_toBottomOf="@id/titleTextView"
+        android:textSize="14sp"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="4dp"/>
+        app:layout_constraintTop_toBottomOf="@id/titleTextView" />
 
     <!-- 隐私政策内容 -->
     <ScrollView
@@ -39,216 +38,274 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/updateDateTextView"
-        app:layout_constraintBottom_toTopOf="@id/buttonsContainer">
+        app:layout_constraintBottom_toTopOf="@id/consentCheckboxContainer"
+        app:layout_constraintTop_toBottomOf="@id/updateDateTextView">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
-
             <!-- 引言 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="1. 引言"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="本应用尊重并保护所有使用服务用户的个人隐私权。本隐私政策旨在说明我们如何收集、使用、存储和保护您的个人信息，特别是关于位置、录音等敏感权限的使用。"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="16dp"
+                android:text="本应用尊重并保护所有使用服务用户的个人隐私权。本隐私政策旨在说明我们如何收集、使用、存储和保护您的个人信息，特别是关于设备信息、位置、录音等敏感权限的使用。"
+                android:textSize="16sp" />
 
             <!-- 信息收集与使用 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="2. 信息收集与使用"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
+
+            <!-- 设备信息收集 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="2.1 设备信息收集"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="我们可能收集以下设备信息：\n• 设备标识符（Android ID/IDFA）：用于账号安全绑定\n• 设备型号和系统版本：用于兼容性适配\n• 网络信息（IP地址、网络类型）：用于服务优化\n• 屏幕分辨率：用于界面适配\n• 电池状态：用于省电优化\n\n我们承诺：\n• 不会将设备信息与个人身份直接关联\n• 敏感信息（如MAC地址）采用加密存储\n• 存储期限不超过6个月（法律特殊要求除外）"
+                android:textSize="16sp" />
+
+            <!-- MAC地址收集 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="2.2 MAC地址收集与使用"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="收集内容：MAC地址、Android ID、OAID、DEVICEID\n收集目的：  \n- 设备唯一性识别（用于账号安全绑定）\n  - 网络故障诊断（分析连接异常问题）  \n  - 反作弊系统（防止虚假设备注册）  \n  处理方式：  \n  - 获取的MAC地址立即进行SHA-256哈希加密  \n  - 不与用户身份信息直接关联存储  \n  - 存储期限：自收集之日起180天后自动删除  \n  关闭方式：  \n  用户可通过【设置-隐私中心-设备标识管理】随时关闭MAC地址收集"
+            android:textSize="16sp" />
 
             <!-- 位置信息 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2.1 位置信息"
+                android:layout_marginTop="8dp"
+                android:text="2.3 位置信息"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:text="• 收集目的：用于提供周边地点搜索、天气查询等基于位置的服务\n• 使用方式：仅在您使用相关功能时获取当前位置，不会持续追踪\n• 存储方式：位置信息仅临时处理，不会长期存储在服务器上"
+                android:textSize="16sp" />
+
+            <!-- 智能对话 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="2.4 智能对话服务"
                 android:textSize="16sp"
-                android:layout_marginBottom="8dp"/>
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="在使用智能对话功能时：\n• 我们会收集您输入的文本、图片等内容用于理解上下文\n• 剪贴板内容仅在您主动粘贴时获取\n• 对话数据会进行匿名化分析用于服务优化\n• 您可随时在设置中清除对话历史记录"
+                android:textSize="16sp" />
 
             <!-- 录音权限 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2.2 录音权限"
+                android:layout_marginTop="8dp"
+                android:text="2.5 录音权限"
                 android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="• 收集目的：实现语音输入功能用于声纹识别验证\n• 使用方式：语音输入内容仅用于处理您的请求，声纹特征信息会加密存储用于身份验证\n• 存储期限：语音输入内容实时处理完成后立即删除，声纹特征数据将保留至您主动删除账户，我们不会将您的录音用于其他用途（除本应用使用除外）"
-                android:textSize="16sp"
-                android:layout_marginBottom="8dp"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="2.3 MAC地址收集与使用条款"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="• 收集目的:我们可能收集设备的MAC地址用于以下合法用途：\n• 设备身份识别（确保服务的设备级唯一性）\n• 网络连接故障诊断\n• 提供基于位置的个性化服务（当与GPS等其他数据结合时）防止欺诈和滥用行为"
-                android:textSize="16sp"
-                android:layout_marginBottom="8dp"/>
-
-            <!-- 其他权限 -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="2.4 其他权限"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="• 存储权限：用于缓存应用数据，提升使用体验\n• 网络权限：用于连接服务器获取服务内容"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="16dp"
+                android:text="• 收集目的：实现语音输入功能用于声纹识别验证\n• 使用方式：语音输入内容仅用于处理您的请求\n• 存储期限：语音内容实时处理后立即删除，声纹数据保留至账户注销"
+                android:textSize="16sp" />
 
             <!-- 数据共享与披露 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="3. 数据共享与披露"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:text="我们承诺不会将您的个人信息出售给第三方。仅在以下情况下，我们可能会共享您的信息：\n• 获得您明确同意后\n• 应法律法规要求或政府主管部门强制要求\n• 为保护本应用及其用户或公众的安全"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:textSize="16sp" />
 
             <!-- 数据安全 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="4. 数据安全"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="我们采取各种安全措施来保护您的个人信息：\n• 数据传输使用SSL加密技术\n• 敏感信息(如声纹数据)加密存储\n• 定期安全审计和漏洞修复"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="16dp"
+                android:text="我们采取的安全措施：\n• 数据传输使用SSL加密技术\n• 敏感信息加密存储\n• 定期安全审计和漏洞修复\n• 访问权限分级控制"
+                android:textSize="16sp" />
 
             <!-- 您的权利 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="5. 您的权利"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="您对您的个人信息享有以下权利：\n• 访问、更正或删除您的个人信息\n• 撤回已同意的权限\n• 注销账户\n• 获取个人信息副本"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:layout_marginBottom="16dp"
+                android:text="您享有以下权利：\n• 访问、更正或删除个人信息\n• 撤回已同意的权限\n• 注销账户\n• 获取个人信息副本\n• 拒绝设备信息收集（部分功能可能受限）"
+                android:textSize="16sp" />
 
             <!-- 未成年人保护 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="6. 未成年人保护"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:text="我们特别重视未成年人的个人信息保护：\n• 不满14周岁的用户需在监护人同意下使用\n• 不主动收集未成年人的个人信息\n• 监护人可联系我们管理未成年人的账户"
-                android:textSize="16sp"
-                android:layout_marginBottom="16dp"/>
+                android:textSize="16sp" />
+
+            <!-- 运营与安全保障 -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="7. 运营与安全保障"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="用于保障服务正常运行的必要信息：\n• 硬件型号、操作系统版本\n• 设备标识符（Android ID/OAID）\n• 网络质量数据、服务日志\n• 设备传感器数据（如加速度传感器）"
+                android:textSize="16sp" />
 
             <!-- 联系我们 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="7. 联系我们"
+                android:layout_marginTop="8dp"
+                android:text="8. 联系我们"
                 android:textSize="18sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="如对本隐私政策有任何疑问或建议，请通过以下方式联系我们："
-                android:textSize="16sp"
-                android:layout_marginBottom="8dp"/>
+                android:layout_marginBottom="8dp"
+                android:text="如有任何疑问，请联系："
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="• 邮箱：3403789091@qq.com"
-                android:textSize="16sp"
                 android:autoLink="email"
-                android:linksClickable="true"/>
+                android:linksClickable="true"
+                android:text="• 邮箱：3403789091@qq.com"
+                android:textSize="16sp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="• 客服电话：19129353202"
-                android:textSize="16sp"
+                android:layout_marginBottom="16dp"
                 android:autoLink="phone"
                 android:linksClickable="true"
-                android:layout_marginBottom="16dp"/>
+                android:text="• 客服电话：19129353202"
+                android:textSize="16sp" />
 
             <!-- 同意声明 -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:text="使用本应用即表示您已阅读并同意本隐私政策的全部内容。"
                 android:textSize="16sp"
-                android:textStyle="italic"
-                android:layout_marginTop="8dp"/>
+                android:textStyle="italic" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- 同意复选框容器 -->
+    <LinearLayout
+        android:id="@+id/consentCheckboxContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        app:layout_constraintBottom_toTopOf="@id/buttonsContainer">
+
+        <CheckBox
+            android:id="@+id/consentCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:buttonTint="@android:color/black" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="我已阅读并同意以上隐私政策"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <!-- 按钮容器 -->
     <LinearLayout
         android:id="@+id/buttonsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
         android:orientation="horizontal"
         android:weightSum="2"
-        android:layout_marginBottom="16dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- 拒绝按钮 -->
@@ -256,21 +313,22 @@
             android:id="@+id/disagreeButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:text="拒绝并退出"
-            android:textColor="@android:color/black"
             android:background="@drawable/button_border"
-            android:layout_marginEnd="8dp"/>
+            android:text="拒绝并退出"
+            android:textColor="@android:color/black" />
 
-        <!-- 同意按钮 -->
+        <!-- 同意按钮（初始不可点击） -->
         <Button
             android:id="@+id/agreeButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:backgroundTint="@android:color/background_dark"
+            android:enabled="false"
             android:text="同意并继续"
-            android:textColor="@android:color/white"
-            android:backgroundTint="@android:color/background_dark"/>
+            android:textColor="@android:color/white" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

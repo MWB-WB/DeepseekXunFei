@@ -5,7 +5,9 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ScrollView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
 
@@ -15,6 +17,8 @@ public class PrivacyPolicyActivity extends AppCompatActivity {
     private SharedPreferences sharedPreferences;
     private Button agreeButton;
     private Button disagreeButton;
+    private CheckBox consentCheckbox;
+    private ScrollView scrollView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,6 +28,8 @@ public class PrivacyPolicyActivity extends AppCompatActivity {
         sharedPreferences = getSharedPreferences("AppPreferences", MODE_PRIVATE);
         agreeButton = findViewById(R.id.agreeButton);
         disagreeButton = findViewById(R.id.disagreeButton);
+        consentCheckbox = findViewById(R.id.consentCheckbox);
+        scrollView = findViewById(R.id.scrollView);
 
         // 检查是否已经同意当前版本的隐私政策
         if (isPolicyAccepted()) {
@@ -40,29 +46,39 @@ public class PrivacyPolicyActivity extends AppCompatActivity {
     }
 
     private void setupUI() {
-        final ScrollView scrollView = findViewById(R.id.scrollView);
-        scrollView.post(() -> scrollView.fullScroll(ScrollView.FOCUS_DOWN));
-
+        // 初始设置同意按钮不可用
         agreeButton.setEnabled(false);
         agreeButton.setAlpha(0.5f);
 
-        // 滚动监听
+        // 滚动到最底部后启用复选框
         scrollView.getViewTreeObserver().addOnScrollChangedListener(() -> {
             if (isScrollToBottom(scrollView)) {
-                agreeButton.setEnabled(true);
-                agreeButton.setAlpha(1f);
+                consentCheckbox.setEnabled(true);
             }
         });
 
+        // 复选框状态变化监听
+        consentCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            agreeButton.setEnabled(isChecked);
+            agreeButton.setAlpha(isChecked ? 1f : 0.5f);
+        });
+
         // 同意按钮点击事件
-        agreeButton.setOnClickListener(v -> acceptPolicy());
+        agreeButton.setOnClickListener(v -> {
+            if (consentCheckbox.isChecked()) {
+                acceptPolicy();
+            } else {
+                Toast.makeText(this, "请先勾选同意隐私政策", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // 拒绝按钮点击事件
         disagreeButton.setOnClickListener(v -> showExitConfirmationDialog());
     }
 
     private boolean isScrollToBottom(ScrollView scrollView) {
-        View view = scrollView.getChildAt(scrollView.getChildCount() - 1);
+        if (scrollView.getChildCount() == 0) return false;
+        View view = scrollView.getChildAt(0);
         int diff = (view.getBottom() - (scrollView.getHeight() + scrollView.getScrollY()));
         return diff <= 0;
     }

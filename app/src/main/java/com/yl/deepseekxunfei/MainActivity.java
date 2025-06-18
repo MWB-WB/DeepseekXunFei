@@ -213,8 +213,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         enableImmersiveMode();
         setContentView(R.layout.activity_main);
-        requestStoragePermission();//请求文件存储权限 (包括读写)
-        requestLocationPermission();//位置权限
+//        requestLocationPermission();//位置权限
         ContextHolder.init(this); // 保存全局 Context
         initView();
         initThirdApi();
@@ -230,7 +229,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         chatAdapter.notifyItemInserted(chatMessages.size() - 1);
         //初始化提示工具类
         promptUtlis = new PromptUtlis();
-
+        MACAddressMain();
     }
 
     @Override
@@ -786,7 +785,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mIatDialog.dismiss(); // 关闭对话框
         }
         createMethod.cloneMIatDisalogs();
-        createMethod.tenSecondsOfAudio.stopRecording();
+        if ( createMethod.tenSecondsOfAudio!=null){
+            createMethod.tenSecondsOfAudio.stopRecording();
+        }
         super.onDestroy();
     }
 
@@ -1308,6 +1309,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // 显示历史记录对话框
             myHandler.postDelayed(this::showHistoryDialog, 500);
         } else if (v.getId() == R.id.xjianduihua) {
+            //在新建对话时申请存储权限
+//            requestStoragePermission();//请求文件存储权限 (包括读写)
+//            // 检查存储权限
+//            int permissionStatus = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+//            Log.d(TAG, "onClick: 存储权限"+permissionStatus);
+//            if (permissionStatus == PackageManager.PERMISSION_GRANTED){
+//
+//            }
             contextQueue.clear();
             context.clear();
             if (voiceManager != null) {
@@ -1332,6 +1341,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             AppDatabase.getInstance(this).insert(chatHistoryEntity);
             chatMessages.clear();
             chatAdapter.notifyDataSetChanged();
+
         } else if (v.getId() == R.id.send_button) {
             isNeedWakeUp = true;
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
@@ -1423,6 +1433,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final int REQUEST_CODE_RECORD_AUDIO = 100;
     private static final int REQUEST_CODE_STORAGE = 101;
     private static final int REQUEST_CODE_LOCATION = 102;
+    public static final int REQUEST_CODE_MAC_ADDRESS = 103; // 新增MAC地址权限请求码
 
     /**
      * 请求录音权限
@@ -1434,6 +1445,92 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     new String[]{Manifest.permission.RECORD_AUDIO},
                     REQUEST_CODE_RECORD_AUDIO);
         }
+    }
+    /**
+     * 请求MAC地址相关权限（需要WIFI状态和位置权限）
+     */
+    private void requestMacAddressPermission() {
+        List<String> permissionsNeeded = new ArrayList<>();
+
+        // Android 6.0+ 需要WIFI状态权限
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_WIFI_STATE)) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_WIFI_STATE);
+        }
+
+        // Android 10+ 需要位置权限才能获取真实MAC地址
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION)) {
+            permissionsNeeded.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        if (!permissionsNeeded.isEmpty()) {
+            if (shouldShowAnyPermissionRationale(permissionsNeeded)) {
+                showMacAddressPermissionRationale(permissionsNeeded);
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        permissionsNeeded.toArray(new String[0]),
+                        REQUEST_CODE_MAC_ADDRESS);
+            }
+        } else {
+            // 已有权限，直接获取MAC地址
+        }
+
+    }
+    // 修改后的对话框方法
+    public void showMacAddressPermissionDialog(PermissionRequestCallback callback) {
+        new AlertDialog.Builder(this)
+                .setTitle("设备识别需要")
+                .setMessage("我们需获取你的MAC地址以生成设备标识符...")
+                .setPositiveButton("理解", (d, w) -> callback.onPermissionResult(true))
+                .setNegativeButton("拒绝", (d, w) -> callback.onPermissionResult(false))
+                .setOnCancelListener(d -> callback.onPermissionResult(false))
+                .show();
+    }
+    // 定义回调接口
+    public interface PermissionRequestCallback {
+        void onPermissionResult(boolean isGranted);
+    }
+    public void MACAddressMain(){
+        showMacAddressPermissionDialog(new PermissionRequestCallback() {
+            @Override
+            public void onPermissionResult(boolean isGranted) {
+                if (isGranted) {
+                    requestMacAddressPermission();
+                } else {
+                    //拒绝MAC权限处理
+
+                }
+            }
+        });
+    }
+
+    /**
+     * 检查是否需要显示权限解释
+     */
+    private boolean shouldShowAnyPermissionRationale(List<String> permissions) {
+        for (String permission : permissions) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, permission)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * 显示MAC地址权限解释对话框
+     */
+    private void showMacAddressPermissionRationale(List<String> permissions) {
+        new AlertDialog.Builder(this)
+                .setTitle("需要权限")
+                .setMessage("获取设备MAC地址需要WIFI状态和位置权限")
+                .setPositiveButton("授予权限", (dialog, which) ->
+                        ActivityCompat.requestPermissions(this,
+                                permissions.toArray(new String[0]),
+                                REQUEST_CODE_MAC_ADDRESS))
+                .setNegativeButton("取消", (dialog, which) ->
+                        Toast.makeText(this, "MAC地址功能将不可用", Toast.LENGTH_SHORT).show())
+                .show();
     }
 
     /**
@@ -1535,7 +1632,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     // 定位权限被拒绝
                     Toast.makeText(this, "定位权限被拒绝", Toast.LENGTH_SHORT).show();
                 }
+
                 break;
+            case REQUEST_CODE_MAC_ADDRESS:
+                handleMacAddressPermissionResult(permissions, grantResults);
+                break;
+        }
+    }
+    private void handleMacAddressPermissionResult(String[] permissions, int[] grantResults) {
+        boolean allGranted = true;
+        boolean shouldShowRationale = false;
+
+        for (int i = 0; i < permissions.length; i++) {
+            if (grantResults[i] != PackageManager.PERMISSION_GRANTED) {
+                allGranted = false;
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, permissions[i])) {
+                    shouldShowRationale = true;
+                }
+            }
+        }
+
+        if (allGranted) {
+            Toast.makeText(this, "权限已授予，正在获取MAC地址", Toast.LENGTH_SHORT).show();
+        } else {
+            if (shouldShowRationale) {
+                showMacAddressPermissionRationale(Arrays.asList(permissions));
+            }
+            Toast.makeText(this, "无法获取MAC地址", Toast.LENGTH_SHORT).show();
         }
     }
 

@@ -2,12 +2,14 @@ package com.yl.deepseekxunfei.scene.actoin;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static androidx.core.content.ContextCompat.getSystemService;
 import static com.yl.deepseekxunfei.utlis.PermissionManager.requestLocationPermission;
 
 import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -17,6 +19,7 @@ import androidx.core.content.ContextCompat;
 
 import com.amap.api.services.weather.LocalWeatherForecastResult;
 import com.amap.api.services.weather.LocalWeatherLive;
+import com.yl.creteEntity.crete.roomCrete.entity.roomDIal;
 import com.yl.deepseekxunfei.APICalls.GeocodingApi;
 import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
 import com.yl.deepseekxunfei.APICalls.ScenerySpotApi;
@@ -24,6 +27,8 @@ import com.yl.deepseekxunfei.APICalls.WeatherAPI;
 import com.yl.deepseekxunfei.MainActivity;
 import com.yl.deepseekxunfei.OnPoiSearchListener;
 import com.yl.deepseekxunfei.broadcast.Broadcasting;
+import com.yl.deepseekxunfei.broadcast.GoHomeBackToWork;
+import com.yl.deepseekxunfei.broadcast.IntentProcessing;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
@@ -65,6 +70,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     public static String location;
     public static String locationScenery;
     public Context context = ContextHolder.getContext();
+    public int code = 0;//设置家/公司
+    public int goCode = 0;//回家/公司
     GeocodingApi geocodingApi = new GeocodingApi();
 
     public SceneAction(MainActivity mainActivity) {
@@ -108,20 +115,56 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         switch (baseChildModel.getType()) {
             // 附近搜索
             case SceneTypeConst.NEARBY:
-                Log.d("TAG", "actionByType: " + SceneAction.location);
-                nearbyAction(baseChildModel, botResponse);
+                mainActivity.requestLocationPermission();
+                // 检查粗略定位权限
+                boolean hasCoarseLocationNearby = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED;
+                if (hasCoarseLocationNearby){
+                    nearbyAction(baseChildModel, botResponse);
+                }else {
+                    mainActivity.addMessageAndTTS(new ChatMessage("请打开位置访问权限", false, "", false)
+                            , "请打开位置访问权限");
+//                    mainActivity.startTimeOut();
+                }
                 break;
             // 关键字导航
             case SceneTypeConst.KEYWORD:
-                if (NavScene.addressLocation.toString() != null) {
-                    geocodingApi.geocoding(NavScene.addressLocation.toString(), null, new GeocodingApi.success() {
-                        @Override
-                        public void SuccessAPI(String response) {
-                            SceneAction.location = response;
+                if (!IntentProcessing.recognizeIntent(baseChildModel.getText()).equals("work") && !IntentProcessing.recognizeIntent(baseChildModel.getText()).equals("home")){
+                    mainActivity.requestLocationPermission();
+                    // 检查粗略定位权限
+                    boolean hasCoarseLocationsKeyword = ContextCompat.checkSelfPermission(
+                            context,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED;
+                    if (hasCoarseLocationsKeyword){
+                        if (NavScene.addressLocation.toString() != null) {
+                            geocodingApi.geocoding(NavScene.addressLocation.toString(), null, new GeocodingApi.success() {
+                                @Override
+                                public void SuccessAPI(String response) {
+                                    SceneAction.location = response;
+                                }
+                            });
                         }
-                    });
+                        keyWordAction(baseChildModel, botResponse);
+                    }else {
+                        mainActivity.addMessageAndTTS(new ChatMessage("请打开位置访问权限", false, "", false)
+                                , "请打开位置访问权限");
+                    }
+                }else {
+                    if (baseChildModel.getText().contains("公司")){
+                        goCode = 1;
+                    }else {
+                        goCode = 0;
+                    }
+                    Log.d("TAG", "goCode: "+goCode);
+                    GoHomeBackToWork.goHomeToWord(goCode,context);
+                    // 先让机器人回复固定内容
+                    mainActivity.addMessageAndTTS(new ChatMessage("好的", false, "", false)
+                            , "好的");
+                    Broadcasting.top(mainActivity);
                 }
-                keyWordAction(baseChildModel, botResponse);
                 break;
             case SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS:
                 SceneAction.location = null;
@@ -187,10 +230,33 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 break;
             case SceneTypeConst.HOMECOMPANY:
                 SceneAction.location = null;
-                Log.d("", "actionByType: 设置家");
+                Log.d("", "actionByType: 设置家"+baseChildModel.getText());
+                if (baseChildModel.getText().contains("公司")){
+                    code = 1;
+                }else {
+                    code = 0;
+                }
                 //1是否设置，2，设置的名称，3，纬度，4，经度，5，地址名称（），6，context对象
-                Broadcasting.top(context);
-//                Broadcasting.BroadcastingActivate(0,context);//设置家或者公司
+                Log.d("TAG", "actionByType: "+code);//0家1公司
+                mainActivity.addMessageAndTTS(new ChatMessage("好的，正在为您打开高德地图", false, "", false)
+                        , "好的，正在为您打开高德地图");
+
+                Broadcasting.BroadcastingActivate(code,context);//设置家或者公司
+                Broadcasting.top(mainActivity);
+                break;
+            case SceneTypeConst.GOHOMETOWORK:
+                Log.d("TAG", "actionByType回: "+baseChildModel.getText());
+                if (baseChildModel.getText().contains("公司")){
+                    goCode = 1;
+                }else {
+                    goCode = 0;
+                }
+                Log.d("TAG", "goCode: "+goCode);
+                GoHomeBackToWork.goHomeToWord(goCode,context);
+                // 先让机器人回复固定内容
+                mainActivity.addMessageAndTTS(new ChatMessage("好的", false, "", false)
+                        , "好的");
+                Broadcasting.top(mainActivity);
                 break;
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
