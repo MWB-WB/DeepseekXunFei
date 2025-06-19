@@ -1,6 +1,6 @@
 package com.yl.deepseekxunfei.model;
 
-import com.yl.deepseekxunfei.sceneenum.SceneType;
+import com.yl.ylcommon.ylenum.SceneType;
 
 public class SceneModel {
 

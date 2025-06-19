@@ -30,5 +30,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = "deepseekXunFei"
 include ':app'
-include ':DouyinApi'
+include ':YLThirdApi'
 include ':creteModule'
+include ':basemvp'
+include ':YLCommon'

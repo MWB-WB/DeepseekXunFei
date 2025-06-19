@@ -2,7 +2,7 @@ package com.yl.deepseekxunfei.scene;
 
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 public class VideoScene extends BaseChildScene {
 

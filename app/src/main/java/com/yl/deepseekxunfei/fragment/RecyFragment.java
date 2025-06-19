@@ -14,24 +14,22 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.github.ybq.android.spinkit.SpinKitView;
-import com.yl.deepseekxunfei.APICalls.MovieApiClient;
-import com.yl.deepseekxunfei.APICalls.NeighborhoodSearch;
-import com.yl.deepseekxunfei.APICalls.SongPlaybackAPI;
-import com.yl.deepseekxunfei.OnPoiSearchListener;
-import com.yl.deepseekxunfei.model.PluginMediaModel;
-import com.yl.deepseekxunfei.utlis.AmapNavigator;
-import com.yl.deepseekxunfei.MainActivity;
+import com.yl.ylcommon.utlis.AmapNavigator;
+import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.adapter.SearchResultAdapter;
 import com.yl.deepseekxunfei.adapter.SearchResultAdapterMovie;
 import com.yl.deepseekxunfei.adapter.SearchResultAdapterMusical;
-import com.yl.deepseekxunfei.model.MovieDetailModel;
-import com.yl.deepseekxunfei.model.MovieResponse;
-import com.yl.deepseekxunfei.page.LocationResult;
-import com.yl.deepseekxunfei.utlis.MusicKuwo;
+import com.yl.gaodeApi.page.LocationResult;
+import com.yl.gaodeApi.poi.NeighborhoodSearch;
+import com.yl.gaodeApi.poi.OnPoiSearchListener;
+import com.yl.kuwo.MusicKuwo;
+import com.yl.kuwo.PluginMediaModel;
+import com.yl.tianmao.MovieApiClient;
+import com.yl.tianmao.MovieDetailModel;
+import com.yl.tianmao.MovieResponse;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class RecyFragment extends Fragment {
@@ -144,7 +142,7 @@ public class RecyFragment extends Fragment {
         return maxPosition;
     }
 
-    public void showMusicSearchResult(List<PluginMediaModel> results,MusicKuwo kuwo) {
+    public void showMusicSearchResult(List<PluginMediaModel> results, MusicKuwo kuwo) {
         searchResultsRecyclerView.setVisibility(View.VISIBLE);
         spinKitView.setVisibility(View.GONE);
         SearchResultAdapterMusical adapter = new SearchResultAdapterMusical(results, new SearchResultAdapterMusical.OnItemClickListener() {

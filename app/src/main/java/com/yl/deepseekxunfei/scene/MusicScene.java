@@ -8,14 +8,12 @@ import com.hankcs.hanlp.seg.common.Term;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.MusicChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MusicScene extends BaseChildScene {
 
@@ -62,10 +60,14 @@ public class MusicScene extends BaseChildScene {
 
             // 识别非书名号音乐名称（需要扩展规则）
             if (isMusicName(word, term.nature.toString())) {
-                result.musicNames.add(word);
+                if (word.length() >= 2) {
+                    result.musicNames.add(word);
+                }
             }
             if (term.nature.startsWith("nr")) {
-                result.artist = word;
+                if (word.length() >= 2) {
+                    result.artist = word;
+                }
             }
         }
         if (Arrays.asList(startAndPlayCommand).contains(text)) {

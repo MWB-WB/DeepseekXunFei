@@ -16,9 +16,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.yl.basemvp.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.R;
-import com.yl.deepseekxunfei.utlis.SystemPropertiesReflection;
 
 import java.util.List;
 

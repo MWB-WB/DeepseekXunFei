@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.yl.deepseekxunfei.R;
-import com.yl.deepseekxunfei.model.PluginMediaModel;
+import com.yl.kuwo.PluginMediaModel;
 
 import java.util.List;
 

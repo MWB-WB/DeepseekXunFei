@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.yl.deepseekxunfei.R;
-import com.yl.deepseekxunfei.model.MovieResponse;
+import com.yl.tianmao.MovieResponse;
 
 import java.util.List;
 

@@ -41,6 +41,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@drawable/wdxz"
         android:supportsRtl="true"
+        tools:node="replace"
         android:theme="@style/Theme.DeepseekXunFei"
         android:usesCleartextTraffic="true"
 
@@ -51,7 +52,7 @@
             android:value="5c04f780c8748ab0d52f27608efa579f" />
         <!-- adjustPan -->
         <activity
-            android:name=".PrivacyPolicyActivity"
+            android:name=".activity.PrivacyPolicyActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -62,7 +63,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name=".activity.MainActivity"
             android:enabled="true"
             android:exported="true"
             android:launchMode="singleInstance"

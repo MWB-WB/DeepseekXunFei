@@ -8,8 +8,8 @@ import com.hankcs.hanlp.seg.common.Term;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.NavChildMode;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.utlis.CityDictionary;
-import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+import com.yl.ylcommon.utlis.CityDictionary;
+import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
 import java.util.List;

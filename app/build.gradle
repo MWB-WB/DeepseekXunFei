@@ -52,20 +52,20 @@ dependencies {
     implementation libs.material
     implementation libs.activity
     implementation libs.constraintlayout
-    implementation files('libs\\kwmusic-autosdk-v2.1.7.jar')
     testImplementation libs.junit
     implementation(fileTree("libs"))
-    implementation project(':DouyinApi')
+    implementation project(':YLThirdApi')
     implementation project(':creteModule')
-//    implementation files('..\\gradle\\wrapper\\gradle-wrapper.jar')
+    implementation project(':basemvp')
+    implementation project(':YLCommon')
+    //    implementation files('..\\gradle\\wrapper\\gradle-wrapper.jar')
     // room
     def room_version = "2.2.5"
-    implementation "androidx.room:room-runtime:$room_version"
+    implementation libs.room.runtime
     annotationProcessor "androidx.room:room-compiler:$room_version"
     implementation libs.glide
     implementation 'net.objecthunter:exp4j:0.4.8'
     implementation "com.squareup.okhttp3:okhttp:4.9.3"
-    implementation 'com.hankcs:hanlp:portable-1.8.2'
     implementation 'com.google.android.material:material:1.8.0'
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
     implementation 'com.google.android.material:material:1.9.0' // 用于定义键盘宽度与输入框一致

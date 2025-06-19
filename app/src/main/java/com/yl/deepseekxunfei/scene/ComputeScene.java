@@ -3,7 +3,7 @@ package com.yl.deepseekxunfei.scene;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ComputeChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import net.objecthunter.exp4j.Expression;
 import net.objecthunter.exp4j.ExpressionBuilder;

@@ -6,16 +6,16 @@ import android.util.Log;
 import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
-import com.yl.deepseekxunfei.broadcast.IntentProcessing;
+import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.SceneModel;
-import com.yl.deepseekxunfei.model.WordNLPModel;
-import com.yl.deepseekxunfei.sceneenum.SceneType;
-import com.yl.deepseekxunfei.utlis.BotConstResponse;
-import com.yl.deepseekxunfei.utlis.ChineseSegmentationUtil;
-import com.yl.deepseekxunfei.utlis.LocationValidator;
-import com.yl.deepseekxunfei.utlis.OptionPositionParser;
-import com.yl.deepseekxunfei.utlis.SceneTypeConst;
+import com.yl.ylcommon.utlis.WordNLPModel;
+import com.yl.ylcommon.utlis.BotConstResponse;
+import com.yl.ylcommon.utlis.ChineseSegmentationUtil;
+import com.yl.ylcommon.utlis.OptionPositionParser;
+import com.yl.gaodeApi.poi.LocationValidator;
+import com.yl.ylcommon.ylenum.SceneType;
+import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -154,7 +154,7 @@ public class SceneManager {
             resultModel.setScene(SceneType.COMPUTE);
         } else if (wordNLPModel.getV().contains("设置") && wordNLPModel.getN().contains("公司") || wordNLPModel.getQ().contains("家")) {
             resultModel.setScene(SceneType.SETHOMECOMPANY);
-        }else if (IntentProcessing.recognizeIntent(text).equals("home") || IntentProcessing.recognizeIntent(text).equals("work")){
+        }else if (GoHomeOrWorkProcessing.recognizeIntent(text).equals("home") || GoHomeOrWorkProcessing.recognizeIntent(text).equals("work")){
             resultModel.setScene(SceneType.GOHOMETOWORK);
         }
 //        else if (isSelfIntroduction(text)) {

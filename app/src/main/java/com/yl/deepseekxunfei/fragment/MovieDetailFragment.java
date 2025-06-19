@@ -13,9 +13,9 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
-import com.yl.deepseekxunfei.MainActivity;
+import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.R;
-import com.yl.deepseekxunfei.model.MovieDetailModel;
+import com.yl.tianmao.MovieDetailModel;
 
 public class MovieDetailFragment extends Fragment implements View.OnClickListener {
 

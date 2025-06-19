@@ -10,10 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.yl.deepseekxunfei.MainActivity;
+import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.R;
-
-import org.w3c.dom.Text;
 
 public class MainFragment extends Fragment {
 
