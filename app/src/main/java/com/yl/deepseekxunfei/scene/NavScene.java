@@ -1,5 +1,6 @@
 package com.yl.deepseekxunfei.scene;
 
+import android.content.Context;
 import android.util.Log;
 
 import com.hankcs.hanlp.HanLP;
@@ -8,17 +9,25 @@ import com.hankcs.hanlp.seg.common.Term;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.NavChildMode;
 import com.yl.deepseekxunfei.model.SceneModel;
+import com.yl.gaodeApi.poi.LocationValidator;
 import com.yl.ylcommon.utlis.CityDictionary;
+import com.yl.ylcommon.ylenum.SceneType;
 import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NavScene extends BaseChildScene {
-   public static String addressLocation;
-
+    public static String addressLocation;
+    private LocationValidator locationValidator;
+    public NavScene(Context context) {
+        locationValidator = new LocationValidator(context);
+    }
 
     private final Segment SEGMENT = HanLP.newSegment()
             .enablePlaceRecognize(true); // 启用地名识别
@@ -26,6 +35,7 @@ public class NavScene extends BaseChildScene {
     @Override
     public BaseChildModel parseSceneToChild(SceneModel sceneModel) {
         NavChildMode navChildMode = new NavChildMode();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         String text = sceneModel.getText();
         List<Term> terms = SEGMENT.seg(text);
         List<NavChildMode.GeoEntity> entities = new ArrayList<>();
@@ -40,22 +50,40 @@ public class NavScene extends BaseChildScene {
         }
         navChildMode.setEntities(entities);
         if (isNearbySearch(entities)) {
-            Log.d("导航地址", "parseSceneToChild: "+entities);
+            Log.d("导航地址", "parseSceneToChild: " + entities);
             navChildMode.setLocation(extractLocation(terms));
             navChildMode.setType(SceneTypeConst.NEARBY);
         } else {
-            Log.d("地址1", "parseSceneToChild: "+sceneModel.getText());
-            Log.d("地址1", "parseSceneToChild: "+text);
+            Log.d("地址1", "parseSceneToChild: " + text);
             String address = extractLocation(text);
-            Log.d("地址2", "parseSceneToChild: "+address);
+            Log.d("地址2", "parseSceneToChild: " + address);
             if (address.isEmpty() || address.equals("。") || address.equals("导航到")) {
                 navChildMode.setType(SceneTypeConst.NAVIGATION_UNKNOWN_ADDRESS);
                 NavScene.addressLocation = address;
             } else {
-                Log.d("地址3", "parseSceneToChild: "+ extractLocation(address));
-                NavScene.addressLocation = address;
-                navChildMode.setLocation(extractLocation(address));
-                navChildMode.setType(SceneTypeConst.KEYWORD);
+                var ref = new Object() {
+                    boolean isTextValid = false;
+                };
+                locationValidator.validateAddress(address, isValid -> {
+                    ref.isTextValid = isValid;
+                    Log.e("地址2", "parseSceneToChild: " + isValid);
+                    countDownLatch.countDown();
+                });
+                try {
+                    // 主线程等待子线程完成
+                    countDownLatch.await();
+                    Log.e("地址2", "parseSceneToChild123: " + ref.isTextValid);
+                    // 子线程执行完后，更新 UI
+                    if (ref.isTextValid) {
+                        NavScene.addressLocation = address;
+                        navChildMode.setLocation(address);
+                        navChildMode.setType(SceneTypeConst.KEYWORD);
+                    } else {
+                        navChildMode.setType(SceneTypeConst.NAVIGATION_ADDRESS_INVALIDATOR);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
         navChildMode.setText(text);
@@ -81,17 +109,24 @@ public class NavScene extends BaseChildScene {
         return location.toString();
     }
 
+    private String[] navStart = {"导航到", "去", "我要去", "带我去", "帮我找", "附近有", "我想去", "附近的", "导航去", "导航"};
+
     private String extractLocation(String input) {
-        // 匹配 "导航到XXX"、"去XXX"、"我要去XXX" 等模式
-        String pattern = "(导航到|去|我要去|带我去|帮我找|附近有|我想去|附近的|导航去|导航)(.+?)(。|$)";
-        Pattern r = Pattern.compile(pattern);
-        Matcher m = r.matcher(input);
-        if (m.find()) {
-            Log.d("地名", "extractLocation: " + m.group(2).trim());
-            return m.group(2).trim(); // 返回匹配的地名
+        Optional<String> result = Arrays.asList(navStart).stream().filter(
+                t -> input.contains(t)
+        ).findFirst();
+        String location = "";
+        if (result.isPresent()) {
+            String[] split = input.split(result.get());
+            Log.e("result", "extractLocation: " + split.length);
+            if (split.length > 1) {
+                location = split[1];
+            }
+        } else {
+            location = input;
         }
-        Log.d("返回", "extractLocation: "+input);
-        return input; // 如果没有匹配到，返回原输入（可能已经是纯地名）
+        Log.d("返回", "extractLocation: " + input);
+        return location; // 如果没有匹配到，返回原输入（可能已经是纯地名）
     }
 
     private NavChildMode.GeoEntityType determineGeoType(String word, String nature) {
@@ -122,7 +157,7 @@ public class NavScene extends BaseChildScene {
     }
 
     private boolean isGeneralArea(String word) {
-        return word.matches("附近|周围|周边|这里|那里|当前位置");
+        return word.matches("附近|周围|周边|这里|那里|当前位置|最近");
     }
 
     private boolean isNearbySearch(List<NavChildMode.GeoEntity> entities) {

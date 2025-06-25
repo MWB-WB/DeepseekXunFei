@@ -5,6 +5,7 @@ import android.app.Application;
 
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechUtility;
+import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.ylcommon.utlis.ContextHolder;
 import com.yl.douyinapi.DouyinApi;
 import com.yl.gaodeApi.GaodeApi;
@@ -22,6 +23,7 @@ public class MyApplication extends Application {
         executorService = Executors.newSingleThreadExecutor();
         ContextHolder.init(this); // 保存全局 Context
         initThrid();
+        AppDatabase.getInstance(this).query();
     }
 
     private void initThrid() {

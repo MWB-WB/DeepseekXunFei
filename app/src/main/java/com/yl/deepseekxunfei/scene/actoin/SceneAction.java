@@ -162,6 +162,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 SceneAction.location = null;
                 navigationUnknownAddressAction();
                 break;
+            case SceneTypeConst.NAVIGATION_ADDRESS_INVALIDATOR:
+                SceneAction.location = null;
+                //非法地址
+                navigationAddressInvalidator();
+                break;
             case SceneTypeConst.RECENT_FILMS:
                 SceneAction.location = null;
                 filmAction(baseChildModel, botResponse);
@@ -268,6 +273,12 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 //                }).start();
 //                break;
         }
+    }
+
+    private void navigationAddressInvalidator() {
+        // 先让机器人回复固定内容
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.searchAddressInvalidator, false, "", false),
+                BotConstResponse.searchAddressInvalidator);
     }
 
     private void musicStartAndPlayAction() {

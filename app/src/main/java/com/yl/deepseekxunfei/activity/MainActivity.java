@@ -15,6 +15,8 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 
 import android.media.MediaPlayer;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -199,10 +201,10 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             mPresenter.voiceManagerStop();
             Log.e(TAG, "button onclick: " + aiType);
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-                ToastUtil.show(this,"请输入一个问题");
+                ToastUtil.show(this, "请输入一个问题");
             } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
-                if (TextUtils.isEmpty(editTextQuestion.getText())){
-                    ToastUtil.show(this,"请输入一个问题");
+                if (TextUtils.isEmpty(editTextQuestion.getText())) {
+                    ToastUtil.show(this, "请输入一个问题");
                     return;
                 }
                 try {
@@ -215,7 +217,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                             replaceFragment(0);
                             sendMessage();
                         } else {
-                            ToastUtil.show(this,"请先等待上一个问题回复完成在进行提问");
+                            ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
                         }
                     }
                 } catch (Exception e) {
@@ -474,11 +476,15 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (mPresenter.getChatMessagesSize() > 0) {
             mPresenter.getChatMessages().add(new ChatMessage(text, true, "", false));
             chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
-            List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
-            mSceneAction.actionByType(baseChildModelList.get(0));
+            if (!isNetWorkConnect()) {
+                addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
+            } else {
+                List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
+                mSceneAction.actionByType(baseChildModelList.get(0));
+            }
         } else {
             if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
-                ToastUtil.show(this,"请先等待上一个问题回复完成在进行提问");
+                ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
             } else {
                 mPresenter.stopSpeaking();
                 mPresenter.voiceManagerStop();
@@ -487,8 +493,17 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 mPresenter.getChatMessages().add(new ChatMessage(text, true, "", false));
                 chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
                 chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
-                List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
-                mSceneAction.actionByType(baseChildModelList.get(0));
+                if (!isNetWorkConnect()) {
+                    addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
+                } else {
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
+                            mSceneAction.actionByType(baseChildModelList.get(0));
+                        }
+                    }).start();
+                }
             }
         }
     }
@@ -543,14 +558,25 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 backTextToAction.backUserText(input);
                 backTextToAction = null;
             } else {
-                List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(input);
-                if (baseChildModelList.size() > 1) {
-                    mSceneAction.startActionByList(baseChildModelList);
+                if (!isNetWorkConnect()) {
+                    addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
                 } else {
-                    mSceneAction.actionByType(baseChildModelList.get(0));
+                    List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(input);
+                    if (baseChildModelList.size() > 1) {
+                        mSceneAction.startActionByList(baseChildModelList);
+                    } else {
+                        mSceneAction.actionByType(baseChildModelList.get(0));
+                    }
                 }
             }
         }
+    }
+
+    private boolean isNetWorkConnect() {
+        ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo info = manager
+                .getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        return info.isConnected();
     }
 
     public void replaceFragment(int id) {
@@ -707,7 +733,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public void sendBtnClick() {
         isNeedWakeUp = true;
         if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-            ToastUtil.show(this,"请输入一个问题");
+            ToastUtil.show(this, "请输入一个问题");
         } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
             Log.d(TAG, "请输入一个问题: ");
             try {
@@ -716,7 +742,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                     sendMessage();
                 } else {
                     if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver()) {
-                        ToastUtil.show(this,"请先等待上一个问题回复完成在进行提问");
+                        ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
                     } else {
                         replaceFragment(0);
                         sendMessage();

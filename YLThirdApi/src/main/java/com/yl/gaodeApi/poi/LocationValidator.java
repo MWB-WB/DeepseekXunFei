@@ -1,6 +1,7 @@
 package com.yl.gaodeApi.poi;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -42,6 +43,7 @@ public class LocationValidator {
                 try {
                     JSONObject json = new JSONObject(jsonData);
                     int count = Integer.parseInt(json.getString("count"));
+                    Log.e("地址2", "onResponse: " + count);
                     if (count > 0) {
                         if (validationCallback != null) {
                             validationCallback.onResult(true);

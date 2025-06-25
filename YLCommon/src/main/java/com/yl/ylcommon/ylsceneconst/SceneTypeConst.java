@@ -18,6 +18,7 @@ public class SceneTypeConst {
     public static final int WANT_NAVIGATION = 1013;
     public static final int COMPUTE = 1014;//计算
     public static final int SELFINTRODUCE = 1015;//计算
+    public static final int NAVIGATION_ADDRESS_INVALIDATOR = 1016; //非法地址
     public static final int QUIT = 10008;//退出
     public static final int STOP = 10009;//停止
     public static final int SELECTION = 10010;//选择

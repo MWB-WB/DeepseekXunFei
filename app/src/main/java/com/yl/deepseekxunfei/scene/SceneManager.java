@@ -59,7 +59,7 @@ public class SceneManager {
 
     private void initChildScene() {
         weatherScene = new WeatherScene();
-        navScene = new NavScene();
+        navScene = new NavScene(mContext);
         movieScene = new MovieScene();
         videoScene = new VideoScene();
         musicScene = new MusicScene();
@@ -154,7 +154,7 @@ public class SceneManager {
             resultModel.setScene(SceneType.COMPUTE);
         } else if (wordNLPModel.getV().contains("设置") && wordNLPModel.getN().contains("公司") || wordNLPModel.getQ().contains("家")) {
             resultModel.setScene(SceneType.SETHOMECOMPANY);
-        }else if (GoHomeOrWorkProcessing.recognizeIntent(text).equals("home") || GoHomeOrWorkProcessing.recognizeIntent(text).equals("work")){
+        } else if (GoHomeOrWorkProcessing.recognizeIntent(text).equals("home") || GoHomeOrWorkProcessing.recognizeIntent(text).equals("work")) {
             resultModel.setScene(SceneType.GOHOMETOWORK);
         }
 //        else if (isSelfIntroduction(text)) {
@@ -200,7 +200,7 @@ public class SceneManager {
                         // 子线程执行完后，更新 UI
                         if (ref.isTextValid) {
                             sceneModel = new SceneModel();
-                            sceneModel.setText("导航到" + text);
+                            sceneModel.setText(text);
                             sceneModel.setScene(SceneType.NAVIGATION);
                         }
                     } catch (InterruptedException e) {

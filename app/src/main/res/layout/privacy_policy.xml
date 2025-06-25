@@ -309,7 +309,7 @@
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- 拒绝按钮 -->
-        <Button
+        <android.widget.Button
             android:id="@+id/disagreeButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -320,12 +320,12 @@
             android:textColor="@android:color/black" />
 
         <!-- 同意按钮（初始不可点击） -->
-        <Button
+        <android.widget.Button
             android:id="@+id/agreeButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:backgroundTint="@android:color/background_dark"
+            android:background="@android:color/background_dark"
             android:enabled="false"
             android:text="同意并继续"
             android:textColor="@android:color/white" />
