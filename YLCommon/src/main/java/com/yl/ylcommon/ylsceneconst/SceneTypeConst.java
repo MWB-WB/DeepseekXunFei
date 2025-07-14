@@ -14,11 +14,15 @@ public class SceneTypeConst {
     public static final int TODAY_RECOMMEND = 1009;
     public static final int MUSIC_SEARCH = 1010;
     public static final int MUSIC_START_AND_PLAY = 1011;
-    public static final int MUSIC_UNKNOW = 1012;
+    public static final int MUSIC_UNKNOWN = 1012;
     public static final int WANT_NAVIGATION = 1013;
     public static final int COMPUTE = 1014;//计算
-    public static final int SELFINTRODUCE = 1015;//计算
+    public static final int SELFINTRODUCE = 1015;//自我介绍
     public static final int NAVIGATION_ADDRESS_INVALIDATOR = 1016; //非法地址
+    public static final int OPEN_APP = 1017; //打开应用
+    public static final int UNKNOWN_OPEN_APP = 1018; //打开非法应用
+    public static final int CONTROL_MUSIC = 1019; //打开非法应用
+    public static final int CONTROL_NAV = 1020; //控制导航
     public static final int QUIT = 10008;//退出
     public static final int STOP = 10009;//停止
     public static final int SELECTION = 10010;//选择

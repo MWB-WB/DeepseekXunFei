@@ -21,6 +21,7 @@ public class BotConstResponse {
     public static String searchWeatherError = "当前网络波动较大，请稍后尝试";
     public static String searchPositionEmpty = "您还没有选择目的地，请详细说明目的地。";
     public static String searchAddressInvalidator = "您要导航的目的地有误，请重新调整目的地。";
+    public static String unknownOpenApp = "暂未安装当前应用。";
 
     public static String getSuccessResponse() {
         Random random = new Random();

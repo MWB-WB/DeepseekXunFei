@@ -2,29 +2,28 @@ package com.yl.deepseekxunfei.scene.actoin;
 
 import static android.content.Context.MODE_PRIVATE;
 
-import static com.yl.deepseekxunfei.room.ulti.JSONReader.select;
-
 import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
 
 import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.broadcast.GaodeBroadcasting;
-import com.yl.deepseekxunfei.contextualResponses.ContextualResponses;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.ComputeChildModel;
+import com.yl.deepseekxunfei.model.MusicControlChildModel;
+import com.yl.deepseekxunfei.model.OpenAppChildMode;
 import com.yl.deepseekxunfei.room.entity.AMapLocationEntity;
-import com.yl.deepseekxunfei.room.ulti.DatabaseInitializer;
 import com.yl.deepseekxunfei.room.ulti.JSONReader;
 import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
 import com.yl.gaodeApi.poi.ReverseGeography;
@@ -41,16 +40,15 @@ import com.yl.douyinapi.DouyinApi;
 import com.yl.gaodeApi.poi.GeocodingApi;
 import com.yl.gaodeApi.poi.NeighborhoodSearch;
 import com.yl.gaodeApi.poi.OnPoiSearchListener;
-import com.yl.gaodeApi.poi.ScenerySpotApi;
 import com.yl.gaodeApi.weather.WeatherAPI;
 import com.yl.gaodeApi.page.LocationResult;
-import com.yl.gaodeApi.page.SceneryPage;
 import com.yl.gaodeApi.poi.PositioningUtil;
 import com.yl.gaodeApi.poi.GaodeKeyWordSearch;
 import com.yl.gaodeApi.weather.YLLocalWeatherForecastResult;
 import com.yl.gaodeApi.weather.YLLocalWeatherLive;
 import com.yl.kuwo.MusicKuwo;
 import com.yl.kuwo.PluginMediaModel;
+import com.yl.ylcommon.ylenum.MUSIC_CONTROL;
 import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
@@ -224,7 +222,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 SceneAction.location = null;
                 hotSongsAction();
                 break;
-            case SceneTypeConst.MUSIC_UNKNOW:
+            case SceneTypeConst.MUSIC_UNKNOWN:
                 SceneAction.location = null;
                 musicUnknowAction();
                 break;
@@ -271,6 +269,14 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.LOCATIONCONST:
                 aMapLocationSceneAction();
                 break;
+            case SceneTypeConst.OPEN_APP:
+                OpenAppAction(((OpenAppChildMode) baseChildModel).getAppPkgName());
+                break;
+            case SceneTypeConst.UNKNOWN_OPEN_APP:
+                UnKnownOpenAppAction();
+                break;
+            case SceneTypeConst.CONTROL_MUSIC:
+                MusicControlAction(baseChildModel);
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
 //                    @Override
@@ -288,6 +294,68 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 //                    }
 //                }).start();
 //                break;
+        }
+    }
+
+    private void MusicControlAction(BaseChildModel baseChildModel) {
+        MUSIC_CONTROL control = ((MusicControlChildModel) baseChildModel).getControl();
+        mainActivity.isNeedWakeUp = false;
+        // 先让机器人回复固定内容
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false),
+                BotConstResponse.ok);
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                switch (control) {
+                    case PLAY:
+                    case PAUSE:
+                        inputKeyEvent(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
+                        break;
+                    case NEXT:
+                        inputKeyEvent(KeyEvent.KEYCODE_MEDIA_NEXT);
+                        break;
+                    case PREV:
+                        inputKeyEvent(KeyEvent.KEYCODE_MEDIA_PREVIOUS);
+                        break;
+                }
+            }
+        }, 1500);
+
+    }
+
+    public static void inputKeyEvent(int key) {
+        Log.e("TAGTEST", "inputKeyEvent: " + key);
+        try {
+            String keyCommand = "input keyevent = " + key;
+            Runtime runtime = Runtime.getRuntime();
+            runtime.exec(keyCommand);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void UnKnownOpenAppAction() {
+        // 先让机器人回复固定内容
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.unknownOpenApp, false, "", false),
+                BotConstResponse.unknownOpenApp);
+    }
+
+    private void OpenAppAction(String appPkgName) {
+        try {
+            // 先让机器人回复固定内容
+            mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false),
+                    BotConstResponse.ok);
+            mainActivity.isNeedWakeUp = false;
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    Intent intentForPackage = mainActivity.getPackageManager().getLaunchIntentForPackage(appPkgName);
+                    intentForPackage.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                    mainActivity.startActivity(intentForPackage);
+                }
+            }, 1500);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -331,7 +399,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.musicUnknow, false, "", false)
                 , BotConstResponse.musicUnknow);
     }
-    public void aMapLocationSceneAction(){
+
+    public void aMapLocationSceneAction() {
         final String[] name = {null};
         PositioningUtil posit = new PositioningUtil();
         try {
@@ -347,15 +416,15 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         String city = sharedPreferences.getString("city", "");
         float lat = sharedPreferences.getFloat("latitude", 0);
         float lot = sharedPreferences.getFloat("longitude", 0);
-        String adcode = sharedPreferences.getString("adcode","");
+        String adcode = sharedPreferences.getString("adcode", "");
         Log.d("我的当前位置", "纬度::" + lat + "\t经度" + lot + "\tcity" + city + "\t区县cityCode编码" + cityCode);
         String lot_lat = lot + "," + lat;
         ReverseGeography reverseGeography = new ReverseGeography();
         reverseGeography.reverseGeographyApi(lot_lat, new ReverseGeography.successApi() {
             @Override
-                public void success(String formattedAddress) {
+            public void success(String formattedAddress) {
                 // 先让机器人回复固定内容
-                Log.d("TAG", "success: "+formattedAddress.isEmpty());
+                Log.d("TAG", "success: " + formattedAddress.isEmpty());
                 if (formattedAddress != null && !formattedAddress.trim().isEmpty() && !formattedAddress.equals("[]")) {
                     new Handler(Looper.getMainLooper()).post(() -> {
                         mainActivity.addMessageAndTTS(new ChatMessage("您当前所在位置是：" + formattedAddress, false, "", false),
@@ -364,16 +433,16 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 } else {
                     List<AMapLocationEntity> list = JSONReader.select(context, adcode);
                     Log.d("TAG", "查询成功：: " + list.toString());
-                    for (AMapLocationEntity amapLocationEntity:list) {
-                        name[0] =  amapLocationEntity.getName();
+                    for (AMapLocationEntity amapLocationEntity : list) {
+                        name[0] = amapLocationEntity.getName();
                     }
-                    if (name[0]!=null){
+                    if (name[0] != null) {
                         Log.d("TAG", "cityCode编码查询: " + cityCode);
                         new Handler(Looper.getMainLooper()).post(() -> {
-                            mainActivity.addMessageAndTTS(new ChatMessage("未获取到您的具体位置，您当前所在：" + city + name[0] , false, "", false),
+                            mainActivity.addMessageAndTTS(new ChatMessage("未获取到您的具体位置，您当前所在：" + city + name[0], false, "", false),
                                     city + cityCode);
                         });
-                    }else {
+                    } else {
                         new Handler(Looper.getMainLooper()).post(() -> {
                             mainActivity.addMessageAndTTS(new ChatMessage("定位失败，请检查定位权限是否授予", false, "", false),
                                     city + cityCode);
@@ -472,8 +541,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setStopRequest(true);
                 String content = mainActivity.filterSensitiveContent(entry.getContent()); // 过滤敏感词
                 mainActivity.updateContext(baseChildModel.getText(), content); // 更新上下文
-                Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
-                Log.d("TAG", "nearbyAction: "+content);
+                Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
+                Log.d("TAG", "nearbyAction: " + content);
                 mainActivity.addMessageAndTTS(new ChatMessage(entry.getContent(), false, "", false)
                         , entry.getContent());
                 mainActivity.found = true;
@@ -568,9 +637,10 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     }
 
     /**
-     *附近搜索
+     * 附近搜索
+     *
      * @param baseChildModel 问题
-     * @param botResponse 固定答案
+     * @param botResponse    固定答案
      */
     private void nearbyAction(BaseChildModel baseChildModel, String botResponse) {
         String location = ((NavChildMode) baseChildModel).getLocation();
@@ -618,9 +688,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     /**
      * 关键字搜索
-     * @param baseChildModel 问题
-     * @param botResponse 固定答案
      *
+     * @param baseChildModel 问题
+     * @param botResponse    固定答案
      */
     private void keyWordAction(BaseChildModel baseChildModel, String botResponse) {
         mainActivity.setStopRequest(true);
@@ -629,8 +699,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
         mainActivity.updateContext(baseChildModel.getText(), botResponse);
-        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
-        Log.d("TAG", "nearbyAction: "+botResponse);
+        Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
+        Log.d("TAG", "nearbyAction: " + botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)

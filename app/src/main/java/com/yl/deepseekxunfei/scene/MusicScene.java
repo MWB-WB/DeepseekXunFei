@@ -116,7 +116,7 @@ public class MusicScene extends BaseChildScene {
             musicChildModel.setKeyWord(musicData.musicNames.get(0));
             musicChildModel.setType(SceneTypeConst.MUSIC_SEARCH);
         } else {
-            musicChildModel.setType(SceneTypeConst.MUSIC_UNKNOW);
+            musicChildModel.setType(SceneTypeConst.MUSIC_UNKNOWN);
         }
         return musicChildModel;
     }
