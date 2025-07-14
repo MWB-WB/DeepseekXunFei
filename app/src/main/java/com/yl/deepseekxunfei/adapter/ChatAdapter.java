@@ -164,7 +164,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.ChatViewHolder
                 holder.textView.setTextColor(Color.parseColor("#CDCD00"));
                 break;
             default:
-                holder.textView.setTextColor(Color.parseColor("#FF000000"));
+                holder.textView.setTextColor(Color.parseColor("#FFFFFF"));
                 break;
         }
     }

@@ -10,6 +10,7 @@ public class TimeDownUtil {
     public static final int CHANGE_TIPS_TIMER_INTERVAL = 1000;
     private static int count = 10;
     private static Handler mChangeTipsHandler = new Handler();
+    private static final Object lock = new Object();
 
     public static void startTimeDown(CountTimeListener countTimeListener) {
         Runnable mChangeTipsRunnable = new Runnable() {
@@ -21,6 +22,7 @@ public class TimeDownUtil {
                         countTimeListener.onTimeFinish();
                     }
                     return;
+
                 }
                 count--;
                 mChangeTipsHandler.postDelayed(this, CHANGE_TIPS_TIMER_INTERVAL);
@@ -31,12 +33,12 @@ public class TimeDownUtil {
     }
 
     public static void clearTimeDown() {
-        mChangeTipsHandler.removeCallbacksAndMessages(null);
+        synchronized (lock){
+            mChangeTipsHandler.removeCallbacksAndMessages(null);
+        }
     }
 
     public interface CountTimeListener {
         void onTimeFinish();
     }
-
-
 }

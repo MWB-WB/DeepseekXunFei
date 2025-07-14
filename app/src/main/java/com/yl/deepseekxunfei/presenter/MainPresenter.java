@@ -31,6 +31,7 @@ import com.yl.basemvp.BasePresenter;
 import com.yl.basemvp.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.activity.MainActivity;
+import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.ylcommon.utlis.BotConstResponse;
@@ -74,9 +75,9 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private String mEngineType = SpeechConstant.TYPE_CLOUD;// 引擎类型
     private String language = "zh_cn";//识别语言
     private String resultType = "json";//结果内容数据格式
-    private Deque<ChatMessage> contextQueue = new ArrayDeque<>();
+    public Deque<ChatMessage> contextQueue = new ArrayDeque<>();
     private static final int MAX_CONTEXT_TOKENS = 30000; // 预留2K tokens给新问题
-    private static final int MAX_HISTORY_ROUNDS = 5; // 最多5轮对话
+    private static final int MAX_HISTORY_ROUNDS = 10; // 最多5轮对话
     private Call currentCall;
     private VoiceManager voiceManager = null;
     //是否停止输出
@@ -98,14 +99,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             // 显示历史记录对话框
             mActivity.get().showHistoryDialog();
         } else if (v.getId() == R.id.xjianduihua) {
-            //在新建对话时申请存储权限
-//            requestStoragePermission();//请求文件存储权限 (包括读写)
-//            // 检查存储权限
-//            int permissionStatus = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//            Log.d(TAG, "onClick: 存储权限"+permissionStatus);
-//            if (permissionStatus == PackageManager.PERMISSION_GRANTED){
-//
-//            }
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
             mActivity.get().sendBtnClick();
@@ -272,9 +265,9 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             int currentTokens = 0;
             // 1. 添加历史上下文（从旧到新）
             for (ChatMessage msg : contextQueue) {
+                JSONObject jsonMsg = new JSONObject();
                 int msgTokens = estimateTokens(msg.getMessage());
                 if (currentTokens + msgTokens > MAX_CONTEXT_TOKENS) break;
-                JSONObject jsonMsg = new JSONObject();
                 jsonMsg.put("role", msg.isUser() ? "user" : "assistant");
                 jsonMsg.put("content", msg.getMessage());
                 messages.put(jsonMsg);
@@ -283,24 +276,24 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             // 添加当前用户问题
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
-//        userMessage.put("content", "请用最简洁的语言直接回答问题：\n" + userQuestion); // userQuestion 已经过转义处理
             userMessage.put("content", userQuestion); // userQuestion 已经过转义处理ffc
+            Log.d(TAG, "callGenerateApiuserQuestion: "+userQuestion);
             messages.put(userMessage);
             requestBody.put("messages", messages);
+            Log.d(TAG, "callGenerateApi: "+messages);
             requestBody.put("stream", true);
             JSONObject options = new JSONObject();
             options.put("temperature", 0.9);
             options.put("mirostat_tau", 1.0);
             options.put("num_predict", -1);
-            options.put("repeat_penalty", 1.0);//重复惩罚
-            options.put("mirostat_eta", 1);//影响算法响应生成文本的反馈的速度。较低的学习率将导致较慢的调整，而较高的学习率将使算法的响应速度更快。（默认值：0.1）
-            options.put("mirostat_tau", 1);//控制输出的连贯性和多样性之间的平衡。较低的值将导致文本更集中、更连贯。（默认值：5.0）
             requestBody.put("options", options);
             // 将 JSONObject 转换为字符串
             String jsonBodyRound1 = requestBody.toString();
-
+            Log.d(TAG, "callGenerateApijsonBodyRound1: "+jsonBodyRound1);
             RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
             Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
+            Log.d(TAG, "callGenerateApi: "+requestRound1.toString().trim()+requestBodyRound1.toString().trim());
+            Log.d(TAG, "callGenerateApi: "+requestRound1);
             // 异步执行请求
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(5, TimeUnit.SECONDS)//连接超时
@@ -308,13 +301,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                     .writeTimeout(5, TimeUnit.SECONDS)//写入超时
                     .build();
             currentCall = client.newCall(requestRound1);
+
             currentCall.enqueue(new Callback() {
                 // 用于存储第一轮完整响应
                 StringBuilder fullResponseRound1 = new StringBuilder();
                 StringBuilder thinkText = new StringBuilder();
                 // 用于存储第一轮机器人消息记录的索引
                 int botMessageIndexRound1 = -1;
-
                 @Override
                 public void onFailure(Call call, IOException e) {
                     //如果不是主动关闭的话需要进行网络波动的播报
@@ -383,11 +376,26 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                     boolean done = jsonResponse.get("done").getAsBoolean();
                                                     String startTag = "<think>";
                                                     String endTag = "</think>";
+                                                    String limendl = "<limendl>";
+                                                    String imend = "<|imend|>";
+                                                    String imstart = "<|imstart|>";
                                                     if (startTag.equals(partialResponse) && !chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(true);
                                                         continue;
                                                     }
                                                     if (endTag.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
+                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
+                                                        continue;
+                                                    }
+                                                    if (limendl.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
+                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
+                                                        continue;
+                                                    }
+                                                    if (imend.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
+                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
+                                                        continue;
+                                                    }
+                                                    if (imstart.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(false);
                                                         continue;
                                                     }
@@ -414,12 +422,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                             if (huida.contains(startTag)) {
                                                                 huida = huida.replace(startTag, "");
                                                             }
-                                                            if (huida.length() <= 0) {
-                                                                huida = "对不起，这个问题我暂时不能回答";
+                                                            if (huida.length() < 0) {
+                                                                huida = "";
                                                                 // 更新机器人消息记录的内容
                                                                 Log.d(TAG, "onResponse: " + huida);
                                                                 mActivity.get().setTextByIndex(botMessageIndexRound1, huida);
                                                                 TTS(huida);
+                                                                return;
                                                             } else {
                                                                 // 更新机器人消息记录的内容
                                                                 mActivity.get().setTextByIndex(botMessageIndexRound1, huida);
@@ -467,9 +476,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                     }
                 }
             });
+            Log.d(TAG, "callGenerateApijsonBodyRound1234: "+jsonBodyRound1);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     public void clearContextQueue() {

@@ -42,13 +42,14 @@ public class GaodeKeyWordSearch {
             posit.release();
         }
         SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
-        String cityCode = sharedPreferences.getString("cityCode", "");
+
         if (TextUtils.isEmpty(city)) {
+            Log.d("TAG", "searchInAmap: "+city);
             city = sharedPreferences.getString("city", "");
-        }
+        }String cityCode = sharedPreferences.getString("cityCode", "");
         float lat = sharedPreferences.getFloat("latitude", 0);
         float lot = sharedPreferences.getFloat("longitude", 0);
-        Log.d("当前坐标", "纬度::" + lat + "\t经度" + lot + "\tcity" + city + "\t区县cityCode编码" + cityCode);
+        Log.d("", "纬度::" + lat + "\t经度" + lot + "\tcity" + city + "\t区县cityCode编码" + cityCode);
         // 构造高德POI搜索URL
         String url = "https://restapi.amap.com/v3/place/text?key=b134db263b1cdde4d64d26dadbaf3e65&keywords="
                 + Uri.encode(keyword) + "&city=" + city + "&offset=20&extensions=all&citylimit=true&"; // 限定城市（可选）

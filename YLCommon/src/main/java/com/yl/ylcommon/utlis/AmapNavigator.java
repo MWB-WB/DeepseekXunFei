@@ -15,7 +15,7 @@ public class AmapNavigator {
      * @param context 上下文
      * @param poiName 目的地名称（如"中国航油裕乐丰加油站"）
      */
-    public static void startNavigationByUri(Context context, String poiName, double lat, double lon) {
+    public static String  startNavigationByUri(Context context, String poiName, double lat, double lon,String address,AmapNavEntity amapNavEntity) {
         Uri uri = Uri.parse("androidauto://navi?lat=" + lat + "&lon=" + lon + "&name=" + Uri.encode(poiName));
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         intent.setPackage("com.autonavi.amapauto");
@@ -31,6 +31,12 @@ public class AmapNavigator {
         } catch (Exception e) {
             Log.e("Navigation", "通过 URL Scheme 启动导航失败", e);
         }
+        Log.d("选择名称", "startNavigationByUri: "+poiName);
+        Log.d("选择名称address", "startNavigationByUri: "+address);
+        Log.d("选择名经纬度", "startNavigationByUri: "+lat+lon);
+        Log.d("选择实体类", "startNavigationByUri: "+amapNavEntity);
+        //进行更新上下文
+        return lon+","+lat;
     }
 
 

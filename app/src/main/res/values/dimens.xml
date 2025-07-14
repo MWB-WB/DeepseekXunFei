@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 默认值（中等屏幕） -->
+    <dimen name="text_small1">12sp</dimen>
+    <dimen name="text_medium1">14sp</dimen>
+    <dimen name="dialog_padding">16dp</dimen>
+
+    <!-- 小屏幕适配 -->
+    <dimen name="text_small" tools:override="true" xmlns:tools="http://schemas.android.com/tools">
+        <size qualifier="small">10sp</size>
+    </dimen>
+
+    <!-- 大屏幕适配 -->
+    <dimen name="text_medium" tools:override="true">
+        <size qualifier="large">16sp</size>
+    </dimen>
+</resources>

@@ -58,4 +58,14 @@ public class LocationResult {
         this.photoUrl = photoUrl;
     }
 
+    @Override
+    public String toString() {
+        return "LocationResult{" +
+                "name='" + name + '\'' +
+                ", address='" + address + '\'' +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", photoUrl='" + photoUrl + '\'' +
+                '}';
+    }
 }

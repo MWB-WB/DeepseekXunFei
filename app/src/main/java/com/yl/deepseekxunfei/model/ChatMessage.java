@@ -82,4 +82,17 @@ public class ChatMessage {
     public void setThinkContent(String thinkContent) {
         this.thinkContent = thinkContent;
     }
+
+    @Override
+    public String toString() {
+        return "ChatMessage{" +
+                "message='" + message + '\'' +
+                ", isUser=" + isUser +
+                ", thinkContent='" + thinkContent + '\'' +
+                ", isThinkContent=" + isThinkContent +
+                ", isNeedShowFoldText=" + isNeedShowFoldText +
+                ", isOver=" + isOver +
+                ", isSpeaking=" + isSpeaking +
+                '}';
+    }
 }

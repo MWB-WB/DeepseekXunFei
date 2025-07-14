@@ -31,6 +31,7 @@ dependencies {
     implementation libs.material
     api files('libs\\AMap3DMap_10.1.200_AMapNavi_10.1.200_AMapSearch_9.7.4_AMapLocation_6.4.9_20241226.jar')
     implementation files('libs\\kwmusic-autosdk-v2.1.7.jar')
+    implementation libs.sqlite
     testImplementation libs.junit
     androidTestImplementation libs.ext.junit
     androidTestImplementation libs.espresso.core

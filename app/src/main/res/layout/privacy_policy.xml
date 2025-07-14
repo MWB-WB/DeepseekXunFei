@@ -25,7 +25,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="最后更新日期：2025年6月16日"
+        android:text="最后更新日期：2025年6月26日"
         android:textColor="@android:color/darker_gray"
         android:textSize="14sp"
         app:layout_constraintLeft_toLeftOf="parent"

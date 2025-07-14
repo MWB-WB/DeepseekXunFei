@@ -20,6 +20,8 @@ import com.yl.ylcommon.utlis.TextLineBreaker;
 import java.util.Arrays;
 import java.util.List;
 
+import okhttp3.internal.http2.Header;
+
 /**
  * 讯飞语音管理，这个主要用来支持流式播放
  */
@@ -155,7 +157,13 @@ public class VoiceManager {
                         mainActivity.getChatMessages().get(mainActivity.getChatMessagesSizeIndex()).setSpeaking(false);
                         mainActivity.chatAdapter.notifyItemChanged(mainActivity.getChatMessagesSizeIndex());
                         release();
-                        mainActivity.TTSbutton.performClick();
+                        //延迟1秒拉起
+                       new Handler().postDelayed(new Runnable() {
+                           @Override
+                           public void run() {
+                               mainActivity.TTSbutton.performClick();
+                           }
+                       },1000);
                     }
                     mIsSpeaking = false;
                     Log.d("TAG", "onCompleted: " + error);

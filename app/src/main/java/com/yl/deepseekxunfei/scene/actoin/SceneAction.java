@@ -2,12 +2,15 @@ package com.yl.deepseekxunfei.scene.actoin;
 
 import static android.content.Context.MODE_PRIVATE;
 
+import static com.yl.deepseekxunfei.room.ulti.JSONReader.select;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -15,11 +18,16 @@ import androidx.core.content.ContextCompat;
 
 import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.broadcast.GaodeBroadcasting;
+import com.yl.deepseekxunfei.contextualResponses.ContextualResponses;
 import com.yl.deepseekxunfei.fragment.RecyFragment;
 import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.ComputeChildModel;
+import com.yl.deepseekxunfei.room.entity.AMapLocationEntity;
+import com.yl.deepseekxunfei.room.ulti.DatabaseInitializer;
+import com.yl.deepseekxunfei.room.ulti.JSONReader;
 import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
+import com.yl.gaodeApi.poi.ReverseGeography;
 import com.yl.ylcommon.utlis.KnowledgeEntry;
 import com.yl.deepseekxunfei.model.MusicChildModel;
 import com.yl.deepseekxunfei.model.NavChildMode;
@@ -67,6 +75,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     GeocodingApi geocodingApi = new GeocodingApi();
 
     public SceneAction(MainActivity mainActivity) {
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            throw new IllegalStateException("SceneAction must be created on main thread!");
+        }
         this.mainActivity = mainActivity;
         musicKuwo = new MusicKuwo(mainActivity);
         // 加载本地知识库
@@ -75,6 +86,10 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         weatherAPI.setOnWeatherListener(this);
         weatherAPI.setOnForecastWeatherListener(this);
         mHandler = new Handler(Looper.myLooper());
+    }
+
+    public SceneAction() {
+
     }
 
     public void startActionByList(List<BaseChildModel> baseChildModelList) {
@@ -227,7 +242,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 break;
             case SceneTypeConst.HOMECOMPANY:
                 SceneAction.location = null;
-                Log.d("", "actionByType: 设置家" + baseChildModel.getText());
                 if (baseChildModel.getText().contains("公司")) {
                     code = 1;
                 } else {
@@ -242,7 +256,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 GaodeBroadcasting.top(mainActivity);
                 break;
             case SceneTypeConst.GOHOMETOWORK:
-                Log.d("TAG", "actionByType回: " + baseChildModel.getText());
                 if (baseChildModel.getText().contains("公司")) {
                     goCode = 1;
                 } else {
@@ -254,6 +267,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.addMessageAndTTS(new ChatMessage("好的", false, "", false)
                         , "好的");
                 GaodeBroadcasting.top(mainActivity);
+                break;
+            case SceneTypeConst.LOCATIONCONST:
+                aMapLocationSceneAction();
                 break;
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
@@ -311,9 +327,61 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 response.toString());
     }
 
-    private void musicUnknowAction() {
+    public void musicUnknowAction() {
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.musicUnknow, false, "", false)
                 , BotConstResponse.musicUnknow);
+    }
+    public void aMapLocationSceneAction(){
+        final String[] name = {null};
+        PositioningUtil posit = new PositioningUtil();
+        try {
+            posit.initLocation(context);
+        } catch (Exception e) {
+            Log.d("报错", "searchInAmap: " + e);
+            throw new RuntimeException(e);
+        } finally {
+            posit.release();
+        }
+        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
+        String cityCode = sharedPreferences.getString("cityCode", "");
+        String city = sharedPreferences.getString("city", "");
+        float lat = sharedPreferences.getFloat("latitude", 0);
+        float lot = sharedPreferences.getFloat("longitude", 0);
+        String adcode = sharedPreferences.getString("adcode","");
+        Log.d("我的当前位置", "纬度::" + lat + "\t经度" + lot + "\tcity" + city + "\t区县cityCode编码" + cityCode);
+        String lot_lat = lot + "," + lat;
+        ReverseGeography reverseGeography = new ReverseGeography();
+        reverseGeography.reverseGeographyApi(lot_lat, new ReverseGeography.successApi() {
+            @Override
+                public void success(String formattedAddress) {
+                // 先让机器人回复固定内容
+                Log.d("TAG", "success: "+formattedAddress.isEmpty());
+                if (formattedAddress != null && !formattedAddress.trim().isEmpty() && !formattedAddress.equals("[]")) {
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        mainActivity.addMessageAndTTS(new ChatMessage("您当前所在位置是：" + formattedAddress, false, "", false),
+                                formattedAddress);
+                    });
+                } else {
+                    List<AMapLocationEntity> list = JSONReader.select(context, adcode);
+                    Log.d("TAG", "查询成功：: " + list.toString());
+                    for (AMapLocationEntity amapLocationEntity:list) {
+                        name[0] =  amapLocationEntity.getName();
+                    }
+                    if (name[0]!=null){
+                        Log.d("TAG", "cityCode编码查询: " + cityCode);
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            mainActivity.addMessageAndTTS(new ChatMessage("未获取到您的具体位置，您当前所在：" + city + name[0] , false, "", false),
+                                    city + cityCode);
+                        });
+                    }else {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            mainActivity.addMessageAndTTS(new ChatMessage("定位失败，请检查定位权限是否授予", false, "", false),
+                                    city + cityCode);
+                        });
+                    }
+                }
+            }
+        });
     }
 
     private void hotSongsAction() {
@@ -404,6 +472,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setStopRequest(true);
                 String content = mainActivity.filterSensitiveContent(entry.getContent()); // 过滤敏感词
                 mainActivity.updateContext(baseChildModel.getText(), content); // 更新上下文
+                Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
+                Log.d("TAG", "nearbyAction: "+content);
                 mainActivity.addMessageAndTTS(new ChatMessage(entry.getContent(), false, "", false)
                         , entry.getContent());
                 mainActivity.found = true;
@@ -418,7 +488,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void filmAction(BaseChildModel baseChildModel, String botResponse) {
         mainActivity.setStopRequest(true);
-        botResponse = botResponse + "\n您可以说查看附近的影院";
+        botResponse = botResponse + "，您可以说查看附近的影院";
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
@@ -497,13 +567,19 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         });
     }
 
+    /**
+     *附近搜索
+     * @param baseChildModel 问题
+     * @param botResponse 固定答案
+     */
     private void nearbyAction(BaseChildModel baseChildModel, String botResponse) {
         String location = ((NavChildMode) baseChildModel).getLocation();
         mainActivity.setStopRequest(true);
-        botResponse = botResponse + "\n您可以说第一个，最后一个";
+        botResponse = botResponse + ",您可以说第一个，最后一个";
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
+        //获取当前所在位置
         mainActivity.updateContext(baseChildModel.getText(), botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
@@ -540,6 +616,12 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         });
     }
 
+    /**
+     * 关键字搜索
+     * @param baseChildModel 问题
+     * @param botResponse 固定答案
+     *
+     */
     private void keyWordAction(BaseChildModel baseChildModel, String botResponse) {
         mainActivity.setStopRequest(true);
         botResponse = botResponse + "\n您可以说第一个，最后一个";
@@ -547,6 +629,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
         mainActivity.updateContext(baseChildModel.getText(), botResponse);
+        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
+        Log.d("TAG", "nearbyAction: "+botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)
@@ -572,56 +656,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setCurrentChatOver();
             }
         });
-    }
-
-
-    public void sceneryAction() {
-        //获取当前定位城市
-        PositioningUtil positioning = new PositioningUtil();
-        try {
-            positioning.initLocation(context);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            positioning.release();
-        }
-        SharedPreferences sharedPreferences = context.getSharedPreferences("Location", MODE_PRIVATE);
-        String city = sharedPreferences.getString("city", "");
-        Log.d("TAG", "sceneryAction: " + city);
-        geocodingApi.geocoding(city, null, new GeocodingApi.success() {
-            @Override
-            public void SuccessAPI(String response) {
-                SceneAction.locationScenery = response;
-            }
-        });
-        if (SceneAction.location != null) {
-            //使用上次关键字导航目的地的经纬度
-            ScenerySpotApi.ScenerySpotAPi(SceneAction.location, "景点", new ScenerySpotApi.scenerySuccess() {
-                @Override
-                public void success(List<SceneryPage> list) {
-                    Log.d("TAG", "successlist结果：: " + list);
-                }
-
-                @Override
-                public void err(String e) {
-
-                }
-            });
-        } else {
-            //使用当前定位城市的经纬度
-            ScenerySpotApi.ScenerySpotAPi(SceneAction.locationScenery, "景点", new ScenerySpotApi.scenerySuccess() {
-                @Override
-                public void success(List<SceneryPage> list) {
-                    Log.d("TAG", "successlist结果：: " + list);
-                    SceneAction.locationScenery = null;
-                }
-
-                @Override
-                public void err(String e) {
-
-                }
-            });
-        }
     }
 
     @Override

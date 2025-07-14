@@ -1,6 +1,8 @@
 package com.yl.deepseekxunfei.fragment;
 
+import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,5 +48,4 @@ public class MainFragment extends Fragment {
             });
         }
     }
-
 }

@@ -25,5 +25,6 @@ public class SceneTypeConst {
     public static final int CHITCHAT = 10011;
     public static final int HOMECOMPANY = 10012;//设置家或者公司
     public static final int GOHOMETOWORK = 10013;//回家或者公司
+    public static final int LOCATIONCONST = 10014;//获取我当前所在位置
 
 }

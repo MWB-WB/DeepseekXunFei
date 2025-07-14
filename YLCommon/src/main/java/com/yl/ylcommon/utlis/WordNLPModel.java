@@ -351,4 +351,140 @@ public class WordNLPModel {
                 ", other=" + other +
                 '}';
     }
+
+    public void setN(List<String> n) {
+        this.n = n;
+    }
+
+    public void setNr(List<String> nr) {
+        this.nr = nr;
+    }
+
+    public void setNs(List<String> ns) {
+        this.ns = ns;
+    }
+
+    public void setNt(List<String> nt) {
+        this.nt = nt;
+    }
+
+    public void setNz(List<String> nz) {
+        this.nz = nz;
+    }
+
+    public void setNl(List<String> nl) {
+        this.nl = nl;
+    }
+
+    public void setNg(List<String> ng) {
+        this.ng = ng;
+    }
+
+    public void setT(List<String> t) {
+        this.t = t;
+    }
+
+    public void setV(List<String> v) {
+        this.v = v;
+    }
+
+    public void setVd(List<String> vd) {
+        this.vd = vd;
+    }
+
+    public void setVn(List<String> vn) {
+        this.vn = vn;
+    }
+
+    public void setVshi(List<String> vshi) {
+        this.vshi = vshi;
+    }
+
+    public void setVyou(List<String> vyou) {
+        this.vyou = vyou;
+    }
+
+    public void setA(List<String> a) {
+        this.a = a;
+    }
+
+    public void setAd(List<String> ad) {
+        this.ad = ad;
+    }
+
+    public void setD(List<String> d) {
+        this.d = d;
+    }
+
+    public void setR(List<String> r) {
+        this.r = r;
+    }
+
+    public void setRr(List<String> rr) {
+        this.rr = rr;
+    }
+
+    public void setRz(List<String> rz) {
+        this.rz = rz;
+    }
+
+    public void setRzt(List<String> rzt) {
+        this.rzt = rzt;
+    }
+
+    public void setC(List<String> c) {
+        this.c = c;
+    }
+
+    public void setU(List<String> u) {
+        this.u = u;
+    }
+
+    public void setM(List<String> m) {
+        this.m = m;
+    }
+
+    public void setQ(List<String> q) {
+        this.q = q;
+    }
+
+    public void setY(List<String> y) {
+        this.y = y;
+    }
+
+    public void setE(List<String> e) {
+        this.e = e;
+    }
+
+    public void setO(List<String> o) {
+        this.o = o;
+    }
+
+    public void setF(List<String> f) {
+        this.f = f;
+    }
+
+    public void setZ(List<String> z) {
+        this.z = z;
+    }
+
+    public void setP(List<String> p) {
+        this.p = p;
+    }
+
+    public void setH(List<String> h) {
+        this.h = h;
+    }
+
+    public void setK(List<String> k) {
+        this.k = k;
+    }
+
+    public void setW(List<String> w) {
+        this.w = w;
+    }
+
+    public void setOther(List<String> other) {
+        this.other = other;
+    }
 }

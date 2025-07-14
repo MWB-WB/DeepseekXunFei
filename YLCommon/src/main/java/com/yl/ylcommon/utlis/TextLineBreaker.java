@@ -11,9 +11,7 @@ public class TextLineBreaker {
     // 匹配英文标点符号（换行并缩进）
     private static final Pattern ENGLISH_PUNCTUATION = Pattern.compile("[!?;]");
     // 匹配其他所有标点符号（需删除）
-    private static final Pattern SPECIAL_CHARS = Pattern.compile("[\\p{P}&&[^。？！；.!?;]]");
-    // 1. 删除非目标标点符号
-
+    private static final Pattern SPECIAL_CHARS = Pattern.compile("[\\p{P}&&[^。？！；，,：:.!?;、－＿]]");
     // 缩进字符
     private static final String INDENT = "\t";
 

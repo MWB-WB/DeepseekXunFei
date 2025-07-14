@@ -37,6 +37,7 @@ public class NavScene extends BaseChildScene {
         NavChildMode navChildMode = new NavChildMode();
         CountDownLatch countDownLatch = new CountDownLatch(1);
         String text = sceneModel.getText();
+
         List<Term> terms = SEGMENT.seg(text);
         List<NavChildMode.GeoEntity> entities = new ArrayList<>();
         for (Term term : terms) {

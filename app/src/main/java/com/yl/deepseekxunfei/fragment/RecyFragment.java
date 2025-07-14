@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.github.ybq.android.spinkit.SpinKitView;
+import com.yl.ylcommon.utlis.AmapNavEntity;
 import com.yl.ylcommon.utlis.AmapNavigator;
 import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.R;
@@ -37,6 +38,7 @@ public class RecyFragment extends Fragment {
     private RecyclerView searchResultsRecyclerView;
     //动画效果
     private SpinKitView spinKitView;
+    String addressName;
 
     @Nullable
     @Override
@@ -61,17 +63,23 @@ public class RecyFragment extends Fragment {
     }
 
     public void showNavSearchResult(List<LocationResult> results) {
+        Log.d("选择LocationResult", "showNavSearchResult: " + results);
         searchResultsRecyclerView.setVisibility(View.VISIBLE);
         spinKitView.setVisibility(View.GONE);
         SearchResultAdapter adapter = new SearchResultAdapter(results, result -> {
             // 点击结果后导航
-            AmapNavigator.startNavigationByUri(
+            String lonLat = AmapNavigator.startNavigationByUri(
                     getContext(),
                     result.getName(),
                     result.getLongitude(),
-                    result.getLatitude()
+                    result.getLatitude(),
+                    result.getAddress(),
+                    new AmapNavEntity(result.getName(), result.getLongitude() + "," + result.getLatitude(), result.getAddress())
             );
+            Log.d("导航选择：", "onSuccess: " + lonLat);
+            if (lonLat != null) {
 
+            }
         });
         searchResultsRecyclerView.setAdapter(adapter);
     }
@@ -179,7 +187,7 @@ public class RecyFragment extends Fragment {
             searchResultsRecyclerView.setAdapter(adapter);
         });
     }
-
+    //点击查看影院
     public void getNearbyCinema() {
         NeighborhoodSearch.search("电影院", "", 1000, new OnPoiSearchListener() {
             @Override
@@ -189,11 +197,13 @@ public class RecyFragment extends Fragment {
                     spinKitView.setVisibility(View.GONE);
                     SearchResultAdapter adapter = new SearchResultAdapter(results, result -> {
                         // 点击结果后导航
-                        AmapNavigator.startNavigationByUri(
+                        String lonLat = AmapNavigator.startNavigationByUri(
                                 getContext(),
                                 result.getName(),
                                 result.getLongitude(),
-                                result.getLatitude()
+                                result.getLatitude(),
+                                result.getAddress(),
+                                new AmapNavEntity(result.getName(), result.getLongitude() + "," + result.getLatitude(), result.getAddress())
                         );
                     });
                     searchResultsRecyclerView.setAdapter(adapter);
@@ -220,6 +230,7 @@ public class RecyFragment extends Fragment {
                         SearchResultAdapterMovie adapterMovie = new SearchResultAdapterMovie(getContext(), movies, new SearchResultAdapterMovie.OnItemClickListener() {
                             @Override
                             public void onItemClick(MovieResponse.Movie result, int position) {
+                                Log.d("diany", "onItemClick: 23");
                                 getMovieDetail(result.getId());
                             }
                         }, new SearchResultAdapterMovie.OnButtonClickListener() {

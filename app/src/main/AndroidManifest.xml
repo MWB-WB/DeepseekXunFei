@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.yl.deepseekxunfei"
-    android:sharedUserId="android.uid.system">
+>
     <!-- 连接网络权限，用于执行云端语 ·音能力 -->
     <uses-permission android:name="android.permission.INTERNET" /> <!-- 获取手机录音机使用权限，听写、识别、语义理解需要用到此权限 -->
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
@@ -49,10 +49,10 @@
         <!--设置高德Key-->
         <meta-data
             android:name="com.amap.api.v2.apikey"
-            android:value="5c04f780c8748ab0d52f27608efa579f" />
+            android:value="5c04f780c8748ab0d52f27608efa579f"/>
         <!-- adjustPan -->
         <activity
-            android:name=".activity.PrivacyPolicyActivity"
+            android:name=".activity.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -62,13 +62,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".activity.MainActivity"
-            android:enabled="true"
-            android:exported="true"
-            android:launchMode="singleInstance"
-            android:windowSoftInputMode="adjustPan">
-        </activity>
+<!--        <activity-->
+<!--            android:name=".activity.MainActivity"-->
+<!--            android:enabled="true"-->
+<!--            android:exported="true"-->
+<!--            android:launchMode="singleInstance"-->
+<!--            android:windowSoftInputMode="adjustPan">-->
+<!--        </activity>-->
         <service android:name="com.yl.creteEntity.crete.uits.DBService"
             android:enabled="true"
             android:exported="true">

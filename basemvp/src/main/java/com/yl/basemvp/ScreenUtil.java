@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 
@@ -156,6 +157,9 @@ public class ScreenUtil {
      * @return
      */
     public static DisplayMetrics getDisplayMetrics(Context context){
+        if (context==null){
+            Log.d("context为空", "context为空");
+        }
         WindowManager manager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         DisplayMetrics metrics = new DisplayMetrics();
         manager.getDefaultDisplay().getMetrics(metrics);

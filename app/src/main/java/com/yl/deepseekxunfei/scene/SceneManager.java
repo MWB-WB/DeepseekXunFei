@@ -1,6 +1,7 @@
 package com.yl.deepseekxunfei.scene;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.hankcs.hanlp.HanLP;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SceneManager {
 
@@ -43,6 +45,7 @@ public class SceneManager {
     private LocationValidator locationValidator;
     private Context mContext;
     private CountDownLatch countDownLatch;
+
     // 连接词集合（可扩展）
     private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
             "然后", "之后", "接着", "随后"
@@ -64,6 +67,7 @@ public class SceneManager {
         videoScene = new VideoScene();
         musicScene = new MusicScene();
         computeScene = new ComputeScene();
+
     }
 
     public List<BaseChildModel> parseToScene(String text) {
@@ -109,7 +113,7 @@ public class SceneManager {
     }
 
     private SceneModel getSceneModel(WordNLPModel wordNLPModel, String text) {
-        Log.d("设置家", "getSceneModel: " + text);
+
         SceneModel resultModel = new SceneModel();
         resultModel.setText(text);
         //可能有上下问关系的场景，主要用来处理一些特殊的逻辑
@@ -118,8 +122,8 @@ public class SceneManager {
         if (sceneModel != null) {
             return sceneModel;
         }
-        if (wordNLPModel.getV().contains("导航") || wordNLPModel.getVn().contains("导航")
-                || text.contains("我要去") || text.contains("我想去") || text.contains("去") || wordNLPModel.getF().contains("附近")) {
+        Log.d("sceneModelGetSceneModel", "getSceneModel: " + sceneModel);
+        if (wordNLPModel.getV().contains("导航") || wordNLPModel.getVn().contains("导航") || text.contains("我要去") || text.contains("我想去") || wordNLPModel.getF().contains("附近")) {
             if (text.contains("攻略") || text.contains("规划") || text.contains("计划")) {
                 resultModel.setScene(SceneType.CHITCHAT);
             } else {
@@ -127,9 +131,14 @@ public class SceneManager {
             }
         } else if (text.startsWith("播放") || text.contains("音乐") ||
                 text.startsWith("我要听") || text.contains("歌") || text.contains("想听")
-                || text.startsWith("来一首")) {
-            resultModel.setScene(SceneType.MUSIC);
-        } else if (text.contains("当前位置") || text.contains("我在哪")) {
+                || text.startsWith("来一首") ||  text.contains("今日推荐音乐")) {
+            if (handlePlayCommand(text)) {
+                resultModel.setScene(SceneType.MUSIC);
+            } else {
+                resultModel.setScene(SceneType.CHITCHAT);
+            }
+        } else if (isLocationQuery(text)) {
+            Log.d("位置", "getSceneModel: 当前位置");
             resultModel.setScene(SceneType.LOCATION);
         } else if (wordNLPModel.getN().contains("天气")) {
             resultModel.setScene(SceneType.WEATHER);
@@ -168,8 +177,8 @@ public class SceneManager {
 
     private SceneModel judgeSceneWithContext(String text) {
         SceneModel sceneModel = null;
-        //如果上一次的场景里包含了导航、音乐，并且此次的是选项则走选择场景
-        if (lastSceneTypeList.contains(SceneType.NAVIGATION) || lastSceneTypeList.contains(SceneType.MUSIC)) {
+        //如果上一次的场景里包含了导航、音乐，电影并且此次的是选项则走选择场景
+        if (lastSceneTypeList.contains(SceneType.NAVIGATION) || lastSceneTypeList.contains(SceneType.MUSIC) || lastSceneTypeList.contains(SceneType.MOVIE)) {
             if (OptionPositionParser.parsePosition(text)) {
                 sceneModel = new SceneModel();
                 sceneModel.setText(text);
@@ -224,6 +233,7 @@ public class SceneManager {
     }
 
     private BaseChildModel getChildModel(SceneModel sceneModel) {
+        Log.d("TAG", "getChildModel: " + sceneModel.getScene());
         BaseChildModel baseChildModel;
         switch (sceneModel.getScene()) {
             case WEATHER:
@@ -232,7 +242,7 @@ public class SceneManager {
             case NAVIGATION:
                 baseChildModel = navScene.parseSceneToChild(sceneModel);
                 break;
-            case MOVIE:
+            case MOVIE://电影
                 baseChildModel = movieScene.parseSceneToChild(sceneModel);
                 break;
             case VIDEO:
@@ -272,6 +282,11 @@ public class SceneManager {
             case GOHOMETOWORK:
                 baseChildModel = new BaseChildModel();
                 baseChildModel.setType(SceneTypeConst.GOHOMETOWORK);
+                baseChildModel.setText(sceneModel.getText());
+                break;
+            case LOCATION:
+                baseChildModel = new BaseChildModel();
+                baseChildModel.setType(SceneTypeConst.LOCATIONCONST);
                 baseChildModel.setText(sceneModel.getText());
                 break;
             default:
@@ -325,5 +340,118 @@ public class SceneManager {
         return matcher.matches();
     }
 
+    /**
+     * 处理音乐播放指令（优化版）
+     *
+     * @param text 用户输入的指令文本
+     */
+    public boolean handlePlayCommand(String text) {
+        // 1. 空指令检查
+        if (TextUtils.isEmpty(text)) {
+            Log.d("播放错误", "请说出您想听的歌曲，例如：播放晴天 或 我想听周杰伦的歌");
+            return false;
+        }
 
+        // 2. 统一处理为小写并去除首尾空格
+        String processedInput = text.trim().toLowerCase();
+
+        // 3. 排除单字"歌"的情况
+        if (processedInput.equals("歌")) {
+            Log.d("播放错误", "请说出完整的歌曲名称哦~");
+            return false;
+        }
+
+        // 4. 支持的指令前缀（可配置）
+        String[] prefixes = {"播放", "我要听", "我想听", "来一首", "听一下", "放一首"};
+
+        // 5. 检查是否匹配任一播放指令
+        String matchedPrefix = null;
+        for (String prefix : prefixes) {
+            String lowerPrefix = prefix.toLowerCase();
+            if (processedInput.startsWith(lowerPrefix)) {
+                // 检查指令后是否有内容（排除"播放"后为空的情况）
+                if (processedInput.length() > lowerPrefix.length()) {
+                    matchedPrefix = prefix;
+                    break;
+                }
+            }
+        }
+
+        // 6. 如果不是有效的播放指令，直接返回
+        if (matchedPrefix == null) {
+            return false;
+        }
+
+        // 7. 提取歌名部分（保留原始大小写）
+        String songName = text.substring(matchedPrefix.length()).trim();
+
+        // 8. 二次验证歌名有效性
+        if (songName.isEmpty() || isInvalidSongName(songName)) {
+            Log.d("播放错误", "请说出完整的歌曲名称，例如：" + matchedPrefix + "晴天");
+            return false;
+        }
+
+        // 9. 过滤歌名中的特殊符号songName = cleanSongName(songName);
+
+        // 10. 执行播放
+        return true;
+    }
+
+    /**
+     * 检查是否为无效歌名
+     */
+    private boolean isInvalidSongName(String name) {
+        // 单字"歌"已在前置检查，这里主要检查其他无效情况
+        return name.matches("^[\\s\\p{P}]*$"); // 全是空格或标点
+    }
+
+    /**
+     * 清洗歌名中的特殊符号
+     */
+    private String cleanSongName(String name) {
+        return name.replaceAll("[《》\"“”‘’'?？]", "").trim();
+    }
+    public boolean isLocationQuery(String userInput) {
+        // 预处理输入
+        userInput = userInput.toLowerCase()
+                .replaceAll("[?？,.!！]", "")
+                .trim();
+
+        // ----------------- 1. 多语言关键词匹配 -----------------
+        String[][][] keywordGroups = {
+                // 中文组
+                {
+                        {"我在哪", "我的位置", "当前位置", "这是哪里", "我的地址", "当前坐标"},
+                        {"我在哪儿", "俺在哪", "这是啥地方", "我在啥位置", "咯里是哪里"}
+                },
+                // 英文组
+                {
+                        {"where am i", "my location", "current position", "what is this place"},
+                        {"where is me", "locate me", "show my position"}
+                }
+        };
+
+        for (String[][] langGroup : keywordGroups) {
+            for (String[] synonyms : langGroup) {
+                for (String keyword : synonyms) {
+                    if (userInput.contains(keyword)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // ----------------- 2. 高级句式匹配 -----------------
+        Pattern[] patterns = {
+                Pattern.compile(".*(我|你|当前|现在)(的?)(位置|坐标|地址|在哪[里儿]?).*"),
+                Pattern.compile(".*(where is|what's|show me)( my)? (current )?(loc|position).*", Pattern.CASE_INSENSITIVE)
+        };
+
+        for (Pattern p : patterns) {
+            if (p.matcher(userInput).matches()) return true;
+        }
+
+
+        return false;
+    }
 }

@@ -16,6 +16,8 @@ import android.graphics.Color;
 
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
@@ -74,8 +76,10 @@ import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.presenter.MainPresenter;
 import com.yl.deepseekxunfei.room.AppDatabase;
+import com.yl.deepseekxunfei.room.AppDatabaseAbcodeRoom;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
+import com.yl.deepseekxunfei.room.ulti.JSONReader;
 import com.yl.deepseekxunfei.scene.SceneManager;
 import com.yl.deepseekxunfei.scene.actoin.SceneAction;
 import com.yl.ylcommon.utlis.BotConstResponse;
@@ -92,6 +96,8 @@ import com.yl.ylcommon.utlis.ToastUtil;
 
 import java.io.IOException;
 import java.util.function.Consumer;
+
+import okhttp3.internal.http2.Header;
 
 
 public class MainActivity extends BaseActivity<MainPresenter> {
@@ -124,17 +130,16 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public ImageButton TTSbutton;
     //是否隐藏停止输出按钮
     public boolean found = false;
-    private List<ChatMessage> context = new ArrayList<>(); // 用于保存多轮对话的上下文
     public int i = 0;
     private String currentTitle = ""; // 当前对话的标题
     private ImageButton history;//历史对话
     private ImageButton newDialogue;//新建对话
     private TextView titleTextView;//对话标题
-    private MainFragment mainFragment;
+    public MainFragment mainFragment;
     private RecyFragment recyFragment;
     private MovieDetailFragment movieDetailFragment;
     private MyHandler myHandler;
-    private String mWeatherResult;
+    private String mWeatherResult;//天气消息
     public BotConstResponse.AIType aiType = BotConstResponse.AIType.TEXT_NO_READY;
     // 检查当前标题是否已经存在于历史记录中
     boolean isDuplicate = false;
@@ -144,6 +149,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     //开始录音按钮
     private Button kaishiluyin;
     private BackTextToAction backTextToAction = null;
+    private AppDatabaseAbcodeRoom db;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -152,6 +158,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
         mPresenter.TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
+        JSONReader.insertJsonFileData(this, "result.json");//高德城市编码表中的数据添加到数据库
     }
 
     @Override
@@ -174,7 +181,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mSceneAction = new SceneAction(this);
         textFig = false;
         mPresenter.setParam();
-        mPresenter.MACAddressMain();
+//        mPresenter.MACAddressMain();
         //        requestLocationPermission();//位置权限
     }
 
@@ -217,7 +224,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                             replaceFragment(0);
                             sendMessage();
                         } else {
-                            ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
+                            ToastUtil.show(this, "");
                         }
                     }
                 } catch (Exception e) {
@@ -473,14 +480,19 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void commitText(String text) {
-        if (mPresenter.getChatMessagesSize() > 0) {
+        if (mPresenter.getChatMessagesSize() <= 0) {
             mPresenter.getChatMessages().add(new ChatMessage(text, true, "", false));
             chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
             if (!isNetWorkConnect()) {
                 addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
             } else {
                 List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
-                mSceneAction.actionByType(baseChildModelList.get(0));
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mSceneAction.actionByType(baseChildModelList.get(0));
+                    }
+                });
             }
         } else {
             if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
@@ -496,11 +508,17 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 if (!isNetWorkConnect()) {
                     addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
                 } else {
+
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
                             List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(text);
-                            mSceneAction.actionByType(baseChildModelList.get(0));
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    mSceneAction.actionByType(baseChildModelList.get(0));
+                                }
+                            });
                         }
                     }).start();
                 }
@@ -515,11 +533,11 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             @Override
             public void dataBack(ChatHistoryEntity chatHistoryEntity) {
                 mPresenter.getChatMessages().clear();
-                context.clear();
+                mPresenter.contextQueue.clear();
                 List<ChatHistoryDetailEntity> chatHistoryDetailEntities = chatHistoryEntity.getChatHistoryDetailEntities();
                 for (ChatHistoryDetailEntity chatHistoryDetailEntity : chatHistoryDetailEntities) {
                     mPresenter.getChatMessages().add(new ChatMessage(chatHistoryDetailEntity.message, chatHistoryDetailEntity.isUser, chatHistoryDetailEntity.thinkMessage, false));
-                    context.add(new ChatMessage(chatHistoryDetailEntity.message, chatHistoryDetailEntity.isUser));
+                    mPresenter.contextQueue.add(new ChatMessage(chatHistoryDetailEntity.message, chatHistoryDetailEntity.isUser));
                 }
                 chatAdapter.notifyDataSetChanged();
                 chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
@@ -565,7 +583,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                     if (baseChildModelList.size() > 1) {
                         mSceneAction.startActionByList(baseChildModelList);
                     } else {
-                        mSceneAction.actionByType(baseChildModelList.get(0));
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                mSceneAction.actionByType(baseChildModelList.get(0));
+                            }
+                        });
                     }
                 }
             }
@@ -580,10 +603,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void replaceFragment(int id) {
+
         hideFragment();
         if (id == 0) {
             if (mainFragment == null) {
                 //设置fragment
+                Log.d(TAG, "replaceFragment:1 右侧");
                 mainFragment = new MainFragment();
                 getSupportFragmentManager().beginTransaction().add(R.id.right_layout, mainFragment).commit();
             } else {
@@ -690,7 +715,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 if (baseChildModelList.size() > 1) {
                     mSceneAction.startActionByList(baseChildModelList);
                 } else {
-                    mSceneAction.actionByType(baseChildModelList.get(0));
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mSceneAction.actionByType(baseChildModelList.get(0));
+                        }
+                    });
                 }
             }
         }
@@ -709,10 +739,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void newChat() {
-        context.clear();
         mPresenter.clearContextQueue();
         mPresenter.voiceManagerStop();
         mPresenter.stopCurrentCall();
+        // 新增：重置当前对话状态
+        mPresenter.isStopRequested = true;
+        mPresenter.isNewChatCome = true;
         stopSpeaking();
         setCurrentChatOver();
         mPresenter.setNewChatCome(true);
@@ -800,7 +832,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             boolean hasRecordPermission = ContextCompat.checkSelfPermission(MainActivity.this,
                     Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
             if (hasRecordPermission) {
-                TTSbutton.performClick();
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        TTSbutton.performClick();
+                    }
+                }, 1000);
+
             }
         }
         mSceneAction.startActionByPosition();
@@ -860,20 +898,27 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void onTodayWeather(YLLocalWeatherLive weatherLive) {
-        setCurrentChatOver();
-        TimeDownUtil.clearTimeDown();
-        isWeatherOutputStopped = false;
-        mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
-                "，当前的温度是" + weatherLive.getTemperature() + "摄氏度，" + weatherLive.getWindDirection() + "风"
-                + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
-        ChatMessage chatMessage = new ChatMessage("", false);
-        chatMessage.setOver(true);
-        chatAdapter.notifyDataSetChanged();
-        // 只有在未被停止时才执行TTS和后续输出
-        if (!isWeatherOutputStopped) {
-            mPresenter.TTS(mWeatherResult);
-            weatherIndex = 0;
-            myHandler.post(weatherStreamRunnable);
+        synchronized (this) {  // 添加同步块
+            setCurrentChatOver();
+            TimeDownUtil.clearTimeDown();
+            isWeatherOutputStopped = false;
+            mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
+                    "，当前的温度是" + weatherLive.getTemperature() + "摄氏度，" + weatherLive.getWindDirection() + "风"
+                    + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
+
+            // 确保添加新消息是线程安全的
+            runOnUiThread(() -> {
+                ChatMessage chatMessage = new ChatMessage("", false);
+                chatMessage.setOver(true);
+                chatAdapter.notifyDataSetChanged();
+
+                if (!isWeatherOutputStopped) {
+                    mPresenter.TTS(mWeatherResult);
+                    weatherIndex = 0;
+                    myHandler.removeCallbacks(weatherStreamRunnable); // 清除旧回调
+                    myHandler.post(weatherStreamRunnable);
+                }
+            });
         }
     }
 
@@ -881,14 +926,27 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isWeatherOutputStopped || weatherIndex > mWeatherResult.length()) {
-                mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setOver(true);
-                return;
+            synchronized (MainActivity.this) {  // 添加同步
+                if (isWeatherOutputStopped || weatherIndex > mWeatherResult.length()) {
+                    if (mPresenter.getChatMessagesSize() > 0) {
+                        mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setOver(true);
+                    }
+                    return;
+                }
+
+                runOnUiThread(() -> {
+                    if (mPresenter.getChatMessagesSize() > 0) {
+                        String currentText = mWeatherResult.substring(0, Math.min(weatherIndex, mWeatherResult.length()));
+                        ChatMessage lastMsg = mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex());
+                        lastMsg.setMessage(currentText);
+                        lastMsg.setOver(false);
+                        chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
+                    }
+                });
+
+                weatherIndex++;
+                myHandler.postDelayed(this, 200);
             }
-            mPresenter.getChatMessages().set(mPresenter.getChatMessagesSizeIndex(), new ChatMessage(mWeatherResult.substring(0, weatherIndex), false));
-            chatAdapter.notifyDataSetChanged();
-            weatherIndex++;
-            myHandler.postDelayed(weatherStreamRunnable, 200);
         }
     };
 
@@ -1006,13 +1064,11 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void updateContext(String userQuestion, String modelResponse) {
-        context.add(new ChatMessage(userQuestion, true)); // 用户问题
-        context.add(new ChatMessage(modelResponse, false)); // 模型回答
-        // 限制上下文长度（避免过长）
-        if (context.size() > 4) { // 保留最近的 10 轮对话
-            context.remove(0);
-            context.remove(0); // 同时移除一对问答
-        }
+        runOnUiThread(() -> {
+            // 使用已绑定的mPresenter，避免新建实例
+            mPresenter.contextQueue.add(new ChatMessage(userQuestion, true));
+            mPresenter.contextQueue.add(new ChatMessage(modelResponse, false));
+        });
     }
 
     // 显示搜索结果
