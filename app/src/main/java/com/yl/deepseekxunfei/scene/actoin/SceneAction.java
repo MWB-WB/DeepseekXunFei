@@ -22,6 +22,7 @@ import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.model.ComputeChildModel;
 import com.yl.deepseekxunfei.model.MusicControlChildModel;
+import com.yl.deepseekxunfei.model.NavControlChildModel;
 import com.yl.deepseekxunfei.model.OpenAppChildMode;
 import com.yl.deepseekxunfei.room.entity.AMapLocationEntity;
 import com.yl.deepseekxunfei.room.ulti.JSONReader;
@@ -49,6 +50,7 @@ import com.yl.gaodeApi.weather.YLLocalWeatherLive;
 import com.yl.kuwo.MusicKuwo;
 import com.yl.kuwo.PluginMediaModel;
 import com.yl.ylcommon.ylenum.MUSIC_CONTROL;
+import com.yl.ylcommon.ylenum.NAV_CONTROL;
 import com.yl.ylcommon.ylsceneconst.SceneTypeConst;
 
 import java.util.ArrayList;
@@ -277,6 +279,10 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 break;
             case SceneTypeConst.CONTROL_MUSIC:
                 MusicControlAction(baseChildModel);
+                break;
+            case SceneTypeConst.CONTROL_NAV:
+                NavControlAction(baseChildModel);
+                break;
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
 //                    @Override
@@ -295,6 +301,33 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 //                }).start();
 //                break;
         }
+    }
+
+    private void NavControlAction(BaseChildModel baseChildModel) {
+        NAV_CONTROL navControl = ((NavControlChildModel) baseChildModel).getNavControl();
+        // 先让机器人回复固定内容
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false),
+                BotConstResponse.ok);
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                switch (navControl) {
+                    case EXIT_NAV:
+                        sendGaodeBroadcast(10010);
+                        break;
+                    case CONTINUE_NAV:
+
+                        break;
+                }
+            }
+        }, 1500);
+    }
+
+    private void sendGaodeBroadcast(int keyType){
+        Intent intent = new Intent();
+        intent.setAction("AUTONAVI_STANDARD_BROADCAST_RECV");
+        intent.putExtra("KEY_TYPE", keyType);
+        mainActivity.sendBroadcast(intent);
     }
 
     private void MusicControlAction(BaseChildModel baseChildModel) {

@@ -201,4 +201,15 @@ public class SceneJudgeUtil {
         return false;
     }
 
+    private static String[] navControl = {"退出导航", "继续导航"};
+
+    public static boolean judgeIsNavControl(String text){
+        String replaceText = text.replace("。", "");
+        Optional<String> any = Arrays.stream(navControl).filter(t -> t.equals(replaceText)).findAny();
+        if (any.isPresent()) {
+            return true;
+        }
+        return false;
+    }
+
 }

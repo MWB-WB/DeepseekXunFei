@@ -36,6 +36,7 @@ public class SceneManager {
     private ComputeScene computeScene;
     private OpenAppScene openAppScene;
     private MusicControlScene musicControlScene;
+    private NavControlScene navControlScene;
     private boolean isMultiIntent = false;
     private List<SceneType> lastSceneTypeList = new ArrayList<>();
     private List<SceneType> sceneTypeList = new ArrayList<>();
@@ -68,6 +69,7 @@ public class SceneManager {
         computeScene = new ComputeScene();
         openAppScene = new OpenAppScene();
         musicControlScene = new MusicControlScene();
+        navControlScene = new NavControlScene();
     }
 
     public List<BaseChildModel> parseToScene(String text) {
@@ -125,6 +127,8 @@ public class SceneManager {
         Log.d("sceneModelGetSceneModel", "getSceneModel: " + sceneModel);
         if (SceneJudgeUtil.getInstance().judgeIsOpenApp(text)) {
             resultModel.setScene(SceneType.OPENAPP);
+        } else if (SceneJudgeUtil.getInstance().judgeIsNavControl(text)) {
+            resultModel.setScene(SceneType.CONTROLNAV);
         } else if (wordNLPModel.getV().contains("导航") || wordNLPModel.getVn().contains("导航") || text.contains("我要去") || text.contains("我想去") || wordNLPModel.getF().contains("附近")) {
             if (text.contains("攻略") || text.contains("规划") || text.contains("计划")) {
                 resultModel.setScene(SceneType.CHITCHAT);
@@ -298,6 +302,9 @@ public class SceneManager {
                 break;
             case CONTROLMUSIC:
                 baseChildModel = musicControlScene.parseSceneToChild(sceneModel);
+                break;
+            case CONTROLNAV:
+                baseChildModel = navControlScene.parseSceneToChild(sceneModel);
                 break;
             default:
                 baseChildModel = new BaseChildModel();
