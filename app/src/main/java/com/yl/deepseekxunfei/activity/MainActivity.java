@@ -14,6 +14,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 
+import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.Network;
@@ -28,6 +29,8 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -86,6 +89,7 @@ import com.yl.ylcommon.utlis.BotConstResponse;
 import com.yl.ylcommon.utlis.JsonParser;
 import com.yl.ylcommon.utlis.KeyboardUtils;
 import com.yl.ylcommon.utlis.OptionPositionParser;
+import com.yl.ylcommon.utlis.PopUpTheKeyboard;
 import com.yl.ylcommon.utlis.TimeDownUtil;
 import com.yl.deepseekxunfei.view.HistoryDialog;
 import com.yl.gaodeApi.page.LocationResult;
@@ -109,7 +113,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private EditText editTextQuestion;
     private static final String TAG = "MainActivity";
     String input;
-
+    private View view;
     // 用HashMap存储听写结果
     private HashMap<String, String> mIatResults = new LinkedHashMap<>();
 
@@ -149,7 +153,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     //开始录音按钮
     private Button kaishiluyin;
     private BackTextToAction backTextToAction = null;
-    private AppDatabaseAbcodeRoom db;
+    private ImageButton wdxzskeyboard;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -204,6 +208,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         TTSbutton = findViewById(R.id.wdxzs);
         kaishiluyin = findViewById(R.id.kaishiluyin);
         button.setImageResource(R.drawable.jzfason);
+        wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
+        view  = new View(this);
         button.setOnClickListener(v -> {
             mPresenter.voiceManagerStop();
             Log.e(TAG, "button onclick: " + aiType);
@@ -246,6 +252,14 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
             }
         });
+        wdxzskeyboard.setOnClickListener(v->{
+            //显示隐藏输入框，在键盘弹出后隐藏，使用输入框自带的发送按钮
+            editTextQuestion.setVisibility(View.VISIBLE);
+            editTextQuestion.requestFocus();
+            PopUpTheKeyboard.forceShowKeyboard(this,editTextQuestion);
+            editTextQuestion.setVisibility(View.GONE);
+        });
+
         editTextQuestion.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -739,27 +753,32 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void newChat() {
-        mPresenter.clearContextQueue();
-        mPresenter.voiceManagerStop();
-        mPresenter.stopCurrentCall();
-        // 新增：重置当前对话状态
-        mPresenter.isStopRequested = true;
-        mPresenter.isNewChatCome = true;
-        stopSpeaking();
-        setCurrentChatOver();
-        mPresenter.setNewChatCome(true);
-        mPresenter.setStopRequested(true);
-        aiType = BotConstResponse.AIType.FREE;
-        TimeDownUtil.clearTimeDown();
-        button.setImageResource(R.drawable.jzfason);
-        List<ChatHistoryDetailEntity> list = new ArrayList<>();
-        for (ChatMessage chatMessage : mPresenter.getChatMessages()) {
-            list.add(new ChatHistoryDetailEntity(chatMessage.isUser(), chatMessage.getThinkContent(), chatMessage.getMessage()));
+        if (!mPresenter.chatMessages.isEmpty()){
+            mPresenter.clearContextQueue();
+            mPresenter.voiceManagerStop();
+            mPresenter.stopCurrentCall();
+            // 新增：重置当前对话状态
+            mPresenter.isStopRequested = true;
+            mPresenter.isNewChatCome = true;
+            stopSpeaking();
+            setCurrentChatOver();
+            mPresenter.setNewChatCome(true);
+            mPresenter.setStopRequested(true);
+            aiType = BotConstResponse.AIType.FREE;
+            TimeDownUtil.clearTimeDown();
+            button.setImageResource(R.drawable.jzfason);
+            List<ChatHistoryDetailEntity> list = new ArrayList<>();
+            for (ChatMessage chatMessage : mPresenter.getChatMessages()) {
+                list.add(new ChatHistoryDetailEntity(chatMessage.isUser(), chatMessage.getThinkContent(), chatMessage.getMessage()));
+            }
+            ChatHistoryEntity chatHistoryEntity = new ChatHistoryEntity(list, getTitle(list));
+            AppDatabase.getInstance(this).insert(chatHistoryEntity);
+            mPresenter.getChatMessages().clear();
+            chatAdapter.notifyDataSetChanged();
+        }else {
+            mPresenter.TTS("还没有聊天记录呢~");
+            Log.d(TAG, "newChat: 空");
         }
-        ChatHistoryEntity chatHistoryEntity = new ChatHistoryEntity(list, getTitle(list));
-        AppDatabase.getInstance(this).insert(chatHistoryEntity);
-        mPresenter.getChatMessages().clear();
-        chatAdapter.notifyDataSetChanged();
     }
 
     public void sendBtnClick() {
@@ -1063,14 +1082,45 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         }
     }
 
-    public void updateContext(String userQuestion, String modelResponse) {
+    /**
+     * 更新或追加消息
+     * @param userQuestion 用户消息（可为null，表示不添加用户消息）
+     * @param modelResponse 系统消息（可为null，表示不添加系统消息）
+     * @param updateLastSystem 是否更新最后一条系统消息（true=更新，false=追加新消息）
+     */
+    public void updateContext(String userQuestion, String modelResponse, boolean updateLastSystem) {
         runOnUiThread(() -> {
-            // 使用已绑定的mPresenter，避免新建实例
-            mPresenter.contextQueue.add(new ChatMessage(userQuestion, true));
-            mPresenter.contextQueue.add(new ChatMessage(modelResponse, false));
+            // 1. 检查Presenter和队列是否有效
+            if (isFinishing() || mPresenter == null || mPresenter.contextQueue == null) {
+                return;
+            }
+
+            // 2. 更新最后一条系统消息（如果允许且队列不为空）
+            if (updateLastSystem && !mPresenter.contextQueue.isEmpty()) {
+                List<ChatMessage> list = new ArrayList<>(mPresenter.contextQueue);
+                ChatMessage lastMessage = list.get(list.size() - 1);
+                if (!lastMessage.isUser() && modelResponse != null) {
+                    lastMessage.setMessage(modelResponse);
+                    if (chatAdapter != null) {
+                        chatAdapter.notifyItemChanged(list.size() - 1);
+                    }
+                    return; // 更新后直接返回
+                }
+            }
+            // 3. 追加新消息（如果参数非null）
+            if (userQuestion != null) {
+                mPresenter.contextQueue.add(new ChatMessage(userQuestion, true));
+            }
+            if (modelResponse != null) {
+                mPresenter.contextQueue.add(new ChatMessage(modelResponse, false));
+            }
+
+            // 4. 通知Adapter刷新
+            if (chatAdapter != null) {
+                chatAdapter.notifyDataSetChanged(); // 简化处理，实际可优化为局部刷新
+            }
         });
     }
-
     // 显示搜索结果
     public void showSearchResults(List<LocationResult> results) {
         replaceFragment(1);

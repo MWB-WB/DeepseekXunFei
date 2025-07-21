@@ -573,7 +573,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setCurrentChatOver();
                 mainActivity.setStopRequest(true);
                 String content = mainActivity.filterSensitiveContent(entry.getContent()); // 过滤敏感词
-                mainActivity.updateContext(baseChildModel.getText(), content); // 更新上下文
+                mainActivity.updateContext(baseChildModel.getText(), content,false); // 更新上下文
                 Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
                 Log.d("TAG", "nearbyAction: " + content);
                 mainActivity.addMessageAndTTS(new ChatMessage(entry.getContent(), false, "", false)
@@ -683,13 +683,15 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
         //获取当前所在位置
-        mainActivity.updateContext(baseChildModel.getText(), botResponse);
+        mainActivity.updateContext(baseChildModel.getText(), botResponse,false);
+        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)
                 .findFirst()
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
+        String finalBotResponse = botResponse;
         NeighborhoodSearch.getLocation(city, city, cityLocation -> {
             if (SceneAction.location != null) {
                 cityLocation = SceneAction.location;
@@ -731,9 +733,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
-        mainActivity.updateContext(baseChildModel.getText(), botResponse);
-        Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
-        Log.d("TAG", "nearbyAction: " + botResponse);
+        mainActivity.updateContext(baseChildModel.getText(), "",false);
+        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
+        Log.d("TAG", "nearbyAction: "+botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)

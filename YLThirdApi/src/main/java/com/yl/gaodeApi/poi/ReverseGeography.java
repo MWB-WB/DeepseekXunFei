@@ -23,7 +23,7 @@ public class ReverseGeography {
     public String formattedAddress;
 
 
-    public void reverseGeographyApi(String location,successApi successApi) {
+    public String reverseGeographyApi(String location,successApi successApi) {
         String api = "https://restapi.amap.com/v3/geocode/regeo?output=json&location=" +
                 location + "&key=b134db263b1cdde4d64d26dadbaf3e65&radius=1000&extensions=all";
 
@@ -80,6 +80,7 @@ public class ReverseGeography {
                 }
             }
         });
+        return formattedAddress;
     }
     public interface successApi{
         void success(String formattedAddress);

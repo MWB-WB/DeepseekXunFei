@@ -76,8 +76,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private String language = "zh_cn";//识别语言
     private String resultType = "json";//结果内容数据格式
     public Deque<ChatMessage> contextQueue = new ArrayDeque<>();
-    private static final int MAX_CONTEXT_TOKENS = 30000; // 预留2K tokens给新问题
-    private static final int MAX_HISTORY_ROUNDS = 10; // 最多5轮对话
+    private static final int MAX_CONTEXT_TOKENS = 29000; // 预留3K tokens给新问题,因为上限为约32万避免新问题太长而导致问题不完整
+    private static final int MAX_HISTORY_ROUNDS = 20; // 最多10轮对话
     private Call currentCall;
     private VoiceManager voiceManager = null;
     //是否停止输出
@@ -265,6 +265,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             int currentTokens = 0;
             // 1. 添加历史上下文（从旧到新）
             for (ChatMessage msg : contextQueue) {
+                //进行上下文关联分析
                 JSONObject jsonMsg = new JSONObject();
                 int msgTokens = estimateTokens(msg.getMessage());
                 if (currentTokens + msgTokens > MAX_CONTEXT_TOKENS) break;
@@ -274,13 +275,17 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 currentTokens += msgTokens;
             }
             // 添加当前用户问题
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", "分析用户问题，识别出用户的意图，根据用户的意图，准确输出对应的回答");
+            messages.put(systemMessage);
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
             userMessage.put("content", userQuestion); // userQuestion 已经过转义处理ffc
-            Log.d(TAG, "callGenerateApiuserQuestion: "+userQuestion);
+            Log.d(TAG, "callGenerateApiuserQuestion: " + userQuestion);
             messages.put(userMessage);
             requestBody.put("messages", messages);
-            Log.d(TAG, "callGenerateApi: "+messages);
+            Log.d(TAG, "callGenerateApimessages: " + messages);
             requestBody.put("stream", true);
             JSONObject options = new JSONObject();
             options.put("temperature", 0.9);
@@ -289,11 +294,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             requestBody.put("options", options);
             // 将 JSONObject 转换为字符串
             String jsonBodyRound1 = requestBody.toString();
-            Log.d(TAG, "callGenerateApijsonBodyRound1: "+jsonBodyRound1);
+            Log.d(TAG, "上下: " + jsonBodyRound1);
             RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
             Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
-            Log.d(TAG, "callGenerateApi: "+requestRound1.toString().trim()+requestBodyRound1.toString().trim());
-            Log.d(TAG, "callGenerateApi: "+requestRound1);
+            Log.d(TAG, "callGenerateApi: " + requestRound1.toString().trim() + requestBodyRound1.toString().trim());
+            Log.d(TAG, "callGenerateApi: " + requestRound1);
             // 异步执行请求
             OkHttpClient client = new OkHttpClient.Builder()
                     .connectTimeout(5, TimeUnit.SECONDS)//连接超时
@@ -387,15 +392,15 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(false);
                                                         continue;
                                                     }
-                                                    if (limendl.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
+                                                    if (limendl.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(false);
                                                         continue;
                                                     }
-                                                    if (imend.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
+                                                    if (imend.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(false);
                                                         continue;
                                                     }
-                                                    if (imstart.equals(partialResponse)&& chatMessages.get(botMessageIndexRound1).isThinkContent() ){
+                                                    if (imstart.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                         chatMessages.get(botMessageIndexRound1).setThinkContent(false);
                                                         continue;
                                                     }
@@ -411,6 +416,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                     // 更新 UI
                                                     mActivity.get().runOnUiThread(() -> {
                                                         String huida = "";
+                                                        Log.d(TAG, "onResponse: "+botMessageIndexRound1);
                                                         if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                             huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString())).trim();
                                                             // 更新机器人消息记录的内容
@@ -430,6 +436,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                                 TTS(huida);
                                                                 return;
                                                             } else {
+                                                                Log.d(TAG, "onResponse: " + huida);
                                                                 // 更新机器人消息记录的内容
                                                                 mActivity.get().setTextByIndex(botMessageIndexRound1, huida);
                                                             }
@@ -450,7 +457,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                             chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
                                                             chatMessages.get(botMessageIndexRound1).setOver(true);
                                                             // 保存上下文信息
-                                                            mActivity.get().updateContext(userQuestion, fullResponseRound1.toString());
+                                                            mActivity.get().updateContext(userQuestion, fullResponseRound1.toString(), false);
                                                         } else {
                                                             chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(false);
                                                         }
@@ -476,7 +483,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                     }
                 }
             });
-            Log.d(TAG, "callGenerateApijsonBodyRound1234: "+jsonBodyRound1);
+            Log.d(TAG, "callGenerateApijsonBodyRound1234: " + jsonBodyRound1);
         } catch (JSONException e) {
             throw new RuntimeException(e);
         }
@@ -803,7 +810,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     public int getChatMessagesSizeIndex() {
-        if (chatMessages == null) {
+        if (chatMessages == null || chatMessages.isEmpty()) {
             return 0;
         }
         return chatMessages.size() - 1;

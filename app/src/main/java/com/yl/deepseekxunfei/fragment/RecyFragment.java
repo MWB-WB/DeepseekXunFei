@@ -1,6 +1,7 @@
 package com.yl.deepseekxunfei.fragment;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.github.ybq.android.spinkit.SpinKitView;
+import com.yl.deepseekxunfei.model.ChatMessage;
+import com.yl.gaodeApi.poi.ReverseGeography;
 import com.yl.ylcommon.utlis.AmapNavEntity;
 import com.yl.ylcommon.utlis.AmapNavigator;
 import com.yl.deepseekxunfei.activity.MainActivity;
@@ -39,6 +42,8 @@ public class RecyFragment extends Fragment {
     //动画效果
     private SpinKitView spinKitView;
     String addressName;
+    MainActivity mainActivity;
+    ReverseGeography reverseGeography;
 
     @Nullable
     @Override
@@ -60,6 +65,8 @@ public class RecyFragment extends Fragment {
 
         // 设置RecyclerView
         searchResultsRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+        mainActivity = (MainActivity) getActivity();
+        reverseGeography = new ReverseGeography();
     }
 
     public void showNavSearchResult(List<LocationResult> results) {
@@ -76,9 +83,18 @@ public class RecyFragment extends Fragment {
                     result.getAddress(),
                     new AmapNavEntity(result.getName(), result.getLongitude() + "," + result.getLatitude(), result.getAddress())
             );
-            Log.d("导航选择：", "onSuccess: " + lonLat);
-            if (lonLat != null) {
-
+            addressName = reverseGeography.reverseGeographyApi(lonLat, new ReverseGeography.successApi() {
+                @Override
+                public void success(String formattedAddress) {
+                    addressName = formattedAddress;
+                }
+            });
+            Log.d("导航选择：", "上下: " + lonLat);
+            Log.d("导航选择：", "上下: " + addressName);
+            if (addressName != null) {
+                mainActivity.updateContext(null, "我当前所在" + addressName, true);
+            } else {
+                mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
             }
         });
         searchResultsRecyclerView.setAdapter(adapter);
@@ -187,6 +203,7 @@ public class RecyFragment extends Fragment {
             searchResultsRecyclerView.setAdapter(adapter);
         });
     }
+
     //点击查看影院
     public void getNearbyCinema() {
         NeighborhoodSearch.search("电影院", "", 1000, new OnPoiSearchListener() {
@@ -205,7 +222,20 @@ public class RecyFragment extends Fragment {
                                 result.getAddress(),
                                 new AmapNavEntity(result.getName(), result.getLongitude() + "," + result.getLatitude(), result.getAddress())
                         );
+                        Log.d("TAG", "上下: callGenerateApi");
+                        addressName = reverseGeography.reverseGeographyApi(lonLat, new ReverseGeography.successApi() {
+                            @Override
+                            public void success(String formattedAddress) {
+                                addressName = formattedAddress;
+                            }
+                        });
+                        if (addressName != null) {
+                            mainActivity.updateContext(null, "我当前所在" + addressName, true);
+                        } else {
+                            mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
+                        }
                     });
+
                     searchResultsRecyclerView.setAdapter(adapter);
                 });
             }

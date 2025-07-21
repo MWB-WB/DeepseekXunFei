@@ -52,7 +52,7 @@
                         android:layout_marginStart="10dp"
                         android:text="路线规划"
                         android:textColor="#FFF"
-                        android:textSize="16sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -69,7 +69,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="导航到最近的加油站。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t2"
@@ -79,7 +79,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="导航到附近的地铁站"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t13"
@@ -89,7 +89,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="导航到世界之窗。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
 
                     <TextView
@@ -100,7 +100,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="我想去深圳北站。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -134,7 +134,7 @@
                         android:layout_marginStart="10dp"
                         android:text="休闲娱乐"
                         android:textColor="#FFF"
-                        android:textSize="16sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -151,7 +151,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="播放毛不易的无名的人。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t4"
@@ -161,7 +161,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="最近上映的电影。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t15"
@@ -171,7 +171,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="今日推荐音乐。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t16"
@@ -181,7 +181,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="今日推荐电影。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
@@ -244,7 +244,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="拨打给家人。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t6"
@@ -254,7 +254,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="接听来电。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t17"
@@ -264,7 +264,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="打电话给10086。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t18"
@@ -274,7 +274,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="查看通讯录。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -326,7 +326,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="检查胎压状态。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t8"
@@ -336,7 +336,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="剩余油量还能开多远？"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t19"
@@ -346,7 +346,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="查看里程数？"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t20"
@@ -356,7 +356,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="查看车辆信息？"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -402,7 +402,7 @@
                         android:layout_marginStart="10dp"
                         android:text="天气搜索"
                         android:textColor="#FFF"
-                        android:textSize="16sp"
+                        android:textSize="20sp"
                         android:textStyle="bold" />
                 </LinearLayout>
 
@@ -419,7 +419,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="讲个笑话。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t10"
@@ -429,7 +429,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="今日天气。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t21"
@@ -439,7 +439,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="深圳天气怎么样。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t22"
@@ -449,7 +449,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="北京的天气怎么样。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                 </LinearLayout>
             </LinearLayout>
@@ -485,7 +485,7 @@
                         android:layout_marginStart="10dp"
                         android:text="周边搜索"
                         android:textColor="#FFF"
-                        android:textSize="16sp"
+                        android:textSize="20sp"
 
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -503,7 +503,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="附近的停车场"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t12"
@@ -513,7 +513,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="附近的餐厅。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t23"
@@ -523,7 +523,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="附近的酒店。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:id="@+id/t24"
@@ -533,7 +533,7 @@
                         android:background="@drawable/backduncoloi"
                         android:text="附近的美食。"
                         android:textColor="#FFF"
-                        android:textSize="18sp" />
+                        android:textSize="16sp" />
 
                 </LinearLayout>
             </LinearLayout>
