@@ -1,5 +1,7 @@
 package com.yl.deepseekxunfei.presenter;
 
+import static android.app.PendingIntent.getActivity;
+
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -7,6 +9,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
 import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
@@ -27,6 +31,7 @@ import com.iflytek.cloud.SpeechSynthesizer;
 import com.iflytek.cloud.SynthesizerListener;
 import com.iflytek.cloud.ui.RecognizerDialog;
 import com.iflytek.cloud.ui.RecognizerDialogListener;
+import com.iflytek.cloud.RecognizerListener;
 import com.yl.basemvp.BasePresenter;
 import com.yl.basemvp.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.R;
@@ -189,8 +194,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         mIat.setParameter(SpeechConstant.VAD_EOS, mSharedPreferences.getString("iat_vadeos_preference", "2000"));
 
         // 设置标点符号,设置为"0"返回结果无标点,设置为"1"返回结果有标点
-        mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "1"));
+        mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "0"));
+        mIat.setParameter(SpeechConstant.ASR_SOURCE_PATH, "-1");
 
+        mIat.setParameter(SpeechConstant.ASR_INTERRUPT_ERROR, mSharedPreferences.getString("iat_punc_preference", "0")); // 允许中断
         // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
 //        mIat.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
 //        mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/iat.wav");
@@ -208,6 +215,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
         Log.e(TAG, "TTS code: " + code);
+        mTts.setParameter(SpeechConstant.TTS_DATA_NOTIFY, "1"); // 支持流式
         if (code != ErrorCode.SUCCESS) {
             if (code == ErrorCode.ERROR_COMPONENT_NOT_INSTALLED) {
                 //上面的语音配置对象为初始化时：
@@ -239,6 +247,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         }
         //带UI界面
         mIatDialog.setListener(mRecognizerDialogListener);
+        int ret = mIat.startListening(mRecognizerListener);
+        if (ret != ErrorCode.SUCCESS) {
+            mActivity.get().showMsg("听写失败，错误码：" + ret);
+        }
         mIatDialog.show();
         //获取字体所在控件
         TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
@@ -263,34 +275,48 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             requestBody.put("model", "text");
             JSONArray messages = new JSONArray();
             int currentTokens = 0;
-            // 1. 添加历史上下文（从旧到新）
+            //添加系统提示
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", "严格根据上下文回答问题，前置规则：上下文之间必须有一定的关联，否则重新回答问题");
+            messages.put(systemMessage);
+           // 1. 添加历史上下文（从旧到新）
+            int i = 1;
             for (ChatMessage msg : contextQueue) {
                 //进行上下文关联分析
                 JSONObject jsonMsg = new JSONObject();
-                int msgTokens = estimateTokens(msg.getMessage());
-                if (currentTokens + msgTokens > MAX_CONTEXT_TOKENS) break;
+                //用户消息为true，系统消息为false
                 jsonMsg.put("role", msg.isUser() ? "user" : "assistant");
                 jsonMsg.put("content", msg.getMessage());
                 messages.put(jsonMsg);
-                currentTokens += msgTokens;
+                //编码句子并计算相似度
+                i++;
+//                if (i>2){
+//                    float[] emb1 = mActivity.get().embedder.encode(msg.getMessage());//历史回答
+//                    float[] emb2 =  mActivity.get().embedder.encode(userQuestion);//当前用户问题
+//                    float similarity = SBERTOnnxEmbedder.cosineSimilarity(emb1, emb2);
+//                    Log.d("Tokens", "相似度: " + similarity);
+//                }
             }
+
             // 添加当前用户问题
-            JSONObject systemMessage = new JSONObject();
-            systemMessage.put("role", "system");
-            systemMessage.put("content", "分析用户问题，识别出用户的意图，根据用户的意图，准确输出对应的回答");
-            messages.put(systemMessage);
             JSONObject userMessage = new JSONObject();
             userMessage.put("role", "user");
-            userMessage.put("content", userQuestion); // userQuestion 已经过转义处理ffc
+            userMessage.put("content", userQuestion);
             Log.d(TAG, "callGenerateApiuserQuestion: " + userQuestion);
             messages.put(userMessage);
             requestBody.put("messages", messages);
-            Log.d(TAG, "callGenerateApimessages: " + messages);
             requestBody.put("stream", true);
             JSONObject options = new JSONObject();
-            options.put("temperature", 0.9);
+            options.put("temperature", 0.6);
             options.put("mirostat_tau", 1.0);
             options.put("num_predict", -1);
+            options.put("repeat_last_n", 2048);//检查全部上下文，避免重复回答
+            options.put(" repeat_penalty", 1.2);//重复惩罚
+            long num = 4294967295L;
+            long randomNum = (long) (Math.random() * num + 1);
+            Log.d(TAG, "随机数: "+randomNum);
+            options.put("seed", randomNum);
             requestBody.put("options", options);
             // 将 JSONObject 转换为字符串
             String jsonBodyRound1 = requestBody.toString();
@@ -486,6 +512,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             Log.d(TAG, "callGenerateApijsonBodyRound1234: " + jsonBodyRound1);
         } catch (JSONException e) {
             throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
     }
@@ -509,6 +537,39 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().recognizeOnError(error);
         }
 
+    };
+    private RecognizerListener mRecognizerListener = new RecognizerListener() {
+        //音量变化回调
+        @Override
+        public void onVolumeChanged(int i, byte[] bytes) {
+
+        }
+        //开始说话回调
+        @Override
+        public void onBeginOfSpeech() {
+            Log.d(TAG, "讯飞: 开始说话");
+        }
+        //结束说话回调
+        @Override
+        public void onEndOfSpeech() {
+            Log.d(TAG, "讯飞: 结束说话");
+        }
+        //识别结果回调
+        @Override
+        public void onResult(RecognizerResult recognizerResult, boolean b) {
+            Log.d(TAG, "讯飞合成: "+recognizerResult.getResultString());
+            mActivity.get().recognizeResult(recognizerResult, b);
+        }
+        //识别错误回调
+        @Override
+        public void onError(SpeechError speechError) {
+            mActivity.get().recognizeOnError(speechError);
+        }
+        //其他事件回调
+        @Override
+        public void onEvent(int i, int i1, int i2, Bundle bundle) {
+
+        }
     };
 
     //合成监听器

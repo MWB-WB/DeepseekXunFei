@@ -41,7 +41,7 @@ public class RecyFragment extends Fragment {
     private RecyclerView searchResultsRecyclerView;
     //动画效果
     private SpinKitView spinKitView;
-    String addressName;
+    String addressName = null;
     MainActivity mainActivity;
     ReverseGeography reverseGeography;
 
@@ -87,15 +87,17 @@ public class RecyFragment extends Fragment {
                 @Override
                 public void success(String formattedAddress) {
                     addressName = formattedAddress;
+                    Log.d("导航选择：", "上下: " + lonLat);
+                    Log.d("导航选择：", "上下: " + addressName);
+                    Log.d("导航选择：", "上下formattedAddress: " + formattedAddress);
+                    if (addressName != null) {
+                        mainActivity.updateContext(null, "我当前所在" + addressName, true);
+                    } else {
+                        mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
+                    }
                 }
             });
-            Log.d("导航选择：", "上下: " + lonLat);
-            Log.d("导航选择：", "上下: " + addressName);
-            if (addressName != null) {
-                mainActivity.updateContext(null, "我当前所在" + addressName, true);
-            } else {
-                mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
-            }
+
         });
         searchResultsRecyclerView.setAdapter(adapter);
     }
@@ -206,7 +208,7 @@ public class RecyFragment extends Fragment {
 
     //点击查看影院
     public void getNearbyCinema() {
-        NeighborhoodSearch.search("电影院", "", 1000, new OnPoiSearchListener() {
+        NeighborhoodSearch.search("", "", 1000, new OnPoiSearchListener() {
             @Override
             public void onSuccess(List<LocationResult> results) {
                 getActivity().runOnUiThread(() -> {
@@ -227,15 +229,14 @@ public class RecyFragment extends Fragment {
                             @Override
                             public void success(String formattedAddress) {
                                 addressName = formattedAddress;
+                                if (addressName != null) {
+                                    mainActivity.updateContext(null, "我当前所在" + addressName, true);
+                                } else {
+                                    mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
+                                }
                             }
                         });
-                        if (addressName != null) {
-                            mainActivity.updateContext(null, "我当前所在" + addressName, true);
-                        } else {
-                            mainActivity.updateContext(null, "我当前所在，坐标：" + lonLat, true);
-                        }
                     });
-
                     searchResultsRecyclerView.setAdapter(adapter);
                 });
             }

@@ -101,6 +101,7 @@ import com.yl.ylcommon.utlis.ToastUtil;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+import ai.onnxruntime.OrtException;
 import okhttp3.internal.http2.Header;
 
 
@@ -154,6 +155,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private Button kaishiluyin;
     private BackTextToAction backTextToAction = null;
     private ImageButton wdxzskeyboard;
+//    public SBERTOnnxEmbedder embedder;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -192,6 +194,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     @Override
     protected void initView(Bundle savedInstanceState) {
 //        createMethod.init(MainActivity.this);
+//        embedder = new SBERTOnnxEmbedder(this);
         //标题置顶
         titleTextView = findViewById(R.id.titleTextView);
         titleTextView.bringToFront();
@@ -252,11 +255,11 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
             }
         });
-        wdxzskeyboard.setOnClickListener(v->{
+        wdxzskeyboard.setOnClickListener(v -> {
             //显示隐藏输入框，在键盘弹出后隐藏，使用输入框自带的发送按钮
             editTextQuestion.setVisibility(View.VISIBLE);
             editTextQuestion.requestFocus();
-            PopUpTheKeyboard.forceShowKeyboard(this,editTextQuestion);
+            PopUpTheKeyboard.forceShowKeyboard(this, editTextQuestion);
             editTextQuestion.setVisibility(View.GONE);
         });
 
@@ -685,6 +688,15 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (createMethod.tenSecondsOfAudio != null) {
             createMethod.tenSecondsOfAudio.stopRecording();
         }
+//        try {
+//            if (embedder != null) {
+//                embedder.close();
+//            }
+//        } catch (IOException e) {
+//            Log.e("SBERT", "释放资源失败", e);
+//        } catch (OrtException e) {
+//            throw new RuntimeException(e);
+//        }
         mPresenter.detach();
         super.onDestroy();
     }
@@ -695,7 +707,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
      * @param results
      */
     private void printResult(RecognizerResult results, boolean isLast) {
-        String text = JsonParser.parseIatResult(results.getResultString());
+        String text = JsonParser.parseIatResult(results.getResultString());//听写结果
         String sn = null;
         try {
             JSONObject resultJson = new JSONObject(results.getResultString());
@@ -713,7 +725,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             Toast.makeText(this, "您还没开始说话", Toast.LENGTH_SHORT).show();
             return;
         }
-        // 只有最后一段才做最终判断
+        // 只有最后一段才做最终判断,否则会同时输出两次
         if (!isLast) {
             return;
         }
@@ -753,7 +765,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void newChat() {
-        if (!mPresenter.chatMessages.isEmpty()){
+        //收起右侧布局
+        if (recyFragment != null && recyFragment.isVisible()) {
+            replaceFragment(0);
+        }
+        //新建对话
+        if (!mPresenter.chatMessages.isEmpty()) {
             mPresenter.clearContextQueue();
             mPresenter.voiceManagerStop();
             mPresenter.stopCurrentCall();
@@ -775,9 +792,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             AppDatabase.getInstance(this).insert(chatHistoryEntity);
             mPresenter.getChatMessages().clear();
             chatAdapter.notifyDataSetChanged();
-        }else {
-            mPresenter.TTS("还没有聊天记录呢~");
-            Log.d(TAG, "newChat: 空");
+            mPresenter.getChatMessages().add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
+            mPresenter.TTS("我是小天，很高兴见到你！");
+        } else {
+            //聊天记录为空，添加系统提示
+            mPresenter.getChatMessages().add(new ChatMessage("还没有聊天记录", false, "", false));
+            mPresenter.TTS("还没有聊天记录");
         }
     }
 
@@ -962,7 +982,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                         chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
                     }
                 });
-
                 weatherIndex++;
                 myHandler.postDelayed(this, 200);
             }
@@ -1084,8 +1103,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     /**
      * 更新或追加消息
-     * @param userQuestion 用户消息（可为null，表示不添加用户消息）
-     * @param modelResponse 系统消息（可为null，表示不添加系统消息）
+     *
+     * @param userQuestion     用户消息（可为null，表示不添加用户消息）
+     * @param modelResponse    系统消息（可为null，表示不添加系统消息）
      * @param updateLastSystem 是否更新最后一条系统消息（true=更新，false=追加新消息）
      */
     public void updateContext(String userQuestion, String modelResponse, boolean updateLastSystem) {
@@ -1094,7 +1114,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             if (isFinishing() || mPresenter == null || mPresenter.contextQueue == null) {
                 return;
             }
-
             // 2. 更新最后一条系统消息（如果允许且队列不为空）
             if (updateLastSystem && !mPresenter.contextQueue.isEmpty()) {
                 List<ChatMessage> list = new ArrayList<>(mPresenter.contextQueue);
@@ -1121,6 +1140,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             }
         });
     }
+
     // 显示搜索结果
     public void showSearchResults(List<LocationResult> results) {
         replaceFragment(1);

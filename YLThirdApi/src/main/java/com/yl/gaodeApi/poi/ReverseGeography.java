@@ -80,6 +80,7 @@ public class ReverseGeography {
                 }
             }
         });
+        Log.d("返回", "reverseGeographyApi: 上下"+formattedAddress);
         return formattedAddress;
     }
     public interface successApi{
