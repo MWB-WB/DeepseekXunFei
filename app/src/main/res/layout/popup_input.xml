@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <!-- 隐藏的输入框：透明且尺寸为0，仅用于接收输入 -->
+    <EditText
+        android:id="@+id/et_hidden_input"
+        android:layout_width="500dp"
+        android:layout_height="100dp"
+        android:background="@drawable/popup_background"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:inputType="text"
+        android:textColor="@color/black"
+        android:imeOptions="actionDone" /> <!-- 键盘显示“完成”按钮 -->
+
+</LinearLayout>

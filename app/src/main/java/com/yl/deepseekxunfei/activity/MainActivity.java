@@ -13,26 +13,17 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
-
-import android.graphics.Rect;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.text.Editable;
 import android.text.TextUtils;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.EditText;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -48,7 +39,6 @@ import android.widget.ImageButton;
 
 import androidx.core.content.ContextCompat;
 
-import android.view.inputmethod.EditorInfo;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -79,7 +69,6 @@ import com.yl.deepseekxunfei.model.BaseChildModel;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.presenter.MainPresenter;
 import com.yl.deepseekxunfei.room.AppDatabase;
-import com.yl.deepseekxunfei.room.AppDatabaseAbcodeRoom;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryDetailEntity;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
 import com.yl.deepseekxunfei.room.ulti.JSONReader;
@@ -101,24 +90,18 @@ import com.yl.ylcommon.utlis.ToastUtil;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-import ai.onnxruntime.OrtException;
-import okhttp3.internal.http2.Header;
-
-
 public class MainActivity extends BaseActivity<MainPresenter> {
 
     private boolean isWeatherOutputStopped = false;
     public boolean isNeedWakeUp = true;
     private int seleteSize = 0;//判断是不是第一次进行唤醒
     CreateMethod createMethod = new CreateMethod();
-    private EditText editTextQuestion;
     private static final String TAG = "MainActivity";
     String input;
     private View view;
     // 用HashMap存储听写结果
     private HashMap<String, String> mIatResults = new LinkedHashMap<>();
 
-    private EditText inputEditText;
     public ImageButton button;
     private RecyclerView chatRecyclerView;
     public ChatAdapter chatAdapter;
@@ -197,7 +180,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 //        embedder = new SBERTOnnxEmbedder(this);
         //标题置顶
         titleTextView = findViewById(R.id.titleTextView);
-        titleTextView.bringToFront();
+//        titleTextView.bringToFront();
         mDeepThinkLayout = findViewById(R.id.deep_think_layout);
         mDeepCreteLayout = findViewById(R.id.deep_crete_layout);
         mDeepThinkLayout.setOnClickListener(mPresenter);
@@ -205,33 +188,29 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mDeepThinkImg = findViewById(R.id.deep_think_img);
         mDeepThinkText = findViewById(R.id.deep_think_text);
         mDeepCreteText = findViewById(R.id.deep_crete_text);
-        editTextQuestion = findViewById(R.id.inputEditText);//输入框
         button = findViewById(R.id.send_button);//发送按钮
         button.setOnClickListener(mPresenter);
         TTSbutton = findViewById(R.id.wdxzs);
-        kaishiluyin = findViewById(R.id.kaishiluyin);
+//        kaishiluyin = findViewById(R.id.kaishiluyin);
         button.setImageResource(R.drawable.jzfason);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
-        view  = new View(this);
+        view = new View(this);
         button.setOnClickListener(v -> {
             mPresenter.voiceManagerStop();
             Log.e(TAG, "button onclick: " + aiType);
             if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
                 ToastUtil.show(this, "请输入一个问题");
             } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
-                if (TextUtils.isEmpty(editTextQuestion.getText())) {
-                    ToastUtil.show(this, "请输入一个问题");
-                    return;
-                }
+
                 try {
                     if (mPresenter.getChatMessagesSize() > 0) {
                         replaceFragment(0);
-                        sendMessage();
+//                        sendMessage();
                     } else {
                         Log.d(TAG, "initView: " + aiType);
                         if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
                             replaceFragment(0);
-                            sendMessage();
+//                            sendMessage();
                         } else {
                             ToastUtil.show(this, "");
                         }
@@ -255,42 +234,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
             }
         });
-        wdxzskeyboard.setOnClickListener(v -> {
-            //显示隐藏输入框，在键盘弹出后隐藏，使用输入框自带的发送按钮
-            editTextQuestion.setVisibility(View.VISIBLE);
-            editTextQuestion.requestFocus();
-            PopUpTheKeyboard.forceShowKeyboard(this, editTextQuestion);
-            editTextQuestion.setVisibility(View.GONE);
-        });
-
-        editTextQuestion.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-            }
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                String shuru = s.toString().trim();
-                // 如果正在输出，不更新按钮状态
-                if (textFig) {
-                    return;
-                }
-                if (shuru.isEmpty()) {
-                    button.setImageResource(R.drawable.jzfason);
-                    aiType = BotConstResponse.AIType.TEXT_NO_READY;
-                } else {
-                    button.setImageResource(R.drawable.fason);
-                    aiType = BotConstResponse.AIType.TEXT_READY;
-                }
-            }
-        });
-
+        wdxzskeyboard.setOnClickListener(mPresenter);
 
         //启动语音识别
         TTSbutton.setOnClickListener(v -> {
@@ -306,26 +250,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 startVoiceRecognize();
             }
         });
-        //输入框
-        inputEditText = findViewById(R.id.inputEditText);
         chatRecyclerView = findViewById(R.id.chat_recycler_view);
         chatAdapter = new ChatAdapter(mPresenter.getChatMessages());
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
         // 在初始化 RecyclerView 时禁用动画
         chatRecyclerView.setItemAnimator(null);
-        // 隐藏主面板并添加历史记录
-        inputEditText.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_SEND) {
-                try {
-                    sendMessage();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                return true;
-            }
-            return false;
-        });
 
         // 初始化视图
         titleTextView = findViewById(R.id.titleTextView);
@@ -341,9 +271,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, recyFragment).commit();
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, movieDetailFragment).commit();
         replaceFragment(0);
-        kaishiluyin.setOnClickListener(v -> {
-            createMethod.kaishi();
-        });
+//        kaishiluyin.setOnClickListener(v -> {
+//            createMethod.kaishi();
+//        });
     }
 
     @Override
@@ -473,7 +403,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
             mPresenter.setNewChatCome(true);
         }
-        editTextQuestion.setText("");
         //停止播放文本
         stopSpeaking();
         mIatResults.clear();
@@ -577,7 +506,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     //添加到对话列表
     private void sendMessage() {
         found = false;
-        input = inputEditText.getText().toString().trim();
+//        input = inputEditText.getText().toString().trim();
         if (!input.isEmpty()) {
             // 如果是第一次提问，将问题设置为对话标题
             if (currentTitle.isEmpty()) {
@@ -588,7 +517,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             mPresenter.getChatMessages().add(new ChatMessage(input, true, "", false));
             chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
             chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
-            inputEditText.setText("");
+//            inputEditText.setText("");
             if (backTextToAction != null) {
                 backTextToAction.backUserText(input);
                 backTextToAction = null;

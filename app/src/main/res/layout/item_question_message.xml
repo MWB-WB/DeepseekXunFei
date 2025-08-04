@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_margin="10dp"
-            android:background="@drawable/rounded_corner_user_message"
+            android:background="@drawable/question_bg_gradient"
             android:ellipsize="none"
             android:padding="5dp"
             android:paddingRight="10dp"

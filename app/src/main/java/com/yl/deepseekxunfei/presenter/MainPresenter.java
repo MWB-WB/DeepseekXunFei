@@ -39,6 +39,7 @@ import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
+import com.yl.deepseekxunfei.view.PopupInputManager;
 import com.yl.ylcommon.utlis.BotConstResponse;
 import com.yl.ylcommon.utlis.TextLineBreaker;
 import com.yl.ylcommon.utlis.TimeDownUtil;
@@ -92,6 +93,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final List<String> SENSITIVE_WORDS = Arrays.asList(
             "DeepSeek", "deepseek", "DEEPSEEK", "Deepseek", "deep seek", "Deep Seek"
     );//敏感词列表
+    private PopupInputManager inputManager;
 
     @Override
     protected void onItemClick(View v) {
@@ -106,9 +108,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         } else if (v.getId() == R.id.xjianduihua) {
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
-            mActivity.get().sendBtnClick();
+//            mActivity.get().sendBtnClick();
         } else if (v.getId() == R.id.deep_crete_layout) {
             mActivity.get().swOpenClose();
+        } else if (v.getId() == R.id.wdxzskeyboard) {
+            inputManager.show(mActivity.get());
         }
     }
 
@@ -129,6 +133,18 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
         mIatDialog = new RecognizerDialog(mActivity.get(), mInitListener);
         mSharedPreferences = mActivity.get().getSharedPreferences("ASR", Activity.MODE_PRIVATE);
+        inputManager = new PopupInputManager(mActivity.get(), new PopupInputManager.InputCallback() {
+            @Override
+            public void onInputChanged(String text) {
+                Log.e(TAG, "onInputChanged: " + text);
+            }
+
+            @Override
+            public void onInputCompleted(String text) {
+                Log.e(TAG, "onInputCompleted: " + text);
+                mActivity.get().commitText(text);
+            }
+        });
     }
 
     /**
@@ -280,7 +296,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             systemMessage.put("role", "system");
             systemMessage.put("content", "严格根据上下文回答问题，前置规则：上下文之间必须有一定的关联，否则重新回答问题");
             messages.put(systemMessage);
-           // 1. 添加历史上下文（从旧到新）
+            // 1. 添加历史上下文（从旧到新）
             int i = 1;
             for (ChatMessage msg : contextQueue) {
                 //进行上下文关联分析
@@ -315,7 +331,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             options.put(" repeat_penalty", 1.2);//重复惩罚
             long num = 4294967295L;
             long randomNum = (long) (Math.random() * num + 1);
-            Log.d(TAG, "随机数: "+randomNum);
+            Log.d(TAG, "随机数: " + randomNum);
             options.put("seed", randomNum);
             requestBody.put("options", options);
             // 将 JSONObject 转换为字符串
@@ -339,6 +355,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 StringBuilder thinkText = new StringBuilder();
                 // 用于存储第一轮机器人消息记录的索引
                 int botMessageIndexRound1 = -1;
+
                 @Override
                 public void onFailure(Call call, IOException e) {
                     //如果不是主动关闭的话需要进行网络波动的播报
@@ -442,7 +459,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                                                     // 更新 UI
                                                     mActivity.get().runOnUiThread(() -> {
                                                         String huida = "";
-                                                        Log.d(TAG, "onResponse: "+botMessageIndexRound1);
+                                                        Log.d(TAG, "onResponse: " + botMessageIndexRound1);
                                                         if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
                                                             huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString())).trim();
                                                             // 更新机器人消息记录的内容
@@ -544,27 +561,32 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         public void onVolumeChanged(int i, byte[] bytes) {
 
         }
+
         //开始说话回调
         @Override
         public void onBeginOfSpeech() {
             Log.d(TAG, "讯飞: 开始说话");
         }
+
         //结束说话回调
         @Override
         public void onEndOfSpeech() {
             Log.d(TAG, "讯飞: 结束说话");
         }
+
         //识别结果回调
         @Override
         public void onResult(RecognizerResult recognizerResult, boolean b) {
-            Log.d(TAG, "讯飞合成: "+recognizerResult.getResultString());
+            Log.d(TAG, "讯飞合成: " + recognizerResult.getResultString());
             mActivity.get().recognizeResult(recognizerResult, b);
         }
+
         //识别错误回调
         @Override
         public void onError(SpeechError speechError) {
             mActivity.get().recognizeOnError(speechError);
         }
+
         //其他事件回调
         @Override
         public void onEvent(int i, int i1, int i2, Bundle bundle) {

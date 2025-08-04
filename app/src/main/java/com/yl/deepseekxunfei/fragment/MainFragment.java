@@ -33,14 +33,8 @@ public class MainFragment extends Fragment {
     private void initView(View view) {
         // 推荐问题点击区域
         TextView[] textViews = {
-                view.findViewById(R.id.t1), view.findViewById(R.id.t2), view.findViewById(R.id.t3),
-                view.findViewById(R.id.t4), view.findViewById(R.id.t5), view.findViewById(R.id.t6),
-                view.findViewById(R.id.t7), view.findViewById(R.id.t8), view.findViewById(R.id.t9),
-                view.findViewById(R.id.t10), view.findViewById(R.id.t11), view.findViewById(R.id.t12),
-                view.findViewById(R.id.t13), view.findViewById(R.id.t14), view.findViewById(R.id.t15),
-                view.findViewById(R.id.t16), view.findViewById(R.id.t17), view.findViewById(R.id.t18),
-                view.findViewById(R.id.t19), view.findViewById(R.id.t20), view.findViewById(R.id.t21),
-                view.findViewById(R.id.t22), view.findViewById(R.id.t23), view.findViewById(R.id.t24)
+                view.findViewById(R.id.navigate_gas), view.findViewById(R.id.navigate_world_window), view.findViewById(R.id.play_music),
+                view.findViewById(R.id.recent_movies), view.findViewById(R.id.today_weather), view.findViewById(R.id.beijing_weather)
         };
         for (TextView textView : textViews) {
             textView.setOnClickListener(v -> {

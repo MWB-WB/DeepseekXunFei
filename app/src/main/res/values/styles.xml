@@ -10,6 +10,14 @@
         <item name="colorAccent">@color/cardview_dark_background</item>
     </style>
 
+    <style name="FunctionButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="strokeColor">#50FFFFFF</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
 
     <style name="CustomDialog" parent="android:style/Theme.Dialog">
         <!--背景颜色及和透明程度-->

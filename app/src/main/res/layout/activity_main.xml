@@ -4,240 +4,217 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/desktop_bg">
+    android:background="#1a1a22">
 
-    <!-- 左侧布局：问题和回答区域 -->
+    <!-- 左侧布局：聊天区域 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/leftLayout"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/right_layout"
+        app:layout_constraintEnd_toStartOf="@+id/divider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.55">
+        app:layout_constraintWidth_percent="0.6">
 
-        <!-- 介绍区域 -->
+        <!-- 顶部标题栏 -->
         <LinearLayout
-            android:id="@+id/introLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="10dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="10dp"
-            android:paddingBottom="10dp"
+            android:id="@+id/topBar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#5023262f"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="16dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <!-- 欢迎使用智能助手 -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="34dp"
-                android:orientation="horizontal">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="欢迎使用智能助手"
+                android:textColor="#FFF"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:gravity="center_vertical"
-                    android:text="欢迎使用智能助手"
-                    android:textColor="#FFF"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="1dp" />
 
-                <ImageButton
-                    android:id="@+id/historyButton"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="start"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/backduncoloi"
-                    android:src="@drawable/lishiduihua" />
+            <ImageButton
+                android:id="@+id/historyButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="历史对话"
+                android:src="@drawable/lishiduihua" />
 
-                <!-- 新建对话按钮 -->
-                <ImageButton
-                    android:id="@+id/xjianduihua"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="start"
-                    android:layout_marginEnd="8dp"
-                    android:background="@drawable/backduncoloi"
-                    android:src="@drawable/baishexj" />
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="1dp" />
 
-                <android.widget.Button
-                    android:id="@+id/kaishiluyin"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginEnd="5dp"
-                    android:background="@drawable/btn_bg"
-                    android:text="录制声纹信息"
-                    android:textSize="8sp"
-                    android:visibility="gone"/>
-            </LinearLayout>
+            <ImageButton
+                android:id="@+id/xjianduihua"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="新建对话"
+                android:src="@drawable/baishexj" />
         </LinearLayout>
 
-        <!-- 对话标题 -->
-        <TextView
-            android:id="@+id/titleTextView"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="新对话"
-            android:textColor="#FFFFFF"
-            android:visibility="gone"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/introLayout" />
-
         <!-- 聊天消息列表 -->
-        <!-- 输入框和发送按钮 -->
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/chat_recycler_view"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="40dp"
-            android:layout_marginBottom="80dp"
-            android:paddingEnd="0dp"
+            android:layout_height="0dp"
+            android:paddingVertical="8dp"
+            app:layout_constraintBottom_toTopOf="@+id/controlPanel"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintHorizontal_bias="1.0"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/titleTextView"
+            app:layout_constraintTop_toBottomOf="@id/topBar"
             tools:listitem="@layout/item_answer_message" />
 
+        <!-- 底部控制面板 -->
         <LinearLayout
-            android:id="@+id/bottom_layout"
-            android:layout_width="0dp"
+            android:id="@+id/controlPanel"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical"
-            android:paddingStart="16dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:gravity="center">
+            android:padding="8dp"
+            app:layout_constraintBottom_toBottomOf="parent">
 
+            <!-- 功能开关区域 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:padding="5dp"
+                android:paddingVertical="8dp"
                 android:visibility="gone">
-                <!-- 深度思考 -->
+
                 <LinearLayout
                     android:id="@+id/deep_think_layout"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
                     android:background="@drawable/text_selected_bg"
-                    android:padding="5dp">  <!-- 右边距，避免紧贴 -->
+                    android:gravity="center"
+                    android:padding="8dp">
 
                     <ImageView
                         android:id="@+id/deep_think_img"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:src="@drawable/think_select" />
 
                     <TextView
                         android:id="@+id/deep_think_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text=" 深度思考（R1）"
+                        android:layout_marginStart="4dp"
+                        android:text="深度思考（R1）"
                         android:textColor="#00BFFF"
-                        android:textSize="12sp"
-                        />
+                        android:textSize="14sp" />
                 </LinearLayout>
 
-                <!-- 声纹验证 -->
+                <Space
+                    android:layout_width="16dp"
+                    android:layout_height="1dp" />
+
                 <LinearLayout
                     android:id="@+id/deep_crete_layout"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:background="@drawable/text_selected_bg"
-                    android:padding="5dp">
+                    android:gravity="center"
+                    android:padding="8dp">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp" />
 
                     <TextView
                         android:id="@+id/deep_crete_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:text=" 是 否 开 启 声 纹 验 证 "
+                        android:layout_marginStart="4dp"
+                        android:text="声纹验证"
                         android:textColor="#00BFFF"
-                        android:textSize="12sp" />
+                        android:textSize="14sp" />
                 </LinearLayout>
             </LinearLayout>
-            <LinearLayout
-                android:id="@+id/submitLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
 
+            <!-- 输入区域 - 仅显示图标 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_input_bg"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <!-- 键盘输入图标 -->
                 <ImageButton
                     android:id="@+id/wdxzskeyboard"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:background="@drawable/backduncoloi"
-                    android:layout_marginRight="90dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?selectableItemBackgroundBorderless"
+                    android:contentDescription="键盘输入"
                     android:src="@drawable/dakaijianpan" />
 
-                <EditText
-                    android:id="@+id/inputEditText"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_margin="16dp"
-                    android:layout_marginBottom="12dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/rounded_corner_bg"
-                    android:hint="请输入内容"
-                    android:imeOptions="actionSend"
-                    android:padding="8dp"
-                    android:textColor="@color/black"
-                    android:textColorHint="@color/black"
-                    android:visibility="gone"/>
+                <Space
+                    android:layout_width="24dp"
+                    android:layout_height="1dp" />
+
+                <!-- 语音输入图标 -->
                 <ImageButton
                     android:id="@+id/wdxzs"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/backduncoloi"
-                    android:src="@drawable/wdxz_jqr"/>
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:background="?selectableItemBackgroundBorderless"
+                    android:contentDescription="语音输入"
+                    android:src="@drawable/wdxz_jqr" />
+
+                <Space
+                    android:layout_width="24dp"
+                    android:layout_height="1dp" />
+
+                <!-- 发送图标 -->
                 <ImageButton
                     android:id="@+id/send_button"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/backduncoloi"
-                    android:src="@drawable/fason"
-                    android:layout_marginLeft="90dp"/>
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:background="?selectableItemBackgroundBorderless"
+                    android:contentDescription="发送"
+                    android:src="@drawable/fason" />
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- 分割线 -->
     <View
         android:id="@+id/divider"
         android:layout_width="1dp"
         android:layout_height="match_parent"
-        android:background="#E0E0E0"
+        android:background="#40000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/right_layout"
-        app:layout_constraintStart_toEndOf="@+id/leftLayout"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintStart_toEndOf="@id/leftLayout"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <!--右侧布局-->
     <FrameLayout
         android:id="@+id/right_layout"
         android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:padding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/divider"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintWidth_percent="0.45" />
+        app:layout_constraintWidth_percent="0.4" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

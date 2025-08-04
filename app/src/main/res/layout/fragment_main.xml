@@ -1,543 +1,132 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 右侧功能区域 -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/right_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="match_parent">
 
-    android:padding="16dp"
-    android:orientation="vertical">
-
-    <LinearLayout
-        android:id="@+id/defaultRightContent"
+    <TextView
+        android:id="@+id/featureTitle"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-        <!-- 第一行 -->
+        android:layout_height="wrap_content"
+        android:text="快捷功能"
+        android:textColor="#FFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingStart="8dp"
+        app:layout_constraintTop_toTopOf="parent"/>
 
-        <LinearLayout
-            android:id="@+id/youceyi"
+    <!-- 固定高度布局 - 无滚动 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/featureTitle"
+        android:padding="7dp">
+
+        <!-- 路线规划 -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:padding="11dp">
-            <!-- 路线规划 -->
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#23262f"
+            app:cardCornerRadius="12dp">
+
             <LinearLayout
-                android:id="@+id/route_planning"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="10dp"
-                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
+                android:padding="6dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
+                    android:text="路线规划"
+                    android:textColor="#FFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
 
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_menu_directions" />
+                <Button
+                    android:id="@+id/navigate_gas"
+                    style="@style/FunctionButton"
+                    android:text="附近的加油站" />
 
-                    <TextView
-                        android:id="@+id/lxgh"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="路线规划"
-                        android:textColor="#FFF"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t1"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="导航到最近的加油站。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t2"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="导航到附近的地铁站"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t13"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="导航到世界之窗。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-
-                    <TextView
-                        android:id="@+id/t14"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="我想去深圳北站。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-                </LinearLayout>
+                <Button
+                    android:id="@+id/navigate_world_window"
+                    style="@style/FunctionButton"
+                    android:text="导航到世界之窗"/>
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-            <!-- 音乐播放 -->
-            <LinearLayout
-                android:id="@+id/music_playback"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
-
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_media_play" />
-
-                    <TextView
-                        android:id="@+id/yybf"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="休闲娱乐"
-                        android:textColor="#FFF"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t3"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="播放毛不易的无名的人。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t4"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="最近上映的电影。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t15"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="今日推荐音乐。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t16"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="今日推荐电影。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 第二行 -->
-        <LinearLayout
-            android:id="@+id/youceer"
+        <!-- 休闲娱乐 -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:padding="11dp"
-            android:visibility="gone">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#23262f"
+            app:cardCornerRadius="12dp">
 
-            <!-- 电话通讯 -->
             <LinearLayout
-                android:id="@+id/phone_communication"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="10dp"
-                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
+                android:padding="6dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
+                    android:text="休闲娱乐"
+                    android:textColor="#FFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
 
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_menu_call" />
+                <Button
+                    android:id="@+id/play_music"
+                    style="@style/FunctionButton"
+                    android:text="播放毛不易的无名的人"/>
 
-                    <TextView
-                        android:id="@+id/dhtx"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="电话通讯"
-                        android:textColor="#FFF"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t5"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="拨打给家人。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t6"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="接听来电。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t17"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="打电话给10086。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t18"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="查看通讯录。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
+                <Button
+                    android:id="@+id/recent_movies"
+                    style="@style/FunctionButton"
+                    android:text="最近上映的电影"/>
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-            <!-- 车辆信息查询 -->
-            <LinearLayout
-                android:id="@+id/vehicle_info"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
-
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_menu_info_details" />
-
-                    <TextView
-                        android:id="@+id/clxx"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="车辆信息"
-                        android:textColor="#FFF"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t7"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="检查胎压状态。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t8"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="剩余油量还能开多远？"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t19"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="查看里程数？"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t20"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="查看车辆信息？"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- 第三行 -->
-        <LinearLayout
-            android:id="@+id/youcesan"
+        <!-- 天气搜索 -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="horizontal"
-            android:padding="11dp">
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            app:cardBackgroundColor="#23262f"
+            app:cardCornerRadius="12dp">
 
-            <!-- 气候控制 -->
             <LinearLayout
-                android:id="@+id/climate_control"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginRight="10dp"
-                android:layout_weight="1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
+                android:padding="6dp">
 
-                <LinearLayout
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
+                    android:text="天气搜索"
+                    android:textColor="#FFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"/>
 
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_menu_compass" />
+                <Button
+                    android:id="@+id/today_weather"
+                    style="@style/FunctionButton"
+                    android:text="今日的天气"/>
 
-                    <TextView
-                        android:id="@+id/qhkz"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="天气搜索"
-                        android:textColor="#FFF"
-                        android:textSize="20sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t9"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="讲个笑话。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t10"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="今日天气。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t21"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="深圳天气怎么样。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t22"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="北京的天气怎么样。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
+                <Button
+                    android:id="@+id/beijing_weather"
+                    style="@style/FunctionButton"
+                    android:text="北京的天气"/>
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-            <!-- 周边搜索 -->
-            <LinearLayout
-                android:id="@+id/nearby_search"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-
-                android:orientation="vertical"
-                android:paddingStart="16dp"
-                android:paddingTop="5dp"
-                android:paddingEnd="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingBottom="10dp">
-
-                    <ImageView
-                        android:layout_width="30dp"
-                        android:layout_height="30dp"
-                        android:src="@android:drawable/ic_menu_search" />
-
-                    <TextView
-                        android:id="@+id/zbss"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:text="周边搜索"
-                        android:textColor="#FFF"
-                        android:textSize="20sp"
-
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/t11"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="附近的停车场"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t12"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="附近的餐厅。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t23"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="附近的酒店。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                    <TextView
-                        android:id="@+id/t24"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="10dp"
-                        android:background="@drawable/backduncoloi"
-                        android:text="附近的美食。"
-                        android:textColor="#FFF"
-                        android:textSize="16sp" />
-
-                </LinearLayout>
-            </LinearLayout>
-        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

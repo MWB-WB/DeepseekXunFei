@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginTop="10dp"
     android:background="@drawable/right_ll_bg"
-    android:padding="10dp">
+    android:padding="6dp">
 
     <ImageView
         android:id="@+id/movie_img"
@@ -19,8 +19,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:textColor="@color/black"
-        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:textSize="16sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintWidth_percent="0.6" />
@@ -31,8 +31,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
         android:ellipsize="end"
-        android:textColor="@color/black"
-        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:textSize="16sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toBottomOf="@+id/movie_title"
         app:layout_constraintWidth_percent="0.6" />
@@ -44,8 +44,8 @@
         android:layout_marginTop="20dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="@color/black"
-        android:textSize="20sp"
+        android:textColor="@color/white"
+        android:textSize="16sp"
         app:layout_constraintStart_toEndOf="@id/movie_img"
         app:layout_constraintTop_toBottomOf="@+id/movie_pt"
         app:layout_constraintWidth_percent="0.6" />
