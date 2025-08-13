@@ -172,11 +172,18 @@
                 <!-- 语音输入图标 -->
                 <ImageButton
                     android:id="@+id/wdxzs"
-                    android:layout_width="60dp"
-                    android:layout_height="60dp"
-                    android:background="?selectableItemBackgroundBorderless"
-                    android:contentDescription="语音输入"
-                    android:src="@drawable/wdxz_jqr" />
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/free_gif"
+                    android:visibility="visible"
+                    android:contentDescription="语音输入" />
+                <ImageButton
+                    android:id="@+id/wdxzs_read"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/read"
+                    android:visibility="gone"
+                    android:contentDescription="语音输入" />
 
                 <Space
                     android:layout_width="24dp"

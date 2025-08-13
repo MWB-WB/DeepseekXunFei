@@ -7,6 +7,7 @@ import android.os.HandlerThread;
 import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.View;
 
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechError;
@@ -116,6 +117,15 @@ public class VoiceManager {
     }
 
     private void startSpeech(String text) {
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mainActivity.TTSbutton.setVisibility(View.GONE);
+                mainActivity.read_button.setVisibility(View.VISIBLE);
+//                mainActivity.animFree.stop();
+//                mainActivity.animRead.start();
+            }
+        });
         Log.e("1231231", "startSpeech: " + text);
         mIsSpeaking = true;
         String TTSTexte = filterSensitiveContent(text);
@@ -158,12 +168,15 @@ public class VoiceManager {
                         mainActivity.chatAdapter.notifyItemChanged(mainActivity.getChatMessagesSizeIndex());
                         release();
                         //延迟1秒拉起
-                       new Handler().postDelayed(new Runnable() {
-                           @Override
-                           public void run() {
-                               mainActivity.TTSbutton.performClick();
-                           }
-                       },1000);
+                        new Handler().postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                mainActivity.TTSbutton.setVisibility(View.VISIBLE);
+                                mainActivity.read_button.setVisibility(View.GONE);
+                                mainActivity.animStart();
+                                mainActivity.TTSbutton.performClick();
+                            }
+                        }, 1000);
                     }
                     mIsSpeaking = false;
                     Log.d("TAG", "onCompleted: " + error);

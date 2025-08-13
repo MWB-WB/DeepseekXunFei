@@ -36,6 +36,7 @@ import com.yl.basemvp.BasePresenter;
 import com.yl.basemvp.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.activity.MainActivity;
+import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.view.PopupInputManager;
@@ -259,6 +260,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     public void TTS(String str) {
         if (mTts == null || str == null || str.trim().isEmpty()) return;
 
+        mActivity.get().TTSbutton.setVisibility(View.GONE);
+        mActivity.get().read_button.setVisibility(View.VISIBLE);
+//        mActivity.get().animRead.start();
+//        mActivity.get().animFree.stop();
+        Log.e(TAG, "123131312: " + str.trim());
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
         mTts.setParameter(SpeechConstant.TTS_DATA_NOTIFY, "1");
@@ -648,6 +654,9 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         public void onCompleted(SpeechError error) {
             Log.d(TAG, "播放完毕");
             Log.d(TAG, "error" + error);
+            mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
+            mActivity.get().animStart();
+            mActivity.get().read_button.setVisibility(View.GONE);
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }

@@ -11,6 +11,7 @@ constraintlayout = "2.2.1"
 roomRuntime = "2.2.5"
 sqlite = "2.0.1"
 entityExtraction = "16.0.0-beta6"
+activityVersion = "1.8.0"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -24,6 +25,7 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "sqlite" }
 entity-extraction = { group = "com.google.mlkit", name = "entity-extraction", version.ref = "entityExtraction" }
+androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activityVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

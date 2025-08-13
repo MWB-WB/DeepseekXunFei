@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -138,6 +139,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private BackTextToAction backTextToAction = null;
     private ImageButton wdxzskeyboard;
     private Handler uiHandler = new Handler(Looper.getMainLooper());
+    public ImageButton read_button;
+    public AnimationDrawable animFree;//序列帧
+    public AnimationDrawable animRead;//序列帧
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -146,9 +150,19 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
         mPresenter.TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
+        animFree = (AnimationDrawable) TTSbutton.getBackground();
+        animRead = (AnimationDrawable) read_button.getBackground();
         JSONReader.insertJsonFileData(this, "result.json");//高德城市编码表中的数据添加到数据库
+        animStart();
     }
-
+    public void animStart(){
+        // 根据需要启动相应的动画
+        if (TTSbutton.getVisibility() == View.VISIBLE) {
+            animFree.start();
+        } else if (read_button.getVisibility() == View.VISIBLE) {
+            animRead.start();
+        }
+    }
     @Override
     protected int getLayoutId() {
         return R.layout.activity_main;
@@ -196,6 +210,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private void initBottomControls() {
         button = findViewById(R.id.send_button);
         TTSbutton = findViewById(R.id.wdxzs);
+        read_button = findViewById(R.id.wdxzs_read);
+//        kaishiluyin = findViewById(R.id.kaishiluyin);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
 
         button.setImageResource(R.drawable.jzfason);
