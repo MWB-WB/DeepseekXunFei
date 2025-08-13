@@ -36,7 +36,6 @@ import com.yl.basemvp.BasePresenter;
 import com.yl.basemvp.SystemPropertiesReflection;
 import com.yl.deepseekxunfei.R;
 import com.yl.deepseekxunfei.activity.MainActivity;
-import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.view.PopupInputManager;
@@ -93,27 +92,41 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final List<String> SENSITIVE_WORDS = Arrays.asList(
             "DeepSeek", "deepseek", "DEEPSEEK", "Deepseek", "deep seek", "Deep Seek"
     );//敏感词列表
+    // XML标签常量
+    private static final String START_TAG = "<think>";
+    private static final String END_TAG = "</think>";
+    private static final String LIMENDL_TAG = "<limendl>";
+    private static final String IMEND_TAG = "<|imend|>";
+    private static final String IMSTART_TAG = "<|imstart|>";
     private PopupInputManager inputManager;
+    private OkHttpClient httpClient;
 
     @Override
     protected void onItemClick(View v) {
         if (v.getId() == R.id.deep_think_layout) {
             mActivity.get().changeDeepThinkMode();
         } else if (v.getId() == R.id.historyButton) {
-            mActivity.get().stopSpeaking();
-            mActivity.get().isNeedWakeUp = true;
-            AppDatabase.getInstance(mActivity.get()).query();
-            // 显示历史记录对话框
-            mActivity.get().showHistoryDialog();
+            handleHistoryClick();
         } else if (v.getId() == R.id.xjianduihua) {
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
-//            mActivity.get().sendBtnClick();
+//            mActivity.get().sendB tnClick();
         } else if (v.getId() == R.id.deep_crete_layout) {
             mActivity.get().swOpenClose();
         } else if (v.getId() == R.id.wdxzskeyboard) {
-            inputManager.show(mActivity.get());
+            if (inputManager != null) {
+                inputManager.show(mActivity.get());
+            }
         }
+    }
+
+    private void handleHistoryClick() {
+        if (mActivity.get() == null) return;
+
+        mActivity.get().stopSpeaking();
+        mActivity.get().isNeedWakeUp = true;
+        AppDatabase.getInstance(mActivity.get()).query();
+        mActivity.get().showHistoryDialog();
     }
 
     public void initThirdApi() {
@@ -133,25 +146,41 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
         mIatDialog = new RecognizerDialog(mActivity.get(), mInitListener);
         mSharedPreferences = mActivity.get().getSharedPreferences("ASR", Activity.MODE_PRIVATE);
+        // 初始化输入管理器
+        initInputManager();
+        // 初始化HTTP客户端
+        initHttpClient();
+    }
+
+    private void initInputManager() {
         inputManager = new PopupInputManager(mActivity.get(), new PopupInputManager.InputCallback() {
             @Override
             public void onInputChanged(String text) {
-                Log.e(TAG, "onInputChanged: " + text);
+                Log.d(TAG, "输入变化: " + text);
             }
 
             @Override
             public void onInputCompleted(String text) {
-                Log.e(TAG, "onInputCompleted: " + text);
-                mActivity.get().commitText(text);
+                Log.d(TAG, "输入完成: " + text);
+                if (mActivity.get() != null) {
+                    mActivity.get().commitText(text);
+                }
             }
         });
+    }
+
+    private void initHttpClient() {
+        httpClient = new OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
     }
 
     /**
      * 初始化监听器。
      */
     private final InitListener mInitListener = code -> {
-
         if (code != ErrorCode.SUCCESS) {
             mActivity.get().showMsg("初始化失败，错误码：" + code + ",请联系开发人员解决方案");
         }
@@ -160,63 +189,64 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     /**
      * 参数设置
      */
+    // 语音参数设置
     public void setParam() {
+        if (mActivity.get() == null) return;
+
         String deepseekVoiceSpeed = SystemPropertiesReflection.get("persist.sys.deepseek_voice_speed", "60");
-        String deepseekVoicespeaker = SystemPropertiesReflection.get("persist.sys.deepseek_voice_speaker", "aisjiuxu");
-        if (deepseekVoicespeaker.equals("许久")) {
-            deepseekVoicespeaker = "aisjiuxu";
-        } else if (deepseekVoicespeaker.equals("小萍")) {
-            deepseekVoicespeaker = "aisxping";
-        } else if (deepseekVoicespeaker.equals("小婧")) {
-            deepseekVoicespeaker = "aisjinger";
-        } else if (deepseekVoicespeaker.equals("许小宝")) {
-            deepseekVoicespeaker = "aisbabyxu";
-        } else if (deepseekVoicespeaker.equals("小燕")) {
-            deepseekVoicespeaker = "xiaoyan";
+        String deepseekVoicespeaker = mapSpeakerName(
+                SystemPropertiesReflection.get("persist.sys.deepseek_voice_speaker", "aisjiuxu")
+        );
+
+        // 设置语音合成参数
+        setTtsParams(deepseekVoicespeaker, deepseekVoiceSpeed);
+
+        // 设置语音识别参数
+        setIatParams();
+    }
+
+    private String mapSpeakerName(String speakerName) {
+        switch (speakerName) {
+            case "许久": return "aisjiuxu";
+            case "小萍": return "aisxping";
+            case "小婧": return "aisjinger";
+            case "许小宝": return "aisbabyxu";
+            case "小燕": return "xiaoyan";
+            default: return speakerName;
         }
+    }
+
+    private void setTtsParams(String speaker, String speed) {
+        if (mTts == null) return;
 
         mTts.setParameter(SpeechConstant.PARAMS, null);
-        mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD); //设置云端
-        mTts.setParameter(SpeechConstant.VOICE_NAME, deepseekVoicespeaker);//设置发音人
-        mTts.setParameter(SpeechConstant.SPEED, deepseekVoiceSpeed);//设置语速
-        //设置合成音调
-        mTts.setParameter(SpeechConstant.PITCH, "50");//设置音高
-        mTts.setParameter(SpeechConstant.VOLUME, "100");//设置音量，范围0~100
+        mTts.setParameter(SpeechConstant.ENGINE_TYPE, SpeechConstant.TYPE_CLOUD);
+        mTts.setParameter(SpeechConstant.VOICE_NAME, speaker);
+        mTts.setParameter(SpeechConstant.SPEED, speed);
+        mTts.setParameter(SpeechConstant.PITCH, "50");
+        mTts.setParameter(SpeechConstant.VOLUME, "100");
         mTts.setParameter(SpeechConstant.STREAM_TYPE, "3");
-        // 设置播放合成音频打断音乐播放，默认为true
         mTts.setParameter(SpeechConstant.KEY_REQUEST_FOCUS, "true");
-        // 清空参数
+    }
+
+    private void setIatParams() {
+        if (mIat == null) return;
+
         mIat.setParameter(SpeechConstant.PARAMS, null);
-        // 设置听写引擎
         mIat.setParameter(SpeechConstant.ENGINE_TYPE, mEngineType);
-        // 设置返回结果格式
         mIat.setParameter(SpeechConstant.RESULT_TYPE, resultType);
+        mIat.setParameter(SpeechConstant.LANGUAGE, language);
 
         if (language.equals("zh_cn")) {
             String lag = mSharedPreferences.getString("iat_language_preference", "mandarin");
-            Log.e(TAG, "language:" + language);// 设置语言
-            mIat.setParameter(SpeechConstant.LANGUAGE, "zh_cn");
-            // 设置语言区域
             mIat.setParameter(SpeechConstant.ACCENT, lag);
-        } else {
-            mIat.setParameter(SpeechConstant.LANGUAGE, language);
         }
-        Log.e(TAG, "last language:" + mIat.getParameter(SpeechConstant.LANGUAGE));
 
-        // 设置语音前端点:静音超时时间，即用户多长时间不说话则当做超时处理
         mIat.setParameter(SpeechConstant.VAD_BOS, mSharedPreferences.getString("iat_vadbos_preference", "5000"));
-
-        // 设置语音后端点:后端点静音检测时间，即用户停止说话多长时间内即认为不再输入， 自动停止录音
         mIat.setParameter(SpeechConstant.VAD_EOS, mSharedPreferences.getString("iat_vadeos_preference", "2000"));
-
-        // 设置标点符号,设置为"0"返回结果无标点,设置为"1"返回结果有标点
         mIat.setParameter(SpeechConstant.ASR_PTT, mSharedPreferences.getString("iat_punc_preference", "0"));
         mIat.setParameter(SpeechConstant.ASR_SOURCE_PATH, "-1");
-
-        mIat.setParameter(SpeechConstant.ASR_INTERRUPT_ERROR, mSharedPreferences.getString("iat_punc_preference", "0")); // 允许中断
-        // 设置音频保存路径，保存音频格式支持pcm、wav，设置路径为sd卡请注意WRITE_EXTERNAL_STORAGE权限
-//        mIat.setParameter(SpeechConstant.AUDIO_FORMAT, "wav");
-//        mIat.setParameter(SpeechConstant.ASR_AUDIO_PATH, Environment.getExternalStorageDirectory() + "/msc/iat.wav");
+        mIat.setParameter(SpeechConstant.ASR_INTERRUPT_ERROR, mSharedPreferences.getString("iat_punc_preference", "0"));
     }
 
     public void stopSpeaking() {
@@ -227,19 +257,26 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     //文字转语音方法
     public void TTS(String str) {
-        Log.e(TAG, "123131312: " + str.trim());
+        if (mTts == null || str == null || str.trim().isEmpty()) return;
+
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
-        Log.e(TAG, "TTS code: " + code);
-        mTts.setParameter(SpeechConstant.TTS_DATA_NOTIFY, "1"); // 支持流式
-        if (code != ErrorCode.SUCCESS) {
+        mTts.setParameter(SpeechConstant.TTS_DATA_NOTIFY, "1");
+
+        if (code != ErrorCode.SUCCESS && mActivity.get() != null) {
             if (code == ErrorCode.ERROR_COMPONENT_NOT_INSTALLED) {
-                //上面的语音配置对象为初始化时：
                 mActivity.get().showMsg("语音组件未安装");
             } else {
                 mActivity.get().showMsg("语音合成失败,错误码: " + code);
             }
         }
+    }
+
+
+    public void stopCurrentActivities() {
+        stopSpeaking();
+        stopCurrentCall();
+        voiceManagerStop();
     }
 
     public void voiceManagerStop() {
@@ -258,25 +295,28 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     //开始监听
     public void startVoiceRecognize() {
-        if (null == mIat) {
-            return;
-        }
-        //带UI界面
+        if (mIat == null || mActivity.get() == null) return;
+
         mIatDialog.setListener(mRecognizerDialogListener);
         int ret = mIat.startListening(mRecognizerListener);
+
         if (ret != ErrorCode.SUCCESS) {
             mActivity.get().showMsg("听写失败，错误码：" + ret);
+            return;
         }
+
         mIatDialog.show();
-        //获取字体所在控件
-        TextView txt = (TextView) mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
-        txt.setText("请说出您的问题！");
-        txt.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //设置为点击无反应，避免跳转到讯飞平台
-            }
-        });
+        customizeRecognitionDialog();
+    }
+
+    private void customizeRecognitionDialog() {
+        if (mIatDialog == null || mIatDialog.getWindow() == null) return;
+
+        TextView txt = mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
+        if (txt != null) {
+            txt.setText("请说出您的问题！");
+            txt.setOnClickListener(v -> { /* 设置为点击无反应 */ });
+        }
     }
 
     // 简易估算token长度（实际应调用HuggingFace tokenizer）
@@ -285,254 +325,262 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     public void callGenerateApi(String userQuestion) {
-        // 使用 JSONObject 构建 JSON 请求体
+        if (userQuestion == null || userQuestion.isEmpty() || mActivity.get() == null) return;
+
         try {
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "text");
-            JSONArray messages = new JSONArray();
-            int currentTokens = 0;
-            //添加系统提示
-            JSONObject systemMessage = new JSONObject();
-            systemMessage.put("role", "system");
-            systemMessage.put("content", "严格根据上下文回答问题，前置规则：上下文之间必须有一定的关联，否则重新回答问题");
-            messages.put(systemMessage);
-            // 1. 添加历史上下文（从旧到新）
-            int i = 1;
-            for (ChatMessage msg : contextQueue) {
-                //进行上下文关联分析
-                JSONObject jsonMsg = new JSONObject();
-                //用户消息为true，系统消息为false
-                jsonMsg.put("role", msg.isUser() ? "user" : "assistant");
-                jsonMsg.put("content", msg.getMessage());
-                messages.put(jsonMsg);
-                //编码句子并计算相似度
-                i++;
-//                if (i>2){
-//                    float[] emb1 = mActivity.get().embedder.encode(msg.getMessage());//历史回答
-//                    float[] emb2 =  mActivity.get().embedder.encode(userQuestion);//当前用户问题
-//                    float similarity = SBERTOnnxEmbedder.cosineSimilarity(emb1, emb2);
-//                    Log.d("Tokens", "相似度: " + similarity);
-//                }
-            }
-
-            // 添加当前用户问题
-            JSONObject userMessage = new JSONObject();
-            userMessage.put("role", "user");
-            userMessage.put("content", userQuestion);
-            Log.d(TAG, "callGenerateApiuserQuestion: " + userQuestion);
-            messages.put(userMessage);
-            requestBody.put("messages", messages);
-            requestBody.put("stream", true);
-            JSONObject options = new JSONObject();
-            options.put("temperature", 0.6);
-            options.put("mirostat_tau", 1.0);
-            options.put("num_predict", -1);
-            options.put("repeat_last_n", 2048);//检查全部上下文，避免重复回答
-            options.put(" repeat_penalty", 1.2);//重复惩罚
-            long num = 4294967295L;
-            long randomNum = (long) (Math.random() * num + 1);
-            Log.d(TAG, "随机数: " + randomNum);
-            options.put("seed", randomNum);
-            requestBody.put("options", options);
-            // 将 JSONObject 转换为字符串
-            String jsonBodyRound1 = requestBody.toString();
-            Log.d(TAG, "上下: " + jsonBodyRound1);
-            RequestBody requestBodyRound1 = RequestBody.create(jsonBodyRound1, MediaType.parse("application/json; charset=utf-8"));
-            Request requestRound1 = new Request.Builder().url(API_URL).post(requestBodyRound1).build();
-            Log.d(TAG, "callGenerateApi: " + requestRound1.toString().trim() + requestBodyRound1.toString().trim());
-            Log.d(TAG, "callGenerateApi: " + requestRound1);
-            // 异步执行请求
-            OkHttpClient client = new OkHttpClient.Builder()
-                    .connectTimeout(5, TimeUnit.SECONDS)//连接超时
-                    .readTimeout(5, TimeUnit.SECONDS)//读取超时
-                    .writeTimeout(5, TimeUnit.SECONDS)//写入超时
+            JSONObject requestBody = buildApiRequest(userQuestion);
+            Request request = new Request.Builder()
+                    .url(API_URL)
+                    .post(RequestBody.create(requestBody.toString(), MediaType.parse("application/json")))
                     .build();
-            currentCall = client.newCall(requestRound1);
 
-            currentCall.enqueue(new Callback() {
-                // 用于存储第一轮完整响应
-                StringBuilder fullResponseRound1 = new StringBuilder();
-                StringBuilder thinkText = new StringBuilder();
-                // 用于存储第一轮机器人消息记录的索引
-                int botMessageIndexRound1 = -1;
-
-                @Override
-                public void onFailure(Call call, IOException e) {
-                    //如果不是主动关闭的话需要进行网络波动的播报
-                    if (!e.getMessage().equals("Socket closed")) {
-                        isStopRequested = true;
-                        isNewChatCome = true;
-                        mActivity.get().textFig = false;
-                        mActivity.get().button.setImageResource(R.drawable.jzfason);
-                        mActivity.get().aiType = BotConstResponse.AIType.FREE;
-                        ChatMessage chatMessage = new ChatMessage();
-                        chatMessage.setMessage("网络波动较大，请稍后再试");
-                        chatMessage.setOver(true);
-                        chatMessages.add(chatMessage);
-                        mActivity.get().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mActivity.get().scrollByPosition(chatMessages.size() - 1);
-                            }
-                        });
-                        TTS("网络波动较大，请稍后再试");
-                    }
-                }
-
-                @Override
-                public void onResponse(Call call, Response response) throws IOException {
-                    if (response.isSuccessful()) {
-                        try (ResponseBody responseBody = response.body()) {
-                            if (responseBody != null) {
-                                BufferedSource source = responseBody.source();
-                                mActivity.get().aiType = BotConstResponse.AIType.TEXT_SHUCHU;
-                                voiceManager = new VoiceManager();
-                                voiceManager.init(mActivity.get());
-                                voiceManager.startProcessing();
-                                while (!source.exhausted()) {
-                                    if (isStopRequested || isNewChatCome) {
-                                        isNewChatCome = false;
-                                        mActivity.get().textFig = false;
-                                        if (botMessageIndexRound1 != -1) {
-                                            chatMessages.get(botMessageIndexRound1).setOver(true);
-                                        } else {
-                                            ChatMessage chatMessage = new ChatMessage();
-                                            chatMessage.setMessage("不好意思，请您重新提问");
-                                            chatMessage.setOver(true);
-                                            mActivity.get().addMessageAndTTS(chatMessage, "不好意思，请您重新提问");
-                                        }
-                                        mActivity.get().button.setImageResource(R.drawable.jzfason);
-                                        break;
-                                    }
-                                    String line = source.readUtf8Line();
-                                    if (line != null && !line.isEmpty()) {
-                                        // 检查 JSON 格式是否正确
-                                        if (isValidJson(line)) {
-                                            // 如果是第一条部分响应，添加一条空的机器人消息记录
-                                            if (botMessageIndexRound1 == -1) {
-                                                mActivity.get().addMessageByBot("");
-                                                botMessageIndexRound1 = chatMessages.size() - 1;
-                                                chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(false);
-                                            }
-                                            // 解析 JSON
-                                            JsonObject jsonResponse = new Gson().fromJson(line, JsonObject.class);
-                                            // 检查 message 字段是否存在
-                                            if (jsonResponse.has("message")) {
-                                                JsonObject messageObject = jsonResponse.getAsJsonObject("message");
-                                                if (messageObject != null && messageObject.has("content")) {
-                                                    String partialResponse = messageObject.get("content").getAsString();
-                                                    boolean done = jsonResponse.get("done").getAsBoolean();
-                                                    String startTag = "<think>";
-                                                    String endTag = "</think>";
-                                                    String limendl = "<limendl>";
-                                                    String imend = "<|imend|>";
-                                                    String imstart = "<|imstart|>";
-                                                    if (startTag.equals(partialResponse) && !chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(true);
-                                                        continue;
-                                                    }
-                                                    if (endTag.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
-                                                        continue;
-                                                    }
-                                                    if (limendl.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
-                                                        continue;
-                                                    }
-                                                    if (imend.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
-                                                        continue;
-                                                    }
-                                                    if (imstart.equals(partialResponse) && chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        chatMessages.get(botMessageIndexRound1).setThinkContent(false);
-                                                        continue;
-                                                    }
-
-                                                    if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                        //思考内容
-                                                        thinkText.append(partialResponse);
-                                                    } else {
-                                                        //回答文本主题
-                                                        fullResponseRound1.append(partialResponse);
-                                                        voiceManager.appendText(partialResponse);
-                                                    }
-                                                    // 更新 UI
-                                                    mActivity.get().runOnUiThread(() -> {
-                                                        String huida = "";
-                                                        Log.d(TAG, "onResponse: " + botMessageIndexRound1);
-                                                        if (chatMessages.get(botMessageIndexRound1).isThinkContent()) {
-                                                            huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(thinkText.toString())).trim();
-                                                            // 更新机器人消息记录的内容
-                                                            mActivity.get().setThinkContent(botMessageIndexRound1, huida);
-                                                            Log.d(TAG, "onResponse: " + huida);
-                                                        } else {
-                                                            huida = filterSensitiveContent(TextLineBreaker.breakTextByPunctuation(fullResponseRound1.toString())).trim();
-                                                            //缩进
-                                                            if (huida.contains(startTag)) {
-                                                                huida = huida.replace(startTag, "");
-                                                            }
-                                                            if (huida.length() < 0) {
-                                                                huida = "";
-                                                                // 更新机器人消息记录的内容
-                                                                Log.d(TAG, "onResponse: " + huida);
-                                                                mActivity.get().setTextByIndex(botMessageIndexRound1, huida);
-                                                                TTS(huida);
-                                                                return;
-                                                            } else {
-                                                                Log.d(TAG, "onResponse: " + huida);
-                                                                // 更新机器人消息记录的内容
-                                                                mActivity.get().setTextByIndex(botMessageIndexRound1, huida);
-                                                            }
-                                                        }
-                                                        // 如果完成，停止读取
-                                                        if (done && !isStopRequested) {
-                                                            // 添加本轮对话到队列
-                                                            contextQueue.add(new ChatMessage(userQuestion, true));
-                                                            contextQueue.add(new ChatMessage(fullResponseRound1.toString(), false));
-
-                                                            // 控制队列长度
-                                                            while (contextQueue.size() > MAX_HISTORY_ROUNDS * 2) {
-                                                                contextQueue.removeFirst();
-                                                            }
-                                                            isStopRequested = true;
-                                                            isNewChatCome = false;
-                                                            mActivity.get().textFig = false;
-                                                            chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(true);
-                                                            chatMessages.get(botMessageIndexRound1).setOver(true);
-                                                            // 保存上下文信息
-                                                            mActivity.get().updateContext(userQuestion, fullResponseRound1.toString(), false);
-                                                        } else {
-                                                            chatMessages.get(botMessageIndexRound1).setNeedShowFoldText(false);
-                                                        }
-                                                        mActivity.get().notifyDataChanged(botMessageIndexRound1);
-
-                                                    });
-                                                }
-                                            }
-                                        } else {
-                                            mActivity.get().runOnUiThread(() -> {
-                                                mActivity.get().showMsg("JSON格式错误");
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } else {
-                        String errorBody = response.body().string();
-                        mActivity.get().runOnUiThread(() -> {
-                            mActivity.get().showMsg("\"请求失败: \" + response.message():" + errorBody);
-                        });
-                    }
-                }
-            });
-            Log.d(TAG, "callGenerateApijsonBodyRound1234: " + jsonBodyRound1);
+            currentCall = httpClient.newCall(request);
+            currentCall.enqueue(new ApiCallback(userQuestion));
         } catch (JSONException e) {
-            throw new RuntimeException(e);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            Log.e(TAG, "JSON构建失败", e);
+        }
+    }
+
+    private JSONObject buildApiRequest(String userQuestion) throws JSONException {
+        JSONObject requestBody = new JSONObject();
+        requestBody.put("model", "text");
+
+        JSONArray messages = new JSONArray();
+        addSystemMessage(messages);
+        addContextMessages(messages);
+        addUserMessage(messages, userQuestion);
+
+        requestBody.put("messages", messages);
+        requestBody.put("stream", true);
+        requestBody.put("options", buildOptions());
+
+        return requestBody;
+    }
+
+    private void addSystemMessage(JSONArray messages) throws JSONException {
+        JSONObject systemMessage = new JSONObject();
+        systemMessage.put("role", "system");
+        systemMessage.put("content", "严格根据上下文回答问题，前置规则：上下文之间必须有一定的关联，否则重新回答问题");
+        messages.put(systemMessage);
+    }
+
+    private void addContextMessages(JSONArray messages) throws JSONException {
+        for (ChatMessage msg : contextQueue) {
+            JSONObject jsonMsg = new JSONObject();
+            jsonMsg.put("role", msg.isUser() ? "user" : "assistant");
+            jsonMsg.put("content", msg.getMessage());
+            messages.put(jsonMsg);
+        }
+    }
+
+    private void addUserMessage(JSONArray messages, String userQuestion) throws JSONException {
+        JSONObject userMessage = new JSONObject();
+        userMessage.put("role", "user");
+        userMessage.put("content", userQuestion);
+        messages.put(userMessage);
+    }
+
+    private JSONObject buildOptions() throws JSONException {
+        JSONObject options = new JSONObject();
+        options.put("temperature", 0.6);
+        options.put("mirostat_tau", 1.0);
+        options.put("num_predict", -1);
+        options.put("repeat_last_n", 2048);
+        options.put("repeat_penalty", 1.2);
+        options.put("seed", generateRandomSeed());
+        return options;
+    }
+
+    private long generateRandomSeed() {
+        long num = 4294967295L;
+        return (long) (Math.random() * num + 1);
+    }
+
+    // API回调处理
+    private class ApiCallback implements Callback {
+        private final String userQuestion;
+        private final StringBuilder fullResponse = new StringBuilder();
+        private final StringBuilder thinkText = new StringBuilder();
+        private int botMessageIndex = -1;
+
+        public ApiCallback(String userQuestion) {
+            this.userQuestion = userQuestion;
         }
 
+        @Override
+        public void onFailure(Call call, IOException e) {
+            if (!"Socket closed".equals(e.getMessage()) && mActivity.get() != null) {
+                handleNetworkError();
+            }
+        }
+
+        @Override
+        public void onResponse(Call call, Response response) throws IOException {
+            if (response.isSuccessful()) {
+                processResponseStream(response.body());
+            } else if (mActivity.get() != null) {
+                mActivity.get().showMsg("请求失败: " + response.message());
+            }
+        }
+
+        private void processResponseStream(ResponseBody body) throws IOException {
+            if (body == null || mActivity.get() == null) return;
+
+            try (BufferedSource source = body.source()) {
+                voiceManager = new VoiceManager();
+                voiceManager.init(mActivity.get());
+                voiceManager.startProcessing();
+
+                while (!source.exhausted()) {
+                    if (shouldBreakProcessing()) break;
+
+                    String line = source.readUtf8Line();
+                    if (line != null && !line.isEmpty() && isValidJson(line)) {
+                        processJsonResponse(line);
+                    }
+                }
+            } finally {
+                ensureCleanup();
+            }
+        }
+
+        private boolean shouldBreakProcessing() {
+            return isStopRequested || isNewChatCome || mActivity.get() == null;
+        }
+
+        private void processJsonResponse(String jsonLine) {
+            JsonObject jsonResponse = new Gson().fromJson(jsonLine, JsonObject.class);
+
+            if (!jsonResponse.has("message")) return;
+
+            JsonObject messageObject = jsonResponse.getAsJsonObject("message");
+            if (messageObject == null || !messageObject.has("content")) return;
+
+            String partialResponse = messageObject.get("content").getAsString();
+            boolean done = jsonResponse.get("done").getAsBoolean();
+
+            if (botMessageIndex == -1) {
+                mActivity.get().addMessageByBot("");
+                botMessageIndex = chatMessages.size() - 1;
+                chatMessages.get(botMessageIndex).setNeedShowFoldText(false);
+            }
+
+            handleResponseContent(partialResponse, done);
+        }
+
+        private void handleResponseContent(String content, boolean done) {
+            if (isThinkTag(content)) {
+                handleThinkTag(content);
+            } else if (chatMessages.get(botMessageIndex).isThinkContent()) {
+                thinkText.append(content);
+                updateThinkContent();
+            } else {
+                fullResponse.append(content);
+                if (voiceManager != null) {
+                    voiceManager.appendText(content);
+                }
+                updateResponseContent(done);
+            }
+        }
+
+        private boolean isThinkTag(String content) {
+            return START_TAG.equals(content) || END_TAG.equals(content) ||
+                    LIMENDL_TAG.equals(content) || IMEND_TAG.equals(content) ||
+                    IMSTART_TAG.equals(content);
+        }
+
+        private void handleThinkTag(String tag) {
+            if (START_TAG.equals(tag)) {
+                chatMessages.get(botMessageIndex).setThinkContent(true);
+            } else if (END_TAG.equals(tag) || LIMENDL_TAG.equals(tag) ||
+                    IMEND_TAG.equals(tag) || IMSTART_TAG.equals(tag)) {
+                chatMessages.get(botMessageIndex).setThinkContent(false);
+            }
+        }
+
+        private void updateThinkContent() {
+            if (mActivity.get() == null) return;
+
+            mActivity.get().runOnUiThread(() -> {
+                String filteredContent = filterSensitiveContent(
+                        TextLineBreaker.breakTextByPunctuation(thinkText.toString()).trim());
+                mActivity.get().setThinkContent(botMessageIndex, filteredContent);
+                mActivity.get().notifyDataChanged(botMessageIndex);
+            });
+        }
+
+        private void updateResponseContent(boolean done) {
+            if (mActivity.get() == null) return;
+
+            mActivity.get().runOnUiThread(() -> {
+                String response = filterSensitiveContent(
+                        TextLineBreaker.breakTextByPunctuation(fullResponse.toString()).trim());
+
+                response = response.replace(START_TAG, "");
+                mActivity.get().setTextByIndex(botMessageIndex, response);
+
+                if (done && !isStopRequested) {
+                    handleCompletedResponse(response);
+                }
+
+                mActivity.get().notifyDataChanged(botMessageIndex);
+            });
+        }
+
+        private void handleCompletedResponse(String response) {
+            contextQueue.add(new ChatMessage(userQuestion, true));
+            contextQueue.add(new ChatMessage(fullResponse.toString(), false));
+
+            while (contextQueue.size() > MAX_HISTORY_ROUNDS * 2) {
+                contextQueue.removeFirst();
+            }
+
+            isStopRequested = true;
+            isNewChatCome = false;
+            mActivity.get().textFig = false;
+            chatMessages.get(botMessageIndex).setNeedShowFoldText(true);
+            chatMessages.get(botMessageIndex).setOver(true);
+            mActivity.get().updateContext(userQuestion, fullResponse.toString(), false);
+        }
+
+        private void handleNetworkError() {
+            isStopRequested = true;
+            isNewChatCome = true;
+            mActivity.get().textFig = false;
+            mActivity.get().button.setImageResource(R.drawable.jzfason);
+            mActivity.get().aiType = BotConstResponse.AIType.FREE;
+
+            ChatMessage chatMessage = new ChatMessage();
+            chatMessage.setMessage("网络波动较大，请稍后再试");
+            chatMessage.setOver(true);
+            chatMessages.add(chatMessage);
+
+            mActivity.get().runOnUiThread(() -> {
+                mActivity.get().scrollByPosition(chatMessages.size() - 1);
+            });
+
+            TTS("网络波动较大，请稍后再试");
+        }
+
+        private void ensureCleanup() {
+            if (isStopRequested || isNewChatCome) {
+                isNewChatCome = false;
+                mActivity.get().textFig = false;
+
+                if (botMessageIndex != -1) {
+                    chatMessages.get(botMessageIndex).setOver(true);
+                } else if (mActivity.get() != null) {
+                    ChatMessage chatMessage = new ChatMessage();
+                    chatMessage.setMessage("不好意思，请您重新提问");
+                    chatMessage.setOver(true);
+                    mActivity.get().addMessageAndTTS(chatMessage, "不好意思，请您重新提问");
+                }
+
+                if (mActivity.get() != null) {
+                    mActivity.get().button.setImageResource(R.drawable.jzfason);
+                }
+            }
+        }
     }
 
     public void clearContextQueue() {
@@ -669,15 +717,26 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     @Override
     public void detach() {
         super.detach();
-        if (null != mIat) {
-            // 退出时释放连接
+        releaseResources();
+    }
+
+    private void releaseResources() {
+        if (mIat != null) {
             mIat.cancel();
             mIat.destroy();
+            mIat = null;
         }
-        if (mIatDialog != null && mIatDialog.isShowing()) {
-            mIatDialog.dismiss(); // 关闭对话框
+
+        if (mIatDialog != null) {
+            if (mIatDialog.isShowing()) {
+                mIatDialog.dismiss();
+            }
+            mIatDialog = null;
         }
+
+        stopCurrentActivities();
     }
+
 
     public void stopListening() {
         mIat.stopListening();

@@ -19,6 +19,7 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -134,11 +135,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     //是否开启声纹验证
     public boolean creteOkAndNo = true;
     private boolean isRecognize = false;
-    //开始录音按钮
-    private Button kaishiluyin;
     private BackTextToAction backTextToAction = null;
     private ImageButton wdxzskeyboard;
-//    public SBERTOnnxEmbedder embedder;
+    private Handler uiHandler = new Handler(Looper.getMainLooper());
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -176,93 +175,112 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     @Override
     protected void initView(Bundle savedInstanceState) {
-//        createMethod.init(MainActivity.this);
-//        embedder = new SBERTOnnxEmbedder(this);
-        //标题置顶
+        initTitleView();
+        initBottomControls();
+        initChatRecyclerView();
+        initFragments();
+    }
+
+    private void initTitleView() {
         titleTextView = findViewById(R.id.titleTextView);
-//        titleTextView.bringToFront();
         mDeepThinkLayout = findViewById(R.id.deep_think_layout);
         mDeepCreteLayout = findViewById(R.id.deep_crete_layout);
-        mDeepThinkLayout.setOnClickListener(mPresenter);
-        mDeepCreteLayout.setOnClickListener(mPresenter);
         mDeepThinkImg = findViewById(R.id.deep_think_img);
         mDeepThinkText = findViewById(R.id.deep_think_text);
         mDeepCreteText = findViewById(R.id.deep_crete_text);
-        button = findViewById(R.id.send_button);//发送按钮
-        button.setOnClickListener(mPresenter);
+
+        mDeepThinkLayout.setOnClickListener(mPresenter);
+        mDeepCreteLayout.setOnClickListener(mPresenter);
+    }
+
+    private void initBottomControls() {
+        button = findViewById(R.id.send_button);
         TTSbutton = findViewById(R.id.wdxzs);
-//        kaishiluyin = findViewById(R.id.kaishiluyin);
-        button.setImageResource(R.drawable.jzfason);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
-        view = new View(this);
-        button.setOnClickListener(v -> {
-            mPresenter.voiceManagerStop();
-            Log.e(TAG, "button onclick: " + aiType);
-            if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-                ToastUtil.show(this, "请输入一个问题");
-            } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
 
-                try {
-                    if (mPresenter.getChatMessagesSize() > 0) {
-                        replaceFragment(0);
-//                        sendMessage();
-                    } else {
-                        Log.d(TAG, "initView: " + aiType);
-                        if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
-                            replaceFragment(0);
-//                            sendMessage();
-                        } else {
-                            ToastUtil.show(this, "");
-                        }
-                    }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-                // 停止天气输出
-                isWeatherOutputStopped = true;
-                myHandler.removeCallbacks(weatherStreamRunnable);
-                mPresenter.stopSpeaking();
-                mPresenter.voiceManagerStop();
-                mPresenter.stopCurrentCall();
-                mPresenter.setStopRequested(true);
-                textFig = false;
-                setCurrentChatOver();
-                aiType = BotConstResponse.AIType.FREE;
-                button.setImageResource(R.drawable.jzfason);
-                mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
-                chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
-            }
-        });
+        button.setImageResource(R.drawable.jzfason);
+        button.setOnClickListener(v -> handleSendButtonClick());
+
+        TTSbutton.setOnClickListener(v -> handleVoiceButtonClick());
         wdxzskeyboard.setOnClickListener(mPresenter);
+    }
 
-        //启动语音识别
-        TTSbutton.setOnClickListener(v -> {
-            mPresenter.requestRecordAudioPermission();
-            // 检查录音权限
-            boolean hasRecordPermission = ContextCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
-            if (hasRecordPermission) {
-                setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
-                mPresenter.stopSpeaking();
-                mPresenter.voiceManagerStop();
-                mPresenter.stopCurrentCall();
-                startVoiceRecognize();
+    private void handleSendButtonClick() {
+        mPresenter.voiceManagerStop();
+
+        if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
+            ToastUtil.show(this, "请输入一个问题");
+        } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
+            try {
+                if (mPresenter.getChatMessagesSize() > 0) {
+                    replaceFragment(0);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "处理发送按钮点击失败", e);
             }
-        });
+        } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+            handleStopOutput();
+        }
+    }
+
+    private void handleStopOutput() {
+        isWeatherOutputStopped = true;
+        uiHandler.removeCallbacks(weatherStreamRunnable);
+        mPresenter.stopSpeaking();
+        mPresenter.voiceManagerStop();
+        mPresenter.stopCurrentCall();
+        mPresenter.setStopRequested(true);
+        textFig = false;
+        setCurrentChatOver();
+        aiType = BotConstResponse.AIType.FREE;
+        button.setImageResource(R.drawable.jzfason);
+
+        if (mPresenter.getChatMessagesSize() > 0) {
+            mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
+            chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
+        }
+    }
+
+    private void handleVoiceButtonClick() {
+        mPresenter.requestRecordAudioPermission();
+        if (hasRecordPermission()) {
+            prepareForVoiceInput();
+            startVoiceRecognize();
+        }
+    }
+
+    private boolean hasRecordPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void prepareForVoiceInput() {
+        setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
+        mPresenter.stopSpeaking();
+        mPresenter.voiceManagerStop();
+        mPresenter.stopCurrentCall();
+        mPresenter.setStopRequested(false);
+        if (aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+            mPresenter.setNewChatCome(true);
+        }
+        isRecognize = true;
+    }
+
+    private void initChatRecyclerView() {
         chatRecyclerView = findViewById(R.id.chat_recycler_view);
         chatAdapter = new ChatAdapter(mPresenter.getChatMessages());
         chatRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         chatRecyclerView.setAdapter(chatAdapter);
-        // 在初始化 RecyclerView 时禁用动画
         chatRecyclerView.setItemAnimator(null);
+    }
 
-        // 初始化视图
-        titleTextView = findViewById(R.id.titleTextView);
+    private void initFragments() {
         history = findViewById(R.id.historyButton);
         newDialogue = findViewById(R.id.xjianduihua);
+
         history.setOnClickListener(mPresenter);
         newDialogue.setOnClickListener(mPresenter);
+
         mainFragment = new MainFragment();
         recyFragment = new RecyFragment();
         movieDetailFragment = new MovieDetailFragment();
@@ -271,10 +289,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, recyFragment).commit();
         getSupportFragmentManager().beginTransaction().add(R.id.right_layout, movieDetailFragment).commit();
         replaceFragment(0);
-//        kaishiluyin.setOnClickListener(v -> {
-//            createMethod.kaishi();
-//        });
     }
+
 
     @Override
     protected void onResume() {
@@ -283,23 +299,20 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (mPresenter.getChatMessagesSize() > 0) {
             chatAdapter.notifyDataSetChanged();
         }
-        String text = "";
-        try {
-            text = SystemPropertiesReflection.get("persist.sys.yl.text", "");
-            Log.e(TAG, "onResume: " + text);
-            SystemPropertiesReflection.set("persist.sys.yl.text", "");
-        } catch (Exception e) {
-            text = "";
-            SystemPropertiesReflection.set("persist.sys.yl.text", "");
-        }
+        String text = SystemPropertiesReflection.get("persist.sys.yl.text", "");
         if (!TextUtils.isEmpty(text)) {
             commitText(text);
         }
+        SystemPropertiesReflection.set("persist.sys.yl.text", "");
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+        stopAllActivities();
+    }
+
+    private void stopAllActivities() {
         stopSpeaking();
         mPresenter.stopCurrentCall();
         mPresenter.setStopRequested(true);
@@ -307,6 +320,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         setCurrentChatOver();
         aiType = BotConstResponse.AIType.FREE;
         button.setImageResource(R.drawable.jzfason);
+
         if (mPresenter.getChatMessagesSize() > 0) {
             mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
             chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
@@ -318,73 +332,92 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         BroadcastReceiver receiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                Log.e(TAG, "registerBroadCast();: " + intent);
-                if ("com.yl.voice.wakeup".equals(intent.getAction())) {
-//                    if (creteOkAndNo) {
-//                        if (createMethod.seleteCrete()) {
-//                            if (!createMethod.createFig()) {
-//                                startVoiceRecognize();
-//                            }
-//                        } else {
-//                            if (seleteSize != 0) {
-//                                Toast.makeText(MainActivity.this, "暂无声纹信息，请注册", Toast.LENGTH_SHORT).show();
-//                                seleteSize++;
-//                            }
-//                        }
-//                    } else {
-                    startVoiceRecognize();
-//                    }
-                } else if ("com.yl.voice.test.start".equals(intent.getAction())) {
-                    String result = intent.getStringExtra("result");
-                    commitText(result);
-                } else if ("com.yl.voice.test.stop".equals(intent.getAction())) {
-                    if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-                        if (button != null) {
-                            button.performClick();
-                        }
-                    }
-                } else if ("com.yl.voice.commit.text".equals(intent.getAction())) {
-                    if (!isRecognize) {
-                        String text = intent.getStringExtra("text");
-                        mPresenter.voiceManagerStop();
-                        stopSpeaking();
-                        if (mPresenter.getChatMessagesSize() > 0) {
-                            setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
-                            aiType = BotConstResponse.AIType.FREE;
-                        }
-                        mPresenter.stopListening();
-                        commitText(text);
-                        isNeedWakeUp = false;
-                    }
-                }
-                if (intent.getAction().equals("AUTONAVI_STANDARD_BROADCAST_SEND")) {
-                    int keyType = intent.getIntExtra("KEY_TYPE", -1);
-                    if (keyType == 10059) {
-                        int category = intent.getIntExtra("CATEGORY", -1);
-                        int responseCode = intent.getIntExtra("EXTRA_RESPONSE_CODE", -1);
-                        String result = responseCode == 0
-                                ? (category == 1 ? "家" : "公司") + "设置成功"
-                                : "设置失败";
-                        Log.d("AmapAuto", result);
-                    }
-                }
+                handleBroadcastIntent(intent);
             }
         };
+
         IntentFilter filter = new IntentFilter("com.yl.voice.wakeup");
-        IntentFilter filters = new IntentFilter("AUTONAVI_STANDARD_BROADCAST_SEND");
         filter.addAction("com.yl.voice.test.start");
         filter.addAction("com.yl.voice.test.stop");
         filter.addAction("com.yl.voice.commit.text");
+
+        IntentFilter filters = new IntentFilter("AUTONAVI_STANDARD_BROADCAST_SEND");
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             registerReceiver(receiver, filters, Context.RECEIVER_EXPORTED);
         }
     }
+
+    private void handleBroadcastIntent(Intent intent) {
+        String action = intent.getAction();
+        if (action == null) return;
+
+        switch (action) {
+            case "com.yl.voice.wakeup":
+                handleWakeupBroadcast();
+                break;
+            case "com.yl.voice.test.start":
+                handleVoiceTestStart(intent);
+                break;
+            case "com.yl.voice.test.stop":
+                handleVoiceTestStop();
+                break;
+            case "com.yl.voice.commit.text":
+                handleCommitTextBroadcast(intent);
+                break;
+            case "AUTONAVI_STANDARD_BROADCAST_SEND":
+                handleNavigationBroadcast(intent);
+                break;
+        }
+    }
+
+    private void handleWakeupBroadcast() {
+        startVoiceRecognize();
+    }
+
+    private void handleVoiceTestStart(Intent intent) {
+        String result = intent.getStringExtra("result");
+        commitText(result);
+    }
+
+    private void handleVoiceTestStop() {
+        if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
+            button.performClick();
+        }
+    }
+
+    private void handleCommitTextBroadcast(Intent intent) {
+        if (!isRecognize) {
+            String text = intent.getStringExtra("text");
+            prepareForTextCommit(text);
+        }
+    }
+
+    private void prepareForTextCommit(String text) {
+        mPresenter.voiceManagerStop();
+        stopSpeaking();
+        if (mPresenter.getChatMessagesSize() > 0) {
+            setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
+            aiType = BotConstResponse.AIType.FREE;
+        }
+        mPresenter.stopListening();
+        commitText(text);
+        isNeedWakeUp = false;
+    }
+
+    private void handleNavigationBroadcast(Intent intent) {
+        int keyType = intent.getIntExtra("KEY_TYPE", -1);
+        if (keyType == 10059) {
+            int category = intent.getIntExtra("CATEGORY", -1);
+            int responseCode = intent.getIntExtra("EXTRA_RESPONSE_CODE", -1);
+            String result = responseCode == 0
+                    ? (category == 1 ? "家" : "公司") + "设置成功"
+                    : "设置失败";
+            Log.d("AmapAuto", result);
+        }
+    }
+
 
     public void stopTTSAndRequest() {
         stopSpeaking();
@@ -687,6 +720,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     protected void onPause() {
         super.onPause();
         isPause = true;
+        if (mPresenter != null) {
+            mPresenter.stopCurrentActivities();
+        }
     }
 
     public void setBackTextToAction(BackTextToAction backTextToAction) {
@@ -694,41 +730,58 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void newChat() {
-        //收起右侧布局
         if (recyFragment != null && recyFragment.isVisible()) {
             replaceFragment(0);
         }
-        //新建对话
+
         if (!mPresenter.chatMessages.isEmpty()) {
-            mPresenter.clearContextQueue();
-            mPresenter.voiceManagerStop();
-            mPresenter.stopCurrentCall();
-            // 新增：重置当前对话状态
-            mPresenter.isStopRequested = true;
-            mPresenter.isNewChatCome = true;
-            stopSpeaking();
-            setCurrentChatOver();
-            mPresenter.setNewChatCome(true);
-            mPresenter.setStopRequested(true);
-            aiType = BotConstResponse.AIType.FREE;
-            TimeDownUtil.clearTimeDown();
-            button.setImageResource(R.drawable.jzfason);
-            List<ChatHistoryDetailEntity> list = new ArrayList<>();
-            for (ChatMessage chatMessage : mPresenter.getChatMessages()) {
-                list.add(new ChatHistoryDetailEntity(chatMessage.isUser(), chatMessage.getThinkContent(), chatMessage.getMessage()));
-            }
-            ChatHistoryEntity chatHistoryEntity = new ChatHistoryEntity(list, getTitle(list));
-            AppDatabase.getInstance(this).insert(chatHistoryEntity);
-            mPresenter.getChatMessages().clear();
-            chatAdapter.notifyDataSetChanged();
-            mPresenter.getChatMessages().add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
-            mPresenter.TTS("我是小天，很高兴见到你！");
+            resetChatState();
+            saveCurrentChat();
+            initNewChat();
         } else {
-            //聊天记录为空，添加系统提示
-            mPresenter.getChatMessages().add(new ChatMessage("还没有聊天记录", false, "", false));
-            mPresenter.TTS("还没有聊天记录");
+            addSystemMessage("还没有聊天记录");
         }
     }
+
+    private void resetChatState() {
+        mPresenter.clearContextQueue();
+        mPresenter.voiceManagerStop();
+        mPresenter.stopCurrentCall();
+        mPresenter.isStopRequested = true;
+        mPresenter.isNewChatCome = true;
+        stopSpeaking();
+        setCurrentChatOver();
+        mPresenter.setNewChatCome(true);
+        mPresenter.setStopRequested(true);
+        aiType = BotConstResponse.AIType.FREE;
+        TimeDownUtil.clearTimeDown();
+        button.setImageResource(R.drawable.jzfason);
+    }
+
+    private void saveCurrentChat() {
+        List<ChatHistoryDetailEntity> list = new ArrayList<>();
+        for (ChatMessage message : mPresenter.getChatMessages()) {
+            list.add(new ChatHistoryDetailEntity(
+                    message.isUser(), message.getThinkContent(), message.getMessage()));
+        }
+
+        ChatHistoryEntity history = new ChatHistoryEntity(list, getTitle(list));
+        AppDatabase.getInstance(this).insert(history);
+    }
+
+    private void initNewChat() {
+        mPresenter.getChatMessages().clear();
+        chatAdapter.notifyDataSetChanged();
+
+        mPresenter.getChatMessages().add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
+        mPresenter.TTS("我是小天，很高兴见到你！");
+    }
+
+    private void addSystemMessage(String message) {
+        mPresenter.getChatMessages().add(new ChatMessage(message, false, "", false));
+        mPresenter.TTS(message);
+    }
+
 
     public void sendBtnClick() {
         isNeedWakeUp = true;
@@ -866,16 +919,20 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void onTodayWeather(YLLocalWeatherLive weatherLive) {
-        synchronized (this) {  // 添加同步块
+        synchronized (this) {
             setCurrentChatOver();
             TimeDownUtil.clearTimeDown();
             isWeatherOutputStopped = false;
-            mWeatherResult = weatherLive.getCity() + "今天的天气" + weatherLive.getWeather() +
-                    "，当前的温度是" + weatherLive.getTemperature() + "摄氏度，" + weatherLive.getWindDirection() + "风"
-                    + weatherLive.getWindPower() + "级，" + "湿度" + weatherLive.getHumidity() + "%";
 
-            // 确保添加新消息是线程安全的
-            runOnUiThread(() -> {
+            mWeatherResult = String.format("%s今天的天气%s，当前的温度是%s摄氏度，%s风%s级，湿度%s%%",
+                    weatherLive.getCity(),
+                    weatherLive.getWeather(),
+                    weatherLive.getTemperature(),
+                    weatherLive.getWindDirection(),
+                    weatherLive.getWindPower(),
+                    weatherLive.getHumidity());
+
+            uiHandler.post(() -> {
                 ChatMessage chatMessage = new ChatMessage("", false);
                 chatMessage.setOver(true);
                 chatAdapter.notifyDataSetChanged();
@@ -883,36 +940,42 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 if (!isWeatherOutputStopped) {
                     mPresenter.TTS(mWeatherResult);
                     weatherIndex = 0;
-                    myHandler.removeCallbacks(weatherStreamRunnable); // 清除旧回调
-                    myHandler.post(weatherStreamRunnable);
+                    uiHandler.removeCallbacks(weatherStreamRunnable);
+                    uiHandler.post(weatherStreamRunnable);
                 }
             });
         }
     }
 
     private int weatherIndex = 0;
-    Runnable weatherStreamRunnable = new Runnable() {
+    private Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
-            synchronized (MainActivity.this) {  // 添加同步
+            synchronized (MainActivity.this) {
                 if (isWeatherOutputStopped || weatherIndex > mWeatherResult.length()) {
-                    if (mPresenter.getChatMessagesSize() > 0) {
-                        mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setOver(true);
-                    }
+                    setLastItemOver();
                     return;
                 }
 
-                runOnUiThread(() -> {
-                    if (mPresenter.getChatMessagesSize() > 0) {
-                        String currentText = mWeatherResult.substring(0, Math.min(weatherIndex, mWeatherResult.length()));
-                        ChatMessage lastMsg = mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex());
-                        lastMsg.setMessage(currentText);
-                        lastMsg.setOver(false);
-                        chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
-                    }
-                });
+                uiHandler.post(() -> updateWeatherText());
                 weatherIndex++;
-                myHandler.postDelayed(this, 200);
+                uiHandler.postDelayed(this, 200);
+            }
+        }
+
+        private void setLastItemOver() {
+            if (mPresenter.getChatMessagesSize() > 0) {
+                mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setOver(true);
+            }
+        }
+
+        private void updateWeatherText() {
+            if (mPresenter.getChatMessagesSize() > 0) {
+                String currentText = mWeatherResult.substring(0, Math.min(weatherIndex, mWeatherResult.length()));
+                ChatMessage lastMsg = mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex());
+                lastMsg.setMessage(currentText);
+                lastMsg.setOver(false);
+                chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
             }
         }
     };
@@ -920,8 +983,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public void onWeatherError(String message, int rCode) {
         setCurrentChatOver();
         TimeDownUtil.clearTimeDown();
-        mPresenter.getChatMessages().remove(mPresenter.getChatMessagesSizeIndex());
-        mPresenter.getChatMessages().add(new ChatMessage(BotConstResponse.searchWeatherError, false)); // 添加到聊天界面
+
+        if (mPresenter.getChatMessagesSize() > 0) {
+            mPresenter.getChatMessages().remove(mPresenter.getChatMessagesSizeIndex());
+        }
+
+        mPresenter.getChatMessages().add(new ChatMessage(BotConstResponse.searchWeatherError, false));
         chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
         mPresenter.TTS(BotConstResponse.searchWeatherError);
     }
@@ -979,55 +1046,54 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
         switch (requestCode) {
             case REQUEST_CODE_RECORD_AUDIO:
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    // 录音权限已授予，执行相关操作
-                    showMsg("录音权限已授予");
-                } else {
-                    // 录音权限被拒绝，提示用户或执行其他操作
-                    showMsg("录音权限被拒绝");
-                }
+                handleRecordAudioPermission(grantResults);
                 break;
 
             case REQUEST_CODE_STORAGE:
-                boolean allGranted = true;
-                for (int result : grantResults) {
-                    if (result != PackageManager.PERMISSION_GRANTED) {
-                        allGranted = false;
-                        break;
-                    }
-                }
-                if (allGranted) {
-                    // 存储权限已授予
-                    showMsg("存储权限已授予");
-                } else {
-                    // 存储权限被拒绝
-                    showMsg("存储权限被拒绝");
-                }
+                handleStoragePermission(grantResults);
                 break;
 
             case REQUEST_CODE_LOCATION:
-                boolean locationGranted = false;
-                for (int i = 0; i < permissions.length; i++) {
-                    if ((permissions[i].equals(Manifest.permission.ACCESS_FINE_LOCATION) ||
-                            permissions[i].equals(Manifest.permission.ACCESS_COARSE_LOCATION)) &&
-                            grantResults[i] == PackageManager.PERMISSION_GRANTED) {
-                        locationGranted = true;
-                        break;
-                    }
-                }
-                if (locationGranted) {
-                    // 定位权限已授予
-                    showMsg("定位权限已授予");
-                } else {
-                    // 定位权限被拒绝
-                    showMsg("定位权限被拒绝");
-                }
-
+                handleLocationPermission(permissions, grantResults);
                 break;
+
             case REQUEST_CODE_MAC_ADDRESS:
                 mPresenter.handleMacAddressPermissionResult(permissions, grantResults);
                 break;
         }
+    }
+
+    private void handleRecordAudioPermission(int[] grantResults) {
+        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            showMsg("录音权限已授予");
+        } else {
+            showMsg("录音权限被拒绝");
+        }
+    }
+
+    private void handleStoragePermission(int[] grantResults) {
+        boolean allGranted = true;
+        for (int result : grantResults) {
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                allGranted = false;
+                break;
+            }
+        }
+        showMsg(allGranted ? "存储权限已授予" : "存储权限被拒绝");
+    }
+
+    private void handleLocationPermission(String[] permissions, int[] grantResults) {
+        boolean locationGranted = false;
+        for (int i = 0; i < permissions.length; i++) {
+            String permission = permissions[i];
+            if ((permission.equals(Manifest.permission.ACCESS_FINE_LOCATION) ||
+                    (permission.equals(Manifest.permission.ACCESS_COARSE_LOCATION)) &&
+                            grantResults[i] == PackageManager.PERMISSION_GRANTED)) {
+                locationGranted = true;
+                break;
+            }
+        }
+        showMsg(locationGranted ? "定位权限已授予" : "定位权限被拒绝");
     }
 
     /**

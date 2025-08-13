@@ -159,8 +159,8 @@
                 <!-- 键盘输入图标 -->
                 <ImageButton
                     android:id="@+id/wdxzskeyboard"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:background="?selectableItemBackgroundBorderless"
                     android:contentDescription="键盘输入"
                     android:src="@drawable/dakaijianpan" />

@@ -683,7 +683,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
         //获取当前所在位置
-        mainActivity.updateContext(baseChildModel.getText(), botResponse,false);
         Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
@@ -691,6 +690,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 .findFirst()
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
+        mainActivity.updateContext(null, "我当前所在" + city, true);
         String finalBotResponse = botResponse;
         NeighborhoodSearch.getLocation(city, city, cityLocation -> {
             if (SceneAction.location != null) {
@@ -733,7 +733,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
-        mainActivity.updateContext(baseChildModel.getText(), "",false);
         Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
         Log.d("TAG", "nearbyAction: "+botResponse);
         mainActivity.startTimeOut();
@@ -742,6 +741,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 .findFirst()
                 .map(NavChildMode.GeoEntity::getName)
                 .orElse(""); // 默认使用当前城市
+        mainActivity.updateContext(null, "我当前所在" + city, true);
         GaodeKeyWordSearch.searchInAmap(mainActivity, ((NavChildMode) baseChildModel).getLocation(), city, new OnPoiSearchListener() {
             @Override
             public void onSuccess(List<LocationResult> results) {

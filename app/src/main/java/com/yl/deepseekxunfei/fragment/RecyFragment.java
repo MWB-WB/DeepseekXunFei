@@ -208,7 +208,7 @@ public class RecyFragment extends Fragment {
 
     //点击查看影院
     public void getNearbyCinema() {
-        NeighborhoodSearch.search("", "", 1000, new OnPoiSearchListener() {
+        NeighborhoodSearch.search("电影院", "", 1000, new OnPoiSearchListener() {
             @Override
             public void onSuccess(List<LocationResult> results) {
                 getActivity().runOnUiThread(() -> {
