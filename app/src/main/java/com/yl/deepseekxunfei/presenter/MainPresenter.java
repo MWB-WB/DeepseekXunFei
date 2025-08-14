@@ -262,6 +262,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         mActivity.get().TTSbutton.setVisibility(View.GONE);
         mActivity.get().read_button.setVisibility(View.VISIBLE);
+        mActivity.get().button.setVisibility(View.VISIBLE);
 //        mActivity.get().animRead.start();
 //        mActivity.get().animFree.stop();
         Log.e(TAG, "123131312: " + str.trim());
@@ -553,7 +554,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             isStopRequested = true;
             isNewChatCome = true;
             mActivity.get().textFig = false;
-            mActivity.get().button.setImageResource(R.drawable.jzfason);
             mActivity.get().aiType = BotConstResponse.AIType.FREE;
 
             ChatMessage chatMessage = new ChatMessage();
@@ -580,10 +580,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                     chatMessage.setMessage("不好意思，请您重新提问");
                     chatMessage.setOver(true);
                     mActivity.get().addMessageAndTTS(chatMessage, "不好意思，请您重新提问");
-                }
-
-                if (mActivity.get() != null) {
-                    mActivity.get().button.setImageResource(R.drawable.jzfason);
                 }
             }
         }
@@ -657,6 +653,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
             mActivity.get().animStart();
             mActivity.get().read_button.setVisibility(View.GONE);
+            mActivity.get().button.setVisibility(View.GONE);
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }

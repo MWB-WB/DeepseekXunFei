@@ -213,8 +213,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         read_button = findViewById(R.id.wdxzs_read);
 //        kaishiluyin = findViewById(R.id.kaishiluyin);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
-
-        button.setImageResource(R.drawable.jzfason);
         button.setOnClickListener(v -> handleSendButtonClick());
 
         TTSbutton.setOnClickListener(v -> handleVoiceButtonClick());
@@ -222,8 +220,10 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     private void handleSendButtonClick() {
+        button.setVisibility(View.GONE);
+        TTSbutton.setVisibility(View.VISIBLE);
+        read_button.setVisibility(View.GONE);
         mPresenter.voiceManagerStop();
-
         if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
             ToastUtil.show(this, "请输入一个问题");
         } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
@@ -249,7 +249,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         textFig = false;
         setCurrentChatOver();
         aiType = BotConstResponse.AIType.FREE;
-        button.setImageResource(R.drawable.jzfason);
 
         if (mPresenter.getChatMessagesSize() > 0) {
             mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
@@ -335,8 +334,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         textFig = false;
         setCurrentChatOver();
         aiType = BotConstResponse.AIType.FREE;
-        button.setImageResource(R.drawable.jzfason);
-
         if (mPresenter.getChatMessagesSize() > 0) {
             mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
             chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
@@ -771,7 +768,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mPresenter.setStopRequested(true);
         aiType = BotConstResponse.AIType.FREE;
         TimeDownUtil.clearTimeDown();
-        button.setImageResource(R.drawable.jzfason);
     }
 
     private void saveCurrentChat() {
@@ -828,7 +824,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             textFig = false;
             mPresenter.voiceManagerStop();
             aiType = BotConstResponse.AIType.FREE;
-            button.setImageResource(R.drawable.jzfason);
             mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
             chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
         }
@@ -859,7 +854,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void onSpeakCompleted() {
-        button.setImageResource(R.drawable.jzfason);
         aiType = BotConstResponse.AIType.FREE;
         mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
         chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
@@ -928,6 +922,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public void callGenerateApi(String userQuestion) {
         textFig = true;
         button.setImageResource(R.drawable.tingzhi);
+        button.setVisibility(View.VISIBLE);
         //重置标识
         mPresenter.setStopRequested(false);
         mPresenter.setNewChatCome(false);

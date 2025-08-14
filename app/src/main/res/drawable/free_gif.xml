@@ -244,20 +244,20 @@
     <item
         android:drawable="@drawable/free81"
         android:duration="50" />
-    <item
-        android:drawable="@drawable/free82"
-        android:duration="50" />
-    <item
-        android:drawable="@drawable/free83"
-        android:duration="50" />
-    <item
-        android:drawable="@drawable/free84"
-        android:duration="50" />
-    <item
-        android:drawable="@drawable/free85"
-        android:duration="50" />
-    <item
-        android:drawable="@drawable/free86"
-        android:duration="50" />
+<!--    <item-->
+<!--        android:drawable="@drawable/free82"-->
+<!--        android:duration="50" />-->
+<!--    <item-->
+<!--        android:drawable="@drawable/free83"-->
+<!--        android:duration="50" />-->
+<!--    <item-->
+<!--        android:drawable="@drawable/free84"-->
+<!--        android:duration="50" />-->
+<!--    <item-->
+<!--        android:drawable="@drawable/free85"-->
+<!--        android:duration="50" />-->
+<!--    <item-->
+<!--        android:drawable="@drawable/free86"-->
+<!--        android:duration="50" />-->
 
 </animation-list>
