@@ -29,8 +29,6 @@ import com.iflytek.cloud.SpeechError;
 import com.iflytek.cloud.SpeechRecognizer;
 import com.iflytek.cloud.SpeechSynthesizer;
 import com.iflytek.cloud.SynthesizerListener;
-import com.iflytek.cloud.ui.RecognizerDialog;
-import com.iflytek.cloud.ui.RecognizerDialogListener;
 import com.iflytek.cloud.RecognizerListener;
 import com.yl.basemvp.BasePresenter;
 import com.yl.basemvp.SystemPropertiesReflection;
@@ -76,7 +74,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final String API_URL = "http://47.106.73.32:11434/api/chat";
     private SpeechSynthesizer mTts;
     private SpeechRecognizer mIat;// 语音听写对象
-    private RecognizerDialog mIatDialog;// 语音听写UI
     private SharedPreferences mSharedPreferences;//缓存
     private String mEngineType = SpeechConstant.TYPE_CLOUD;// 引擎类型
     private String language = "zh_cn";//识别语言
@@ -111,7 +108,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         } else if (v.getId() == R.id.xjianduihua) {
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
-//            mActivity.get().sendB tnClick();
+            mActivity.get().handleSendButtonClick();
         } else if (v.getId() == R.id.deep_crete_layout) {
             mActivity.get().swOpenClose();
         } else if (v.getId() == R.id.wdxzskeyboard) {
@@ -144,8 +141,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         }
         // 使用SpeechRecognizer对象，可根据回调消息自定义界面；
         mIat = SpeechRecognizer.createRecognizer(mActivity.get(), mInitListener);
-        // 使用UI听写功能，请根据sdk文件目录下的notice.txt,放置布局文件和图片资源
-        mIatDialog = new RecognizerDialog(mActivity.get(), mInitListener);
         mSharedPreferences = mActivity.get().getSharedPreferences("ASR", Activity.MODE_PRIVATE);
         // 初始化输入管理器
         initInputManager();
@@ -237,6 +232,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         mIat.setParameter(SpeechConstant.ENGINE_TYPE, mEngineType);
         mIat.setParameter(SpeechConstant.RESULT_TYPE, resultType);
         mIat.setParameter(SpeechConstant.LANGUAGE, language);
+        mIat.setParameter("dwa", "wpgs");
 
         if (language.equals("zh_cn")) {
             String lag = mSharedPreferences.getString("iat_language_preference", "mandarin");
@@ -262,7 +258,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         mActivity.get().TTSbutton.setVisibility(View.GONE);
         mActivity.get().read_button.setVisibility(View.VISIBLE);
-        mActivity.get().button.setVisibility(View.VISIBLE);
+        mActivity.get().stopButton.setVisibility(View.VISIBLE);
 //        mActivity.get().animRead.start();
 //        mActivity.get().animFree.stop();
         Log.e(TAG, "123131312: " + str.trim());
@@ -304,25 +300,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     public void startVoiceRecognize() {
         if (mIat == null || mActivity.get() == null) return;
 
-        mIatDialog.setListener(mRecognizerDialogListener);
         int ret = mIat.startListening(mRecognizerListener);
 
         if (ret != ErrorCode.SUCCESS) {
             mActivity.get().showMsg("听写失败，错误码：" + ret);
             return;
-        }
-
-        mIatDialog.show();
-        customizeRecognitionDialog();
-    }
-
-    private void customizeRecognitionDialog() {
-        if (mIatDialog == null || mIatDialog.getWindow() == null) return;
-
-        TextView txt = mIatDialog.getWindow().getDecorView().findViewWithTag("textlink");
-        if (txt != null) {
-            txt.setText("请说出您的问题！");
-            txt.setOnClickListener(v -> { /* 设置为点击无反应 */ });
         }
     }
 
@@ -589,22 +571,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         contextQueue.clear();
     }
 
-    /**
-     * 听写UI监听器
-     */
-    private final RecognizerDialogListener mRecognizerDialogListener = new RecognizerDialogListener() {
-        public void onResult(RecognizerResult results, boolean isLast) {
-            mActivity.get().recognizeResult(results, isLast);
-        }
-
-        /**
-         * 识别回调错误.
-         */
-        public void onError(SpeechError error) {
-            mActivity.get().recognizeOnError(error);
-        }
-
-    };
     private RecognizerListener mRecognizerListener = new RecognizerListener() {
         //音量变化回调
         @Override
@@ -621,6 +587,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         //结束说话回调
         @Override
         public void onEndOfSpeech() {
+            mActivity.get().hasAddMessageAtRecg = false;
             Log.d(TAG, "讯飞: 结束说话");
         }
 
@@ -653,7 +620,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
             mActivity.get().animStart();
             mActivity.get().read_button.setVisibility(View.GONE);
-            mActivity.get().button.setVisibility(View.GONE);
+            mActivity.get().stopButton.setVisibility(View.GONE);
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }
@@ -731,13 +698,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mIat.cancel();
             mIat.destroy();
             mIat = null;
-        }
-
-        if (mIatDialog != null) {
-            if (mIatDialog.isShowing()) {
-                mIatDialog.dismiss();
-            }
-            mIatDialog = null;
         }
 
         stopCurrentActivities();

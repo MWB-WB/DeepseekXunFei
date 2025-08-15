@@ -162,7 +162,7 @@ public class VoiceManager {
                 public void onCompleted(SpeechError error) {
                     if (mTextBuffer.toString().trim().length() <= 0) {
                         Log.d("TAG", "onCompleted: " + "");
-                        mainActivity.button.setVisibility(View.GONE);
+                        mainActivity.stopButton.setVisibility(View.GONE);
                         mainActivity.aiType = BotConstResponse.AIType.FREE;
                         mainActivity.getChatMessages().get(mainActivity.getChatMessagesSizeIndex()).setSpeaking(false);
                         mainActivity.chatAdapter.notifyItemChanged(mainActivity.getChatMessagesSizeIndex());

@@ -197,7 +197,7 @@
                     android:background="?selectableItemBackgroundBorderless"
                     android:visibility="gone"
                     android:contentDescription="发送"
-                    android:src="@drawable/fason" />
+                    android:src="@drawable/tingzhi" />
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

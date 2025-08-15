@@ -104,7 +104,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     // 用HashMap存储听写结果
     private HashMap<String, String> mIatResults = new LinkedHashMap<>();
 
-    public ImageButton button;
+    public ImageButton stopButton;
     private RecyclerView chatRecyclerView;
     public ChatAdapter chatAdapter;
     public boolean textFig;
@@ -155,7 +155,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         JSONReader.insertJsonFileData(this, "result.json");//高德城市编码表中的数据添加到数据库
         animStart();
     }
-    public void animStart(){
+
+    public void animStart() {
         // 根据需要启动相应的动画
         if (TTSbutton.getVisibility() == View.VISIBLE) {
             animFree.start();
@@ -163,6 +164,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             animRead.start();
         }
     }
+
     @Override
     protected int getLayoutId() {
         return R.layout.activity_main;
@@ -208,35 +210,24 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     private void initBottomControls() {
-        button = findViewById(R.id.send_button);
+        stopButton = findViewById(R.id.send_button);
         TTSbutton = findViewById(R.id.wdxzs);
         read_button = findViewById(R.id.wdxzs_read);
 //        kaishiluyin = findViewById(R.id.kaishiluyin);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
-        button.setOnClickListener(v -> handleSendButtonClick());
-
+        stopButton.setOnClickListener(mPresenter);
         TTSbutton.setOnClickListener(v -> handleVoiceButtonClick());
         wdxzskeyboard.setOnClickListener(mPresenter);
     }
 
-    private void handleSendButtonClick() {
-        button.setVisibility(View.GONE);
+    public void handleSendButtonClick() {
+        stopButton.setVisibility(View.GONE);
         TTSbutton.setVisibility(View.VISIBLE);
         read_button.setVisibility(View.GONE);
+        animFree.start();
+        animRead.stop();
         mPresenter.voiceManagerStop();
-        if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-            ToastUtil.show(this, "请输入一个问题");
-        } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
-            try {
-                if (mPresenter.getChatMessagesSize() > 0) {
-                    replaceFragment(0);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "处理发送按钮点击失败", e);
-            }
-        } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-            handleStopOutput();
-        }
+        handleStopOutput();
     }
 
     private void handleStopOutput() {
@@ -396,7 +387,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     private void handleVoiceTestStop() {
         if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-            button.performClick();
+            stopButton.performClick();
         }
     }
 
@@ -676,6 +667,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         super.onDestroy();
     }
 
+    public boolean hasAddMessageAtRecg = false;
+
     /**
      * 数据解析
      *
@@ -684,17 +677,32 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private void printResult(RecognizerResult results, boolean isLast) {
         String text = JsonParser.parseIatResult(results.getResultString());//听写结果
         String sn = null;
+        String pgs = null;
+        String rg = null;
         try {
             JSONObject resultJson = new JSONObject(results.getResultString());
             sn = resultJson.optString("sn");
+            pgs = resultJson.optString("pgs");
+            rg = resultJson.optString("rg");
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        //如果pgs是rpl就在已有的结果中删除掉要覆盖的sn部分
+        if (pgs.equals("rpl")) {
+            String[] strings = rg.replace("[", "").replace("]", "").split(",");
+            int begin = Integer.parseInt(strings[0]);
+            int end = Integer.parseInt(strings[1]);
+            for (int i = begin; i <= end; i++) {
+                mIatResults.remove(i + "");
+            }
+        }
+
         mIatResults.put(sn, text);
         StringBuffer resultBuffer = new StringBuffer();
         for (String key : mIatResults.keySet()) {
             resultBuffer.append(mIatResults.get(key));
         }
+        Log.e(TAG, "printResult: " + resultBuffer.toString());
         String finalText = resultBuffer.toString().trim();
         if (finalText.isEmpty()) {
             Toast.makeText(this, "您还没开始说话", Toast.LENGTH_SHORT).show();
@@ -702,9 +710,17 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         }
         // 只有最后一段才做最终判断,否则会同时输出两次
         if (!isLast) {
+            if (!hasAddMessageAtRecg) {
+                getChatMessages().add(new ChatMessage(finalText, true)); // 添加到聊天界面
+                hasAddMessageAtRecg = true;
+            } else {
+                mPresenter.getChatMessages().get(getChatMessagesSizeIndex()).setMessage(finalText); // 添加到聊天界面
+            }
+            chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
+            chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
             return;
         }
-        mPresenter.getChatMessages().add(new ChatMessage(finalText, true)); // 添加到聊天界面
+        mPresenter.getChatMessages().get(getChatMessagesSizeIndex()).setMessage(finalText); // 添加到聊天界面
         chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
         chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
         if (backTextToAction != null) {
@@ -794,41 +810,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mPresenter.TTS(message);
     }
 
-
-    public void sendBtnClick() {
-        isNeedWakeUp = true;
-        if (aiType == BotConstResponse.AIType.TEXT_NO_READY) {
-            ToastUtil.show(this, "请输入一个问题");
-        } else if (aiType == BotConstResponse.AIType.TEXT_READY || aiType == BotConstResponse.AIType.FREE) {
-            Log.d(TAG, "请输入一个问题: ");
-            try {
-                if (mPresenter.getChatMessagesSize() > 0) {
-                    replaceFragment(0);
-                    sendMessage();
-                } else {
-                    if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver()) {
-                        ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
-                    } else {
-                        replaceFragment(0);
-                        sendMessage();
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else if (aiType == BotConstResponse.AIType.SPEAK || aiType == BotConstResponse.AIType.TEXT_SHUCHU) {
-            stopSpeaking();
-            mPresenter.stopCurrentCall();
-            setCurrentChatOver();
-            mPresenter.setStopRequested(true);
-            textFig = false;
-            mPresenter.voiceManagerStop();
-            aiType = BotConstResponse.AIType.FREE;
-            mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
-            chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
-        }
-    }
-
     public void swOpenClose() {
         mIsDeepCreteMode = !mIsDeepCreteMode;
         if (!mIsDeepCreteMode) {
@@ -878,7 +859,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void onSpeakBegin() {
-        button.setImageResource(R.drawable.tingzhi);
         aiType = BotConstResponse.AIType.SPEAK;
         mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(true);
         chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
@@ -921,8 +901,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     public void callGenerateApi(String userQuestion) {
         textFig = true;
-        button.setImageResource(R.drawable.tingzhi);
-        button.setVisibility(View.VISIBLE);
+        stopButton.setVisibility(View.VISIBLE);
         //重置标识
         mPresenter.setStopRequested(false);
         mPresenter.setNewChatCome(false);
@@ -1120,6 +1099,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             if (isFinishing() || mPresenter == null || mPresenter.contextQueue == null) {
                 return;
             }
+
             // 2. 更新最后一条系统消息（如果允许且队列不为空）
             if (updateLastSystem && !mPresenter.contextQueue.isEmpty()) {
                 List<ChatMessage> list = new ArrayList<>(mPresenter.contextQueue);
