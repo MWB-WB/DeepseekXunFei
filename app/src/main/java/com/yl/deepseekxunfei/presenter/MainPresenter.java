@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.drawable.AnimationDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -255,12 +256,14 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     //文字转语音方法
     public void TTS(String str) {
         if (mTts == null || str == null || str.trim().isEmpty()) return;
-
+        mActivity.get().aiType = BotConstResponse.AIType.READING;
         mActivity.get().TTSbutton.setVisibility(View.GONE);
+        mActivity.get().animFree.stop();
         mActivity.get().read_button.setVisibility(View.VISIBLE);
+        mActivity.get().animRead.start();
         mActivity.get().stopButton.setVisibility(View.VISIBLE);
-//        mActivity.get().animRead.start();
-//        mActivity.get().animFree.stop();
+        mActivity.get().animThink.stop();
+        mActivity.get().think_button.setVisibility(View.GONE);
         Log.e(TAG, "123131312: " + str.trim());
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
@@ -314,6 +317,12 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     public void callGenerateApi(String userQuestion) {
+        mActivity.get().think_button.setVisibility(View.VISIBLE);
+        mActivity.get().animThink.start();
+        mActivity.get().animRead.stop();
+        mActivity.get().animFree.stop();
+        mActivity.get().TTSbutton.setVisibility(View.GONE);
+        mActivity.get().read_button.setVisibility(View.GONE);
         if (userQuestion == null || userQuestion.isEmpty() || mActivity.get() == null) return;
 
         try {
@@ -406,6 +415,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         @Override
         public void onResponse(Call call, Response response) throws IOException {
             if (response.isSuccessful()) {
+                mActivity.get().aiType = BotConstResponse.AIType.THINKING;
                 processResponseStream(response.body());
             } else if (mActivity.get() != null) {
                 mActivity.get().showMsg("请求失败: " + response.message());
@@ -458,6 +468,16 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         }
 
         private void handleResponseContent(String content, boolean done) {
+            if (mActivity.get().aiType == BotConstResponse.AIType.THINKING) {
+                mActivity.get().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mActivity.get().animThink.stop();
+                        mActivity.get().think_button.setVisibility(View.GONE);
+                        Log.d(TAG, "handleResponseContent: 经入");
+                    }
+                });
+            }
             if (isThinkTag(content)) {
                 handleThinkTag(content);
             } else if (chatMessages.get(botMessageIndex).isThinkContent()) {
@@ -588,6 +608,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         @Override
         public void onEndOfSpeech() {
             mActivity.get().hasAddMessageAtRecg = false;
+            mActivity.get().texte_microphone.setVisibility(View.GONE);
             Log.d(TAG, "讯飞: 结束说话");
         }
 
@@ -617,8 +638,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         public void onCompleted(SpeechError error) {
             Log.d(TAG, "播放完毕");
             Log.d(TAG, "error" + error);
+            mActivity.get().aiType = BotConstResponse.AIType.STANDBY;
             mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
             mActivity.get().animStart();
+            mActivity.get().animRead.stop();
             mActivity.get().read_button.setVisibility(View.GONE);
             mActivity.get().stopButton.setVisibility(View.GONE);
             if (error == null) {

@@ -117,13 +117,14 @@ public class VoiceManager {
     }
 
     private void startSpeech(String text) {
+        mainActivity.aiType = BotConstResponse.AIType.READING;
         mainActivity.runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                mainActivity.animFree.stop();
                 mainActivity.TTSbutton.setVisibility(View.GONE);
                 mainActivity.read_button.setVisibility(View.VISIBLE);
-//                mainActivity.animFree.stop();
-//                mainActivity.animRead.start();
+                mainActivity.animRead.start();
             }
         });
         Log.e("1231231", "startSpeech: " + text);
@@ -171,7 +172,9 @@ public class VoiceManager {
                         new Handler().postDelayed(new Runnable() {
                             @Override
                             public void run() {
+                                mainActivity.aiType = BotConstResponse.AIType.STANDBY;
                                 mainActivity.TTSbutton.setVisibility(View.VISIBLE);
+                                mainActivity.animRead.stop();
                                 mainActivity.read_button.setVisibility(View.GONE);
                                 mainActivity.animStart();
                                 mainActivity.TTSbutton.performClick();

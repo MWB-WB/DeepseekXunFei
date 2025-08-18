@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animation-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:oneshot="false">
+    <item
+        android:drawable="@drawable/think_1"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_2"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_3"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_4"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_5"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_6"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_7"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_8"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_9"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_10"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_11"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_12"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_13"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_14"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_15"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_16"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_17"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_18"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_19"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_20"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_21"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_22"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_23"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_24"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_25"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_26"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_27"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_28"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_29"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_30"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_31"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_32"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_33"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_34"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_35"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_36"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_37"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_38"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_39"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_40"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_41"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_42"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_43"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_44"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_45"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_46"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_47"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_48"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_49"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_50"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_51"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_52"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_53"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_54"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_55"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_56"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_57"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_58"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_59"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_60"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_61"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_62"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_63"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_64"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_65"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_66"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_67"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_68"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_69"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_70"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_71"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_72"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_73"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_74"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_75"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_76"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_77"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_78"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_79"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_80"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_81"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_81"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_82"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_83"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_84"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_85"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_86"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_87"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_89"
+        android:duration="50" />
+    <item
+        android:drawable="@drawable/think_90"
+        android:duration="50" />
+</animation-list>

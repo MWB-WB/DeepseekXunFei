@@ -170,21 +170,42 @@
                     android:layout_height="1dp" />
 
                 <!-- 语音输入图标 -->
-                <ImageButton
-                    android:id="@+id/wdxzs"
+                <FrameLayout
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/free_gif"
-                    android:visibility="visible"
-                    android:contentDescription="语音输入" />
-                <ImageButton
-                    android:id="@+id/wdxzs_read"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/read"
-                    android:visibility="gone"
-                    android:contentDescription="语音输入" />
+                    android:layout_height="wrap_content">
 
+                    <ImageButton
+                        android:id="@+id/wdxzs"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/free_gif"
+                        android:visibility="visible"
+                        android:contentDescription="语音输入" />
+                    <ImageButton
+                        android:id="@+id/wdxzs_read"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/read"
+                        android:visibility="gone"
+                        android:contentDescription="语音输入" />
+                    <ImageButton
+                        android:id="@+id/wdxzs_think"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/thinking_gif"
+                        android:visibility="gone"
+                        android:contentDescription="语音输入" />
+                    <TextView
+                        android:id="@+id/texte_microphone"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom|end"
+                        android:layout_marginBottom="45dp"
+                        android:layout_marginLeft="55dp"
+                        android:textColor="#FFFFFF"
+                        android:visibility="gone"
+                        android:text="我在听"/>
+                </FrameLayout>
                 <Space
                     android:layout_width="24dp"
                     android:layout_height="1dp" />
@@ -195,7 +216,7 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:background="?selectableItemBackgroundBorderless"
-                    android:visibility="gone"
+                    android:visibility="invisible"
                     android:contentDescription="发送"
                     android:src="@drawable/tingzhi" />
             </LinearLayout>

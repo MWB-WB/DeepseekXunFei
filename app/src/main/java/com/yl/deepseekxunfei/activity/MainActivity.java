@@ -140,18 +140,22 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private ImageButton wdxzskeyboard;
     private Handler uiHandler = new Handler(Looper.getMainLooper());
     public ImageButton read_button;
+    public ImageButton think_button;
     public AnimationDrawable animFree;//序列帧
     public AnimationDrawable animRead;//序列帧
+    public AnimationDrawable animThink;//序列帧
+    public TextView texte_microphone;//我在听
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
+    public void onCreate(@Nullable Bundle savedInstanceState)   {
         super.onCreate(savedInstanceState);
         mPresenter.getChatMessages().add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
         setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
-        mPresenter.TTS("我是小天，很高兴见到你！");
         chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
         animFree = (AnimationDrawable) TTSbutton.getBackground();
         animRead = (AnimationDrawable) read_button.getBackground();
+        animThink = (AnimationDrawable) think_button.getBackground();
+        mPresenter.TTS("我是小天，很高兴见到你！");
         JSONReader.insertJsonFileData(this, "result.json");//高德城市编码表中的数据添加到数据库
         animStart();
     }
@@ -160,8 +164,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         // 根据需要启动相应的动画
         if (TTSbutton.getVisibility() == View.VISIBLE) {
             animFree.start();
-        } else if (read_button.getVisibility() == View.VISIBLE) {
+        }
+        if (read_button.getVisibility() == View.VISIBLE) {
             animRead.start();
+        }
+        if (think_button.getVisibility() == View.VISIBLE) {
+            animThink.start();
         }
     }
 
@@ -213,10 +221,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         stopButton = findViewById(R.id.send_button);
         TTSbutton = findViewById(R.id.wdxzs);
         read_button = findViewById(R.id.wdxzs_read);
+        think_button = findViewById(R.id.wdxzs_think);
 //        kaishiluyin = findViewById(R.id.kaishiluyin);
         wdxzskeyboard = findViewById(R.id.wdxzskeyboard);
         stopButton.setOnClickListener(mPresenter);
         TTSbutton.setOnClickListener(v -> handleVoiceButtonClick());
+        texte_microphone = findViewById(R.id.texte_microphone);
+
         wdxzskeyboard.setOnClickListener(mPresenter);
     }
 
@@ -252,6 +263,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (hasRecordPermission()) {
             prepareForVoiceInput();
             startVoiceRecognize();
+            texte_microphone.setVisibility(View.VISIBLE);
         }
     }
 

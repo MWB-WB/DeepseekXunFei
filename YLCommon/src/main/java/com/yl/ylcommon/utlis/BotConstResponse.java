@@ -40,6 +40,9 @@ public class BotConstResponse {
         SPEAK,
         TEXT_SHUCHU,
         TEXT_READY,
-        TEXT_NO_READY
+        TEXT_NO_READY,
+        READING,//阅读
+        THINKING,//思考
+        STANDBY  //待机
     }
 }
