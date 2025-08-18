@@ -204,12 +204,18 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     private String mapSpeakerName(String speakerName) {
         switch (speakerName) {
-            case "许久": return "aisjiuxu";
-            case "小萍": return "aisxping";
-            case "小婧": return "aisjinger";
-            case "许小宝": return "aisbabyxu";
-            case "小燕": return "xiaoyan";
-            default: return speakerName;
+            case "许久":
+                return "aisjiuxu";
+            case "小萍":
+                return "aisxping";
+            case "小婧":
+                return "aisjinger";
+            case "许小宝":
+                return "aisbabyxu";
+            case "小燕":
+                return "xiaoyan";
+            default:
+                return speakerName;
         }
     }
 
@@ -257,13 +263,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     public void TTS(String str) {
         if (mTts == null || str == null || str.trim().isEmpty()) return;
         mActivity.get().aiType = BotConstResponse.AIType.READING;
-        mActivity.get().TTSbutton.setVisibility(View.GONE);
+        mActivity.get().TTSbutton.setVisibility(View.INVISIBLE);
         mActivity.get().animFree.stop();
         mActivity.get().read_button.setVisibility(View.VISIBLE);
         mActivity.get().animRead.start();
         mActivity.get().stopButton.setVisibility(View.VISIBLE);
         mActivity.get().animThink.stop();
-        mActivity.get().think_button.setVisibility(View.GONE);
+        mActivity.get().think_button.setVisibility(View.INVISIBLE);
         Log.e(TAG, "123131312: " + str.trim());
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
@@ -469,14 +475,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         private void handleResponseContent(String content, boolean done) {
             if (mActivity.get().aiType == BotConstResponse.AIType.THINKING) {
-                mActivity.get().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        mActivity.get().animThink.stop();
-                        mActivity.get().think_button.setVisibility(View.GONE);
-                        Log.d(TAG, "handleResponseContent: 经入");
-                    }
-                });
+                mActivity.get().setAnimatorShowOrNo(2, 500);
             }
             if (isThinkTag(content)) {
                 handleThinkTag(content);
@@ -642,8 +641,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
             mActivity.get().animStart();
             mActivity.get().animRead.stop();
-            mActivity.get().read_button.setVisibility(View.GONE);
-            mActivity.get().stopButton.setVisibility(View.GONE);
+            mActivity.get().read_button.setVisibility(View.INVISIBLE);
+            mActivity.get().stopButton.setVisibility(View.INVISIBLE);
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }

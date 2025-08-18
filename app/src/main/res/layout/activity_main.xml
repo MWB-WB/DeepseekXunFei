@@ -171,7 +171,7 @@
 
                 <!-- 语音输入图标 -->
                 <FrameLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="200dp"
                     android:layout_height="wrap_content">
 
                     <ImageButton
@@ -179,46 +179,61 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/free_gif"
-                        android:visibility="visible"
-                        android:contentDescription="语音输入" />
+                        android:contentDescription="语音输入"
+                        android:visibility="visible" />
+
                     <ImageButton
                         android:id="@+id/wdxzs_read"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/read"
-                        android:visibility="gone"
-                        android:contentDescription="语音输入" />
-                    <ImageButton
-                        android:id="@+id/wdxzs_think"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/thinking_gif"
-                        android:visibility="gone"
-                        android:contentDescription="语音输入" />
+                        android:contentDescription="语音输入"
+                        android:visibility="gone" />
+
+                    <FrameLayout
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:paddingStart="9dp"
+                        android:paddingTop="9dp">
+
+                        <ImageButton
+                            android:id="@+id/wdxzs_think"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/thinking_gif"
+                            android:contentDescription="语音输入"
+                            android:visibility="gone" />
+
+                    </FrameLayout>
+
                     <TextView
                         android:id="@+id/texte_microphone"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="bottom|end"
+                        android:layout_marginRight="80dp"
                         android:layout_marginBottom="45dp"
-                        android:layout_marginLeft="55dp"
+                        android:text="我在听"
                         android:textColor="#FFFFFF"
-                        android:visibility="gone"
-                        android:text="我在听"/>
-                </FrameLayout>
-                <Space
-                    android:layout_width="24dp"
-                    android:layout_height="1dp" />
+                        android:visibility="gone" />
 
-                <!-- 发送图标 -->
-                <ImageButton
-                    android:id="@+id/send_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="?selectableItemBackgroundBorderless"
-                    android:visibility="invisible"
-                    android:contentDescription="发送"
-                    android:src="@drawable/tingzhi" />
+                    <Space
+                        android:layout_width="24dp"
+                        android:layout_height="1dp" />
+
+                    <!-- 发送图标 -->
+                    <ImageButton
+                        android:id="@+id/send_button"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:layout_marginLeft="50dp"
+                        android:background="?selectableItemBackgroundBorderless"
+                        android:contentDescription="发送"
+                        android:src="@drawable/tingzhi"
+                        android:visibility="invisible" />
+                </FrameLayout>
+
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>

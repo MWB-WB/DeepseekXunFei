@@ -147,7 +147,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public TextView texte_microphone;//我在听
 
     @Override
-    public void onCreate(@Nullable Bundle savedInstanceState)   {
+    public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mPresenter.getChatMessages().add(new ChatMessage("我是小天，很高兴见到你！", false, "", false));
         setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
@@ -232,9 +232,9 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void handleSendButtonClick() {
-        stopButton.setVisibility(View.GONE);
+        stopButton.setVisibility(View.INVISIBLE);
         TTSbutton.setVisibility(View.VISIBLE);
-        read_button.setVisibility(View.GONE);
+        read_button.setVisibility(View.INVISIBLE);
         animFree.start();
         animRead.stop();
         mPresenter.voiceManagerStop();
@@ -263,7 +263,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         if (hasRecordPermission()) {
             prepareForVoiceInput();
             startVoiceRecognize();
-            texte_microphone.setVisibility(View.VISIBLE);
         }
     }
 
@@ -445,6 +444,20 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         aiType = BotConstResponse.AIType.FREE;
     }
 
+    //设置动画消失隐藏的总体方法，通过下标索引来进行区分 1.free 2.read 3.think
+    public void setAnimatorShowOrNo(int index, int delayTime) {
+        switch (index) {
+            case 2:
+                myHandler.postDelayed(() -> {
+                    animThink.stop();
+                    think_button.setVisibility(View.INVISIBLE);
+                    read_button.setVisibility(View.VISIBLE);
+                    animRead.start();
+                }, delayTime);
+                break;
+        }
+    }
+
     private void startVoiceRecognize() {
         mPresenter.setParam();
         isDuplicate = true;
@@ -457,6 +470,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mIatResults.clear();
         isRecognize = true;
         mPresenter.startVoiceRecognize();
+        texte_microphone.setVisibility(View.VISIBLE);
     }
 
     public void showDetailFragment(MovieDetailModel model) {

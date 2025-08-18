@@ -118,16 +118,6 @@ public class VoiceManager {
 
     private void startSpeech(String text) {
         mainActivity.aiType = BotConstResponse.AIType.READING;
-        mainActivity.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mainActivity.animFree.stop();
-                mainActivity.TTSbutton.setVisibility(View.GONE);
-                mainActivity.read_button.setVisibility(View.VISIBLE);
-                mainActivity.animRead.start();
-            }
-        });
-        Log.e("1231231", "startSpeech: " + text);
         mIsSpeaking = true;
         String TTSTexte = filterSensitiveContent(text);
         String TTSBiao = TextLineBreaker.breakTextByPunctuation(TTSTexte);
@@ -163,7 +153,7 @@ public class VoiceManager {
                 public void onCompleted(SpeechError error) {
                     if (mTextBuffer.toString().trim().length() <= 0) {
                         Log.d("TAG", "onCompleted: " + "");
-                        mainActivity.stopButton.setVisibility(View.GONE);
+                        mainActivity.stopButton.setVisibility(View.INVISIBLE);
                         mainActivity.aiType = BotConstResponse.AIType.FREE;
                         mainActivity.getChatMessages().get(mainActivity.getChatMessagesSizeIndex()).setSpeaking(false);
                         mainActivity.chatAdapter.notifyItemChanged(mainActivity.getChatMessagesSizeIndex());
@@ -175,7 +165,7 @@ public class VoiceManager {
                                 mainActivity.aiType = BotConstResponse.AIType.STANDBY;
                                 mainActivity.TTSbutton.setVisibility(View.VISIBLE);
                                 mainActivity.animRead.stop();
-                                mainActivity.read_button.setVisibility(View.GONE);
+                                mainActivity.read_button.setVisibility(View.INVISIBLE);
                                 mainActivity.animStart();
                                 mainActivity.TTSbutton.performClick();
                             }
