@@ -16,7 +16,8 @@
         android:drawableStart="@drawable/rename"
         android:text="重命名"
         android:textColor="@color/black"
-        android:textSize="14sp" />
+        android:textSize="14sp"
+        android:visibility="gone"/>
 
     <android.widget.Button
         android:id="@+id/btn_delete"

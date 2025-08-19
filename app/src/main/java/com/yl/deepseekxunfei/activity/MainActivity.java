@@ -135,7 +135,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     boolean isDuplicate = false;
     //是否开启声纹验证
     public boolean creteOkAndNo = true;
-    private boolean isRecognize = false;
+    public boolean isRecognize = false;
     private BackTextToAction backTextToAction = null;
     private ImageButton wdxzskeyboard;
     private Handler uiHandler = new Handler(Looper.getMainLooper());
@@ -234,15 +234,20 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         stopButton.setVisibility(View.INVISIBLE);
         texte_microphone.setVisibility(View.INVISIBLE);
         mPresenter.mIat.stopListening();
+        mPresenter.mIat.cancel();
         TTSbutton.setVisibility(View.VISIBLE);
         read_button.setVisibility(View.INVISIBLE);
         animFree.start();
         animRead.stop();
+        think_button.setVisibility(View.INVISIBLE);
+        animThink.stop();
         mPresenter.voiceManagerStop();
         handleStopOutput();
+        hasAddMessageAtRecg = false;
+
     }
 
-    private void handleStopOutput() {
+    public void handleStopOutput() {
         isWeatherOutputStopped = true;
         uiHandler.removeCallbacks(weatherStreamRunnable);
         mPresenter.stopSpeaking();//停止tts合成
@@ -738,6 +743,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         }
         // 只有最后一段才做最终判断,否则会同时输出两次
         if (!isLast) {
+            Log.d(TAG, "printResult: " + hasAddMessageAtRecg);
             if (!hasAddMessageAtRecg) {
                 getChatMessages().add(new ChatMessage(finalText, true)); // 添加到聊天界面
                 hasAddMessageAtRecg = true;
@@ -789,8 +795,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public void newChat() {
         mPresenter.mIat.stopListening();//停止语音转文字
         uiHandler.removeCallbacks(weatherStreamRunnable);
-        if (mPresenter.done!=null || mainFragment.mainPresenter.done!=null){
-            if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done){
+        if (mPresenter.done != null || mainFragment.mainPresenter.done != null) {
+            if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done) {
                 if (recyFragment != null && recyFragment.isVisible()) {
                     replaceFragment(0);
                 }
@@ -803,7 +809,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 } else {
                     addSystemMessage("还没有聊天记录");
                 }
-            }else {
+            } else {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

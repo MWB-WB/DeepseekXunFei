@@ -114,10 +114,15 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         } else if (v.getId() == R.id.xjianduihua) {
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
+            mActivity.get().isRecognize = false;
             mActivity.get().handleSendButtonClick();
         } else if (v.getId() == R.id.deep_crete_layout) {
             mActivity.get().swOpenClose();
         } else if (v.getId() == R.id.wdxzskeyboard) {
+            if (mIat != null && mIat.isListening()){
+                ToastUtil.show(mActivity.get(),"正在语音识别");
+                return;
+            }
             if (inputManager != null) {
                 inputManager.show(mActivity.get());
             }
@@ -135,7 +140,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);
         mActivity.get().stopButton.setVisibility(View.INVISIBLE);
         if (mActivity.get() == null) return;
-        Log.d(TAG, "handleHistoryClick: "+mActivity.get());
         mActivity.get().stopSpeaking();
         mActivity.get().isNeedWakeUp = true;
         AppDatabase.getInstance(mActivity.get()).query(new AppDatabase.QueryCallBack() {
@@ -144,7 +148,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 mActivity.get().showHistoryDialog(chatHistoryEntities);
             }
         });
-
     }
 
     public void initThirdApi() {
