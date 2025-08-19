@@ -104,7 +104,7 @@ public class HistoryDialog extends Dialog implements View.OnClickListener, Histo
                 getContext(),
                 "永久删除对话",
                 "删除后，该对话将不可恢复。确认删除吗？",
-                ContextCompat.getDrawable(getContext(), R.drawable.wdxz),
+                ContextCompat.getDrawable(getContext(), R.drawable.free1),
                 new DeleteDialogHelper.DeleteDialogListener() {
                     @Override
                     public void onDeleteConfirmed() {

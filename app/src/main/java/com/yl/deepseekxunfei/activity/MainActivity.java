@@ -788,6 +788,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     public void newChat() {
         mPresenter.mIat.stopListening();//停止语音转文字
+        uiHandler.removeCallbacks(weatherStreamRunnable);
         if (mPresenter.done!=null || mainFragment.mainPresenter.done!=null){
             if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done){
                 if (recyFragment != null && recyFragment.isVisible()) {
