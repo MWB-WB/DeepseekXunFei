@@ -25,6 +25,7 @@ public abstract class AppDatabase extends RoomDatabase {
     private static final String DB_NAME = "deepseek.db";
     private static volatile AppDatabase instance;
     private static List<ChatHistoryEntity> chatHistoryEntities;
+    private static QueryCallBack queryCallBack;
 
     //获取数据库实体
     public static synchronized AppDatabase getInstance(Context context) {
@@ -52,7 +53,8 @@ public abstract class AppDatabase extends RoomDatabase {
         new DeleteTask().execute(chatHistoryEntity);
     }
 
-    public static void query() {
+    public void query(QueryCallBack queryCallBack) {
+        this.queryCallBack = queryCallBack;
         new QueryTask().execute();
     }
 
@@ -91,7 +93,14 @@ public abstract class AppDatabase extends RoomDatabase {
                     }
                 }
             }
+            if (queryCallBack != null) {
+                queryCallBack.onCallBack(chatHistoryEntities);
+            }
         }
+    }
+
+    public interface QueryCallBack {
+        void onCallBack(List<ChatHistoryEntity> chatHistoryEntities);
     }
 
     private static class DeleteTask extends AsyncTask<ChatHistoryEntity, Void, Void> {

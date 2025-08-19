@@ -536,8 +536,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
 
-    public void showHistoryDialog() {
-        HistoryDialog dialog = new HistoryDialog(this, AppDatabase.getInstance(this).getChatHistoryEntities(), MainActivity.this);
+    public void showHistoryDialog(List<ChatHistoryEntity> chatHistoryEntities) {
+        HistoryDialog dialog = new HistoryDialog(this, chatHistoryEntities, MainActivity.this);
         dialog.setOnDialogDataBack(new HistoryDialog.onDialogDataBack() {
             @Override
             public void dataBack(ChatHistoryEntity chatHistoryEntity) {

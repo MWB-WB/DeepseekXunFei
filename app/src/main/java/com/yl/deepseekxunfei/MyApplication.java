@@ -23,7 +23,6 @@ public class MyApplication extends Application {
         executorService = Executors.newSingleThreadExecutor();
         ContextHolder.init(this); // 保存全局 Context
         initThrid();
-        AppDatabase.getInstance(this).query();
     }
 
     private void initThrid() {

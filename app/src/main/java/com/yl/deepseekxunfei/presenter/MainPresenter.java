@@ -38,6 +38,7 @@ import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.fragment.MainFragment;
 import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
+import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
 import com.yl.deepseekxunfei.view.PopupInputManager;
 import com.yl.ylcommon.utlis.BotConstResponse;
 import com.yl.ylcommon.utlis.TextLineBreaker;
@@ -124,8 +125,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         mActivity.get().stopSpeaking();
         mActivity.get().isNeedWakeUp = true;
-        AppDatabase.getInstance(mActivity.get()).query();
-        mActivity.get().showHistoryDialog();
+        AppDatabase.getInstance(mActivity.get()).query(new AppDatabase.QueryCallBack() {
+            @Override
+            public void onCallBack(List<ChatHistoryEntity> chatHistoryEntities) {
+                mActivity.get().showHistoryDialog(chatHistoryEntities);
+            }
+        });
+
     }
 
     public void initThirdApi() {
