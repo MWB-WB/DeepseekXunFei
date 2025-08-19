@@ -5,6 +5,7 @@ import static android.app.PendingIntent.getActivity;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.AnimationDrawable;
@@ -16,6 +17,7 @@ import android.util.JsonReader;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -45,6 +47,7 @@ import com.yl.ylcommon.utlis.TextLineBreaker;
 import com.yl.ylcommon.utlis.TimeDownUtil;
 import com.yl.deepseekxunfei.VoiceManager;
 import com.yl.gaodeApi.poi.PositioningUtil;
+import com.yl.ylcommon.utlis.ToastUtil;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -75,7 +78,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final String TAG = MainPresenter.class.getSimpleName();
     private static final String API_URL = "http://47.106.73.32:11434/api/chat";
     private SpeechSynthesizer mTts;
-    private SpeechRecognizer mIat;// 语音听写对象
+    public SpeechRecognizer mIat;// 语音听写对象
     private SharedPreferences mSharedPreferences;//缓存
     private String mEngineType = SpeechConstant.TYPE_CLOUD;// 引擎类型
     private String language = "zh_cn";//识别语言
@@ -100,6 +103,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final String IMSTART_TAG = "<|imstart|>";
     private PopupInputManager inputManager;
     private OkHttpClient httpClient;
+    public Boolean done = null;//是否正在输出
 
     @Override
     protected void onItemClick(View v) {
@@ -121,8 +125,17 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     private void handleHistoryClick() {
+        mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
+        mActivity.get().animFree.start();
+        mActivity.get().animRead.stop();
+        mActivity.get().read_button.setVisibility(View.INVISIBLE);
+        mActivity.get().animThink.stop();
+        mActivity.get().think_button.setVisibility(View.INVISIBLE);
+        mIat.stopListening();//停止
+        mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);
+        mActivity.get().stopButton.setVisibility(View.INVISIBLE);
         if (mActivity.get() == null) return;
-
+        Log.d(TAG, "handleHistoryClick: "+mActivity.get());
         mActivity.get().stopSpeaking();
         mActivity.get().isNeedWakeUp = true;
         AppDatabase.getInstance(mActivity.get()).query(new AppDatabase.QueryCallBack() {
@@ -262,6 +275,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     public void stopSpeaking() {
         if (mTts != null) {
             mTts.stopSpeaking();
+            mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);//隐藏我在听
+            mActivity.get().stopButton.setVisibility(View.INVISIBLE);//隐藏我在听
         }
     }
 
@@ -468,8 +483,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             if (messageObject == null || !messageObject.has("content")) return;
 
             String partialResponse = messageObject.get("content").getAsString();
-            boolean done = jsonResponse.get("done").getAsBoolean();
-
+            done = jsonResponse.get("done").getAsBoolean();
+            Log.d(TAG, "processJsonResponse: "+done);
             if (botMessageIndex == -1) {
                 mActivity.get().addMessageByBot("");
                 botMessageIndex = chatMessages.size() - 1;
@@ -523,7 +538,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             });
         }
 
-        private void updateResponseContent(boolean done) {
+        public void updateResponseContent(boolean done) {
             if (mActivity.get() == null) return;
 
             mActivity.get().runOnUiThread(() -> {
@@ -534,6 +549,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 mActivity.get().setTextByIndex(botMessageIndex, response);
 
                 if (done && !isStopRequested) {
+                    Log.d(TAG, "updateResponseContent: "+response+"\t"+done);
                     handleCompletedResponse(response);
                 }
 
@@ -548,7 +564,6 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             while (contextQueue.size() > MAX_HISTORY_ROUNDS * 2) {
                 contextQueue.removeFirst();
             }
-
             isStopRequested = true;
             isNewChatCome = false;
             mActivity.get().textFig = false;
@@ -581,7 +596,16 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 mActivity.get().textFig = false;
 
                 if (botMessageIndex != -1) {
-                    chatMessages.get(botMessageIndex).setOver(true);
+                    if (botMessageIndex > 0 && botMessageIndex<chatMessages.size()){
+                        chatMessages.get(botMessageIndex).setOver(true);
+                    }else {
+                        mActivity.get().runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                ToastUtil.show(mActivity.get(),"请等待当前问题回复完成或者点击停止");
+                            }
+                        });
+                    }
                 } else if (mActivity.get() != null) {
                     ChatMessage chatMessage = new ChatMessage();
                     chatMessage.setMessage("不好意思，请您重新提问");
@@ -606,6 +630,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         //开始说话回调
         @Override
         public void onBeginOfSpeech() {
+            mActivity.get().stopButton.setVisibility(View.VISIBLE);
             Log.d(TAG, "讯飞: 开始说话");
         }
 
@@ -613,7 +638,8 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         @Override
         public void onEndOfSpeech() {
             mActivity.get().hasAddMessageAtRecg = false;
-            mActivity.get().texte_microphone.setVisibility(View.GONE);
+            mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);
+            mActivity.get().stopButton.setVisibility(View.INVISIBLE);
             Log.d(TAG, "讯飞: 结束说话");
         }
 

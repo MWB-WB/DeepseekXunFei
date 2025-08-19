@@ -227,12 +227,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         stopButton.setOnClickListener(mPresenter);
         TTSbutton.setOnClickListener(v -> handleVoiceButtonClick());
         texte_microphone = findViewById(R.id.texte_microphone);
-
         wdxzskeyboard.setOnClickListener(mPresenter);
     }
 
     public void handleSendButtonClick() {
         stopButton.setVisibility(View.INVISIBLE);
+        texte_microphone.setVisibility(View.INVISIBLE);
+        mPresenter.mIat.stopListening();
         TTSbutton.setVisibility(View.VISIBLE);
         read_button.setVisibility(View.INVISIBLE);
         animFree.start();
@@ -244,7 +245,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private void handleStopOutput() {
         isWeatherOutputStopped = true;
         uiHandler.removeCallbacks(weatherStreamRunnable);
-        mPresenter.stopSpeaking();
+        mPresenter.stopSpeaking();//停止tts合成
         mPresenter.voiceManagerStop();
         mPresenter.stopCurrentCall();
         mPresenter.setStopRequested(true);
@@ -273,7 +274,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     private void prepareForVoiceInput() {
         setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
-        mPresenter.stopSpeaking();
+        mPresenter.stopSpeaking();//停止tts合成
         mPresenter.voiceManagerStop();
         mPresenter.stopCurrentCall();
         mPresenter.setStopRequested(false);
@@ -330,7 +331,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     private void stopAllActivities() {
-        stopSpeaking();
+        stopSpeaking();//停止tts合成
         mPresenter.stopCurrentCall();
         mPresenter.setStopRequested(true);
         textFig = false;
@@ -411,7 +412,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     private void prepareForTextCommit(String text) {
         mPresenter.voiceManagerStop();
-        stopSpeaking();
+        stopSpeaking();//停止tts合成
         if (mPresenter.getChatMessagesSize() > 0) {
             setLastItem(mPresenter.getChatMessages(), item -> item.setOver(true));
             aiType = BotConstResponse.AIType.FREE;
@@ -435,7 +436,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
 
     public void stopTTSAndRequest() {
-        stopSpeaking();
+        stopSpeaking();//停止tts合成
         mPresenter.voiceManagerStop();
         mPresenter.stopCurrentCall();
         if (mPresenter.getChatMessagesSize() > 0) {
@@ -466,7 +467,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             mPresenter.setNewChatCome(true);
         }
         //停止播放文本
-        stopSpeaking();
+        stopSpeaking();//停止tts合成
         mIatResults.clear();
         isRecognize = true;
         mPresenter.startVoiceRecognize();
@@ -489,6 +490,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void commitText(String text) {
+        mPresenter.mIat.stopListening();
         if (mPresenter.getChatMessagesSize() <= 0) {
             mPresenter.getChatMessages().add(new ChatMessage(text, true, "", false));
             chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
@@ -507,7 +509,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
                 ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
             } else {
-                mPresenter.stopSpeaking();
+                mPresenter.stopSpeaking();//停止tts合成
                 mPresenter.voiceManagerStop();
                 mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
                 chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
@@ -785,17 +787,39 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void newChat() {
-        if (recyFragment != null && recyFragment.isVisible()) {
-            replaceFragment(0);
-        }
+        mPresenter.mIat.stopListening();//停止语音转文字
+        if (mPresenter.done!=null || mainFragment.mainPresenter.done!=null){
+            if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done){
+                if (recyFragment != null && recyFragment.isVisible()) {
+                    replaceFragment(0);
+                }
 
-        if (!mPresenter.chatMessages.isEmpty()) {
-            resetChatState();
-            saveCurrentChat();
-            initNewChat();
-        } else {
-            addSystemMessage("还没有聊天记录");
+                if (!mPresenter.chatMessages.isEmpty()) {
+
+                    resetChatState();
+                    saveCurrentChat();
+                    initNewChat();//初始化
+                } else {
+                    addSystemMessage("还没有聊天记录");
+                }
+            }else {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                    }
+                });
+            }
         }
+        TTSbutton.setVisibility(View.VISIBLE);
+        animFree.start();
+        animRead.stop();
+        read_button.setVisibility(View.INVISIBLE);
+        animThink.stop();
+        think_button.setVisibility(View.INVISIBLE);
+        mPresenter.mIat.stopListening();//停止
+        texte_microphone.setVisibility(View.INVISIBLE);
+        stopButton.setVisibility(View.INVISIBLE);
     }
 
     private void resetChatState() {
@@ -804,7 +828,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         mPresenter.stopCurrentCall();
         mPresenter.isStopRequested = true;
         mPresenter.isNewChatCome = true;
-        stopSpeaking();
+        stopSpeaking();//停止tts合成
         setCurrentChatOver();
         mPresenter.setNewChatCome(true);
         mPresenter.setStopRequested(true);
@@ -1194,7 +1218,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void setTextByIndex(int index, String text) {
-        mPresenter.getChatMessages().get(index).setMessage(text);
+        // 增加边界检查
+        if (index >= 0 && index < mPresenter.getChatMessagesSize()) {
+            mPresenter.getChatMessages().get(index).setMessage(text);
+            chatAdapter.notifyItemChanged(index);
+        } else {
+            Log.e(TAG, "setTextByIndex: 索引越界，index=" + index + ", 列表大小=" + mPresenter.getChatMessagesSize());
+        }
     }
 
     public void selectionAction(String text) {
@@ -1221,7 +1251,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
 
     public void stopSpeaking() {
-        mPresenter.stopSpeaking();
+        mPresenter.stopSpeaking();//停止tts合成
         if (mPresenter.getChatMessagesSize() > 0) {
             mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).setSpeaking(false);
             chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());

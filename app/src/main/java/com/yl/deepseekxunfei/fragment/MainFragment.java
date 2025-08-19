@@ -14,8 +14,10 @@ import androidx.fragment.app.Fragment;
 
 import com.yl.deepseekxunfei.activity.MainActivity;
 import com.yl.deepseekxunfei.R;
+import com.yl.deepseekxunfei.presenter.MainPresenter;
 
 public class MainFragment extends Fragment {
+    public MainPresenter mainPresenter;
 
     @Nullable
     @Override
@@ -27,9 +29,9 @@ public class MainFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         initView(view);
+        mainPresenter = new MainPresenter();
         super.onViewCreated(view, savedInstanceState);
     }
-
     private void initView(View view) {
         // 推荐问题点击区域
         TextView[] textViews = {
@@ -38,6 +40,7 @@ public class MainFragment extends Fragment {
         };
         for (TextView textView : textViews) {
             textView.setOnClickListener(v -> {
+                mainPresenter.done = true;
                 ((MainActivity) getActivity()).commitText(((TextView) v).getText().toString());
             });
         }
