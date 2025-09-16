@@ -13,8 +13,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class OpenAppScene extends BaseChildScene {
 
-    private static final String[] appList = {"酷我音乐", "高德地图", "酷狗音乐"};
-    private static final String[] appPkgList = {"cn.kuwo.kwmusiccar", "com.autonavi.amapauto", "com.kugou.android.auto"};
+    private static final String[] appList = {"酷我音乐", "高德地图", "地图", "酷狗音乐", "设置"};
+    private static final String[] appPkgList = {"cn.kuwo.kwmusiccar", "com.autonavi.amapauto", "com.autonavi.amapauto",
+            "com.kugou.android.auto", "com.android.settings"};
 
     @Override
     public BaseChildModel parseSceneToChild(SceneModel sceneModel) {

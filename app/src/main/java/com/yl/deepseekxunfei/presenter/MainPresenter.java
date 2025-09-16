@@ -286,12 +286,16 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     public void stopSpeaking() {
         if (mTts != null) {
-            // 1. 先获取Activity实例并判断是否为null
-            MainActivity activity = mActivity.get();
-            if (activity != null) {
-                // 2. 再访问Activity的控件
-                activity.texte_microphone.setVisibility(View.INVISIBLE);
-                activity.stopButton.setVisibility(View.INVISIBLE);
+            mTts.stopSpeaking();
+        }
+        if (mActivity.get().texte_microphone != null) {
+            if (mActivity.get().texte_microphone.isAttachedToWindow()) {
+                mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);//隐藏我在听
+            }
+        }
+        if (mActivity.get().stopButton != null) {
+            if (mActivity.get().stopButton.isAttachedToWindow()) {
+                mActivity.get().stopButton.setVisibility(View.INVISIBLE);//隐藏我在听
             }
         }
     }
@@ -299,14 +303,19 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     //文字转语音方法
     public void TTS(String str) {
         if (mTts == null || str == null || str.trim().isEmpty()) return;
-        mActivity.get().aiType = BotConstResponse.AIType.READING;
-        mActivity.get().TTSbutton.setVisibility(View.INVISIBLE);
-        mActivity.get().animFree.stop();
-        mActivity.get().read_button.setVisibility(View.VISIBLE);
-        mActivity.get().animRead.start();
-        mActivity.get().stopButton.setVisibility(View.VISIBLE);
-        mActivity.get().animThink.stop();
-        mActivity.get().think_button.setVisibility(View.INVISIBLE);
+        mActivity.get().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mActivity.get().aiType = BotConstResponse.AIType.READING;
+                mActivity.get().TTSbutton.setVisibility(View.INVISIBLE);
+                mActivity.get().animFree.stop();
+                mActivity.get().read_button.setVisibility(View.VISIBLE);
+                mActivity.get().animRead.start();
+                mActivity.get().stopButton.setVisibility(View.VISIBLE);
+                mActivity.get().animThink.stop();
+                mActivity.get().think_button.setVisibility(View.INVISIBLE);
+            }
+        });
         Log.e(TAG, "123131312: " + str.trim());
         mTts.stopSpeaking();
         int code = mTts.startSpeaking(str.trim(), mSynListener);
@@ -326,6 +335,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         stopSpeaking();
         stopCurrentCall();
         voiceManagerStop();
+        stopWeatherThread();
+    }
+
+    private void stopWeatherThread() {
+        mActivity.get().stopWeatherThread();
     }
 
     public void voiceManagerStop() {

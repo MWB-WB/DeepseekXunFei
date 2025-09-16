@@ -5,7 +5,6 @@ import android.app.Application;
 
 import com.iflytek.cloud.SpeechConstant;
 import com.iflytek.cloud.SpeechUtility;
-import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.ylcommon.utlis.ContextHolder;
 import com.yl.douyinapi.DouyinApi;
 import com.yl.gaodeApi.GaodeApi;

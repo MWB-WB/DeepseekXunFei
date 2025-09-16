@@ -83,7 +83,6 @@ import com.yl.ylcommon.utlis.BotConstResponse;
 import com.yl.ylcommon.utlis.JsonParser;
 import com.yl.ylcommon.utlis.KeyboardUtils;
 import com.yl.ylcommon.utlis.OptionPositionParser;
-import com.yl.ylcommon.utlis.PopUpTheKeyboard;
 import com.yl.ylcommon.utlis.TimeDownUtil;
 import com.yl.deepseekxunfei.view.HistoryDialog;
 import com.yl.gaodeApi.page.LocationResult;
@@ -1036,6 +1035,10 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     public void requestLocationPermission() {
         mPresenter.requestLocationPermission();
+    }
+
+    public void stopWeatherThread() {
+        uiHandler.removeCallbacks(weatherStreamRunnable);
     }
 
     //用来返回用户说的话或者输入的文本

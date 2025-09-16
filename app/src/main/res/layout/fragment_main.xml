@@ -29,7 +29,8 @@
         <!-- 路线规划 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginBottom="8dp"
             app:cardBackgroundColor="#23262f"
             app:cardCornerRadius="12dp">
@@ -63,7 +64,8 @@
         <!-- 休闲娱乐 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginBottom="8dp"
             app:cardBackgroundColor="#23262f"
             app:cardCornerRadius="12dp">
@@ -97,7 +99,8 @@
         <!-- 天气搜索 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:layout_marginBottom="8dp"
             app:cardBackgroundColor="#23262f"
             app:cardCornerRadius="12dp">
