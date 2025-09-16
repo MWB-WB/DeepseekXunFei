@@ -256,7 +256,7 @@ public class SceneManager {
             case VIDEO:
                 baseChildModel = videoScene.parseSceneToChild(sceneModel);
                 break;
-            case MUSIC:
+            case MUSIC://音乐
                 baseChildModel = musicScene.parseSceneToChild(sceneModel);
                 break;
             case SELECTION:

@@ -11,7 +11,9 @@ import android.content.pm.PackageManager;
 import android.graphics.drawable.AnimationDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.util.JsonReader;
 import android.util.Log;
@@ -42,6 +44,7 @@ import com.yl.deepseekxunfei.model.ChatMessage;
 import com.yl.deepseekxunfei.room.AppDatabase;
 import com.yl.deepseekxunfei.room.entity.ChatHistoryEntity;
 import com.yl.deepseekxunfei.view.PopupInputManager;
+import com.yl.kuwo.MusicKuwo;
 import com.yl.ylcommon.utlis.BotConstResponse;
 import com.yl.ylcommon.utlis.TextLineBreaker;
 import com.yl.ylcommon.utlis.TimeDownUtil;
@@ -77,7 +80,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     private static final String TAG = MainPresenter.class.getSimpleName();
     private static final String API_URL = "http://47.106.73.32:11434/api/chat";
-    private SpeechSynthesizer mTts;
+    public SpeechSynthesizer mTts;
     public SpeechRecognizer mIat;// 语音听写对象
     private SharedPreferences mSharedPreferences;//缓存
     private String mEngineType = SpeechConstant.TYPE_CLOUD;// 引擎类型
@@ -116,11 +119,12 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         } else if (v.getId() == R.id.send_button) {
             mActivity.get().isRecognize = false;
             mActivity.get().handleSendButtonClick();
+
         } else if (v.getId() == R.id.deep_crete_layout) {
             mActivity.get().swOpenClose();
         } else if (v.getId() == R.id.wdxzskeyboard) {
-            if (mIat != null && mIat.isListening()){
-                ToastUtil.show(mActivity.get(),"正在语音识别");
+            if (mIat != null && mIat.isListening()) {
+                ToastUtil.show(mActivity.get(), "正在语音识别");
                 return;
             }
             if (inputManager != null) {
@@ -142,6 +146,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         if (mActivity.get() == null) return;
         mActivity.get().stopSpeaking();
         mActivity.get().isNeedWakeUp = true;
+        mActivity.get().aiType = BotConstResponse.AIType.FREE;
+        if (mActivity.get().uiHandler != null) {
+            Log.d(TAG, "newChat: 执行");
+            mActivity.get().uiHandler.removeCallbacks(mActivity.get().weatherStreamRunnable);
+        }
         AppDatabase.getInstance(mActivity.get()).query(new AppDatabase.QueryCallBack() {
             @Override
             public void onCallBack(List<ChatHistoryEntity> chatHistoryEntities) {
@@ -277,9 +286,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
     public void stopSpeaking() {
         if (mTts != null) {
-            mTts.stopSpeaking();
-            mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);//隐藏我在听
-            mActivity.get().stopButton.setVisibility(View.INVISIBLE);//隐藏我在听
+            // 1. 先获取Activity实例并判断是否为null
+            MainActivity activity = mActivity.get();
+            if (activity != null) {
+                // 2. 再访问Activity的控件
+                activity.texte_microphone.setVisibility(View.INVISIBLE);
+                activity.stopButton.setVisibility(View.INVISIBLE);
+            }
         }
     }
 
@@ -487,13 +500,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
             String partialResponse = messageObject.get("content").getAsString();
             done = jsonResponse.get("done").getAsBoolean();
-            Log.d(TAG, "processJsonResponse: "+done);
+            Log.d(TAG, "processJsonResponse: " + done);
             if (botMessageIndex == -1) {
                 mActivity.get().addMessageByBot("");
                 botMessageIndex = chatMessages.size() - 1;
                 chatMessages.get(botMessageIndex).setNeedShowFoldText(false);
             }
-
+            Log.d(TAG, "processJsonResponse: " + partialResponse);
             handleResponseContent(partialResponse, done);
         }
 
@@ -552,7 +565,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 mActivity.get().setTextByIndex(botMessageIndex, response);
 
                 if (done && !isStopRequested) {
-                    Log.d(TAG, "updateResponseContent: "+response+"\t"+done);
+                    Log.d(TAG, "updateResponseContent: " + response + "\t" + done);
                     handleCompletedResponse(response);
                 }
 
@@ -589,8 +602,12 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().runOnUiThread(() -> {
                 mActivity.get().scrollByPosition(chatMessages.size() - 1);
             });
-
-            TTS("网络波动较大，请稍后再试");
+            mActivity.get().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TTS("网络波动较大，请稍后再试");
+                }
+            });
         }
 
         private void ensureCleanup() {
@@ -599,13 +616,13 @@ public class MainPresenter extends BasePresenter<MainActivity> {
                 mActivity.get().textFig = false;
 
                 if (botMessageIndex != -1) {
-                    if (botMessageIndex > 0 && botMessageIndex<chatMessages.size()){
+                    if (botMessageIndex > 0 && botMessageIndex < chatMessages.size()) {
                         chatMessages.get(botMessageIndex).setOver(true);
-                    }else {
+                    } else {
                         mActivity.get().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                ToastUtil.show(mActivity.get(),"请等待当前问题回复完成或者点击停止");
+                                ToastUtil.show(mActivity.get(), "请等待当前问题回复完成或者点击停止");
                             }
                         });
                     }
@@ -650,7 +667,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         @Override
         public void onResult(RecognizerResult recognizerResult, boolean b) {
             Log.d(TAG, "讯飞合成: " + recognizerResult.getResultString());
-            mActivity.get().recognizeResult(recognizerResult, b);
+            if (mActivity != null && mActivity.get() != null) {
+                mActivity.get().recognizeResult(recognizerResult, b);
+            } else {
+                Log.d(TAG, "onResult: 为空");
+            }
         }
 
         //识别错误回调
@@ -667,7 +688,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     };
 
     //合成监听器
-    private SynthesizerListener mSynListener = new SynthesizerListener() {
+    public SynthesizerListener mSynListener = new SynthesizerListener() {
         //会话结束回调接口，没有错误时，error为null
         public void onCompleted(SpeechError error) {
             Log.d(TAG, "播放完毕");
@@ -677,10 +698,12 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().animStart();
             mActivity.get().animRead.stop();
             mActivity.get().read_button.setVisibility(View.INVISIBLE);
+            mActivity.get().animRead.stop();
             mActivity.get().stopButton.setVisibility(View.INVISIBLE);
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }
+
         }
 
         //缓冲进度回调
@@ -722,7 +745,9 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         TimeDownUtil.startTimeDown(new TimeDownUtil.CountTimeListener() {
             @Override
             public void onTimeFinish() {
-                mActivity.get().onTimeFinish(position);
+                if (mActivity != null && mActivity.get() != null) {
+                    mActivity.get().onTimeFinish(position);
+                }
             }
         });
     }
@@ -756,7 +781,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mIat.destroy();
             mIat = null;
         }
-
+        // 检查Activity是否还存在再停止活动
+        if (mActivity.get() != null) {
+            stopCurrentActivities();
+        }
         stopCurrentActivities();
     }
 

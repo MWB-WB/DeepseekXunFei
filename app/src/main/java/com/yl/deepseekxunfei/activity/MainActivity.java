@@ -13,6 +13,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
@@ -21,10 +22,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 
 import androidx.annotation.NonNull;
@@ -138,7 +141,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public boolean isRecognize = false;
     private BackTextToAction backTextToAction = null;
     private ImageButton wdxzskeyboard;
-    private Handler uiHandler = new Handler(Looper.getMainLooper());
+    public Handler uiHandler = new Handler(Looper.getMainLooper());
     public ImageButton read_button;
     public ImageButton think_button;
     public AnimationDrawable animFree;//序列帧
@@ -231,6 +234,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void handleSendButtonClick() {
+        mPresenter.mTts.stopSpeaking();
         stopButton.setVisibility(View.INVISIBLE);
         texte_microphone.setVisibility(View.INVISIBLE);
         mPresenter.mIat.stopListening();
@@ -327,6 +331,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             commitText(text);
         }
         SystemPropertiesReflection.set("persist.sys.yl.text", "");
+        Log.d(TAG, "onResume: 进入");
+        TTSbutton.setVisibility(View.VISIBLE);
+        animFree.start();
+        animThink.stop();
+        think_button.setVisibility(View.INVISIBLE);
+        animRead.stop();
+        read_button.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -511,7 +522,11 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 });
             }
         } else {
+            Log.d(TAG, "commitText1: " + !mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver());
+            Log.d(TAG, "commitText2: " + aiType);
             if (!mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver() || aiType == BotConstResponse.AIType.SPEAK) {
+                Log.d(TAG, "commitText3: " + !mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex()).isOver());
+                Log.d(TAG, "commitText4: " + aiType);
                 ToastUtil.show(this, "请先等待上一个问题回复完成在进行提问");
             } else {
                 mPresenter.stopSpeaking();//停止tts合成
@@ -568,9 +583,78 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             case MotionEvent.ACTION_DOWN:
                 View view = getCurrentFocus();
                 KeyboardUtils.hideKeyboard(ev, view, this);
+// 获取当前点击的控件
+                View clickedView = getViewAtPosition(this, ev.getRawX(), ev.getRawY());
+
+                // 判断点击的是否是Button或ImageButton
+                boolean isButton = clickedView instanceof Button || clickedView instanceof ImageButton;
+
+                // 仅当不是按钮，且正在识别、停止按钮可见时，执行停止逻辑
+                if (!isButton
+                        && mPresenter.mIat != null
+                        && mPresenter.mIat.isListening()
+                        && stopButton.getVisibility() == View.VISIBLE) {
+
+                    // 隐藏停止按钮并停止识别
+                    stopButton.setVisibility(View.INVISIBLE);
+                    mPresenter.stopListening();
+                    texte_microphone.setVisibility(View.INVISIBLE);
+                    TTSbutton.setVisibility(View.VISIBLE);
+                    read_button.setVisibility(View.INVISIBLE);
+                    animFree.start();
+                    animRead.stop();
+                    think_button.setVisibility(View.INVISIBLE);
+                    animThink.stop();
+                    mPresenter.voiceManagerStop();
+                    handleStopOutput();
+
+                    return true; // 消费事件
+                }
                 break;
         }
         return super.dispatchTouchEvent(ev);
+    }
+
+    // 必须实现这个方法
+    private View getViewAtPosition(Activity activity, float x, float y) {
+        View rootView = activity.getWindow().getDecorView();
+        MotionEvent event = MotionEvent.obtain(
+                SystemClock.uptimeMillis(),
+                SystemClock.uptimeMillis(),
+                MotionEvent.ACTION_DOWN,
+                x,
+                y,
+                0
+        );
+        return findViewAtPosition(rootView, event);
+    }
+
+    // 必须实现这个辅助方法
+    private View findViewAtPosition(View view, MotionEvent event) {
+        if (view.getVisibility() != View.VISIBLE) {
+            return null;
+        }
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        Rect rect = new Rect(
+                location[0],
+                location[1],
+                location[0] + view.getWidth(),
+                location[1] + view.getHeight()
+        );
+        if (rect.contains((int) event.getRawX(), (int) event.getRawY())) {
+            if (view instanceof ViewGroup) {
+                ViewGroup group = (ViewGroup) view;
+                for (int i = 0; i < group.getChildCount(); i++) {
+                    View child = findViewAtPosition(group.getChildAt(i), event);
+                    if (child != null) {
+                        return child;
+                    }
+                }
+            }
+            return view;
+        }
+        return null;
     }
 
     //添加到对话列表
@@ -794,7 +878,10 @@ public class MainActivity extends BaseActivity<MainPresenter> {
 
     public void newChat() {
         mPresenter.mIat.stopListening();//停止语音转文字
-        uiHandler.removeCallbacks(weatherStreamRunnable);
+        if (uiHandler != null) {
+            Log.d(TAG, "newChat: 执行");
+            uiHandler.removeCallbacks(weatherStreamRunnable);
+        }
         if (mPresenter.done != null || mainFragment.mainPresenter.done != null) {
             if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done) {
                 if (recyFragment != null && recyFragment.isVisible()) {
@@ -818,15 +905,15 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 });
             }
         }
-        TTSbutton.setVisibility(View.VISIBLE);
-        animFree.start();
-        animRead.stop();
-        read_button.setVisibility(View.INVISIBLE);
+        animFree.stop();
+        TTSbutton.setVisibility(View.INVISIBLE);
+        read_button.setVisibility(View.VISIBLE);
+        animRead.start();
         animThink.stop();
         think_button.setVisibility(View.INVISIBLE);
         mPresenter.mIat.stopListening();//停止
         texte_microphone.setVisibility(View.INVISIBLE);
-        stopButton.setVisibility(View.INVISIBLE);
+        stopButton.setVisibility(View.VISIBLE);
     }
 
     private void resetChatState() {
@@ -995,7 +1082,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     private int weatherIndex = 0;
-    private Runnable weatherStreamRunnable = new Runnable() {
+    public Runnable weatherStreamRunnable = new Runnable() {
         @Override
         public void run() {
             synchronized (MainActivity.this) {

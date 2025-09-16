@@ -24,6 +24,7 @@ import com.yl.deepseekxunfei.model.ComputeChildModel;
 import com.yl.deepseekxunfei.model.MusicControlChildModel;
 import com.yl.deepseekxunfei.model.NavControlChildModel;
 import com.yl.deepseekxunfei.model.OpenAppChildMode;
+import com.yl.deepseekxunfei.presenter.MainPresenter;
 import com.yl.deepseekxunfei.room.entity.AMapLocationEntity;
 import com.yl.deepseekxunfei.room.ulti.JSONReader;
 import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
@@ -73,6 +74,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     public int code = 0;//设置家/公司
     public int goCode = 0;//回家/公司
     GeocodingApi geocodingApi = new GeocodingApi();
+    public int delayTime = 5000;//固定延迟时间
 
     public SceneAction(MainActivity mainActivity) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
@@ -133,7 +135,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 } else {
                     mainActivity.addMessageAndTTS(new ChatMessage("请打开位置访问权限", false, "", false)
                             , "请打开位置访问权限");
-//                    mainActivity.startTimeOut();
+                    mainActivity.startTimeOut();
                 }
                 break;
             // 关键字导航
@@ -323,7 +325,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         }, 1500);
     }
 
-    private void sendGaodeBroadcast(int keyType){
+    private void sendGaodeBroadcast(int keyType) {
         Intent intent = new Intent();
         intent.setAction("AUTONAVI_STANDARD_BROADCAST_RECV");
         intent.putExtra("KEY_TYPE", keyType);
@@ -383,8 +385,16 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 @Override
                 public void run() {
                     Intent intentForPackage = mainActivity.getPackageManager().getLaunchIntentForPackage(appPkgName);
-                    intentForPackage.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                    mainActivity.startActivity(intentForPackage);
+                    if (intentForPackage == null) {
+                        // 先让机器人回复固定内容
+                        UnKnownOpenAppAction();
+                    } else {
+                        // 先让机器人回复固定内容
+                        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false),
+                                BotConstResponse.ok);
+                        intentForPackage.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                        mainActivity.startActivity(intentForPackage);
+                    }
                 }
             }, 1500);
         } catch (Exception e) {
@@ -399,11 +409,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     }
 
     private void musicStartAndPlayAction() {
-        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false), BotConstResponse.hotSongPlay);
+        mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.hotSongPlay, false, "", false), BotConstResponse.hotSongPlay);
         mHandler.postDelayed(() -> {
             musicKuwo.open(true);
             musicKuwo.continuePlay();
-        }, 2000);
+        }, 5000);
     }
 
     private void stopAction() {
@@ -494,8 +504,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             @Override
             public void onSuccess(List<PluginMediaModel> resultList) {
                 mainActivity.runOnUiThread(() -> {
-                    String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
-                    mainActivity.addMessageAndTTS(new ChatMessage(response, false, "", false), response);
+                    Log.d("酷我_1", "onSuccess: 1234567890-");
+//                    String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
+                    mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false), BotConstResponse.ok);
                 });
                 mHandler.postDelayed(() -> {
                     musicKuwo.play(resultList, 0);
@@ -526,10 +537,23 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.runOnUiThread(() -> {
                     String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
                     mainActivity.addMessageAndTTS(new ChatMessage(response, false, "", false), response);
+                    Log.d("正则表达式之前长度：", "onSuccess: " + response.length());
+                    Log.d("正则表达式之前长度：", "onSuccess: " + response);
+                    // 使用正则表达式替换所有非文字字符（保留字母、汉字等）
+                    String textOnly = response.replaceAll("[^a-zA-Z0-9\u4e00-\u9fa5]", "");
+                    Log.d("正则表达式之后长度：", "onSuccess: "+textOnly);
+                    if (textOnly.length() <= 16) {
+                        delayTime = 4500;
+                        // 如果长度超过16，每多1个字符增加100毫秒
+                    } else if (response.length() > 16) {
+                        int extraLength = response.length() - 16;
+                        delayTime += extraLength * 260;
+                    }
+                    Log.d("延迟时间：", "onSuccess: "+delayTime);
+                    mHandler.postDelayed(() -> {
+                        musicKuwo.play(resultList, 0);
+                    }, delayTime);
                 });
-                mHandler.postDelayed(() -> {
-                    musicKuwo.play(resultList, 0);
-                }, 3000);
             }
 
             @Override
@@ -573,7 +597,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.setCurrentChatOver();
                 mainActivity.setStopRequest(true);
                 String content = mainActivity.filterSensitiveContent(entry.getContent()); // 过滤敏感词
-                mainActivity.updateContext(baseChildModel.getText(), content,false); // 更新上下文
+                mainActivity.updateContext(baseChildModel.getText(), content, false); // 更新上下文
                 Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
                 Log.d("TAG", "nearbyAction: " + content);
                 mainActivity.addMessageAndTTS(new ChatMessage(entry.getContent(), false, "", false)
@@ -683,7 +707,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
         //获取当前所在位置
-        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
+        Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)
@@ -733,8 +757,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         // 先让机器人回复固定内容
         mainActivity.addMessageAndTTS(new ChatMessage(botResponse, false, "", false)
                 , botResponse);
-        Log.d("TAG", "nearbyAction: "+baseChildModel.getText());
-        Log.d("TAG", "nearbyAction: "+botResponse);
+        Log.d("TAG", "nearbyAction: " + baseChildModel.getText());
+        Log.d("TAG", "nearbyAction: " + botResponse);
         mainActivity.startTimeOut();
         String city = ((NavChildMode) baseChildModel).getEntities().stream()
                 .filter(e -> e.getType() == NavChildMode.GeoEntityType.CITY)
