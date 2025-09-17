@@ -106,7 +106,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private static final String IMSTART_TAG = "<|imstart|>";
     private PopupInputManager inputManager;
     private OkHttpClient httpClient;
-    public Boolean done = null;//是否正在输出
+    public boolean done = false;//是否输出完成
 
     @Override
     protected void onItemClick(View v) {
@@ -118,6 +118,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             mActivity.get().newChat();
         } else if (v.getId() == R.id.send_button) {
             mActivity.get().isRecognize = false;
+            done = true;
             mActivity.get().handleSendButtonClick();
 
         } else if (v.getId() == R.id.deep_crete_layout) {

@@ -881,28 +881,26 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             Log.d(TAG, "newChat: 执行");
             uiHandler.removeCallbacks(weatherStreamRunnable);
         }
-        if (mPresenter.done != null || mainFragment.mainPresenter.done != null) {
-            if (Boolean.TRUE.equals(mPresenter.done) || mainFragment.mainPresenter.done) {
-                if (recyFragment != null && recyFragment.isVisible()) {
-                    replaceFragment(0);
-                }
-
-                if (!mPresenter.chatMessages.isEmpty()) {
-
-                    resetChatState();
-                    saveCurrentChat();
-                    initNewChat();//初始化
-                } else {
-                    addSystemMessage("还没有聊天记录");
-                }
-            } else {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                    }
-                });
+        if (mPresenter.done) {
+            if (recyFragment != null && recyFragment.isVisible()) {
+                replaceFragment(0);
             }
+
+            if (!mPresenter.chatMessages.isEmpty()) {
+
+                resetChatState();
+                saveCurrentChat();
+                initNewChat();//初始化
+            } else {
+                addSystemMessage("还没有聊天记录");
+            }
+        } else {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+
+                }
+            });
         }
         animFree.stop();
         TTSbutton.setVisibility(View.INVISIBLE);
