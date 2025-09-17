@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.core.content.ContextCompat;
@@ -27,6 +28,7 @@ import com.yl.deepseekxunfei.model.OpenAppChildMode;
 import com.yl.deepseekxunfei.presenter.MainPresenter;
 import com.yl.deepseekxunfei.room.entity.AMapLocationEntity;
 import com.yl.deepseekxunfei.room.ulti.JSONReader;
+import com.yl.deepseekxunfei.scene.utils.DateTime;
 import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
 import com.yl.gaodeApi.poi.ReverseGeography;
 import com.yl.ylcommon.utlis.KnowledgeEntry;
@@ -75,6 +77,10 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     public int goCode = 0;//回家/公司
     GeocodingApi geocodingApi = new GeocodingApi();
     public int delayTime = 5000;//固定延迟时间
+    private boolean isPresenterSpeakCompleted; // 记录播放状态
+    private boolean isNeedPlayMusicAfterTTS = false;
+    private boolean isMusicSearchAction = false;
+    List<PluginMediaModel> resultListMusiz = new ArrayList<>();
 
     public SceneAction(MainActivity mainActivity) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
@@ -88,6 +94,34 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         weatherAPI.setOnWeatherListener(this);
         weatherAPI.setOnForecastWeatherListener(this);
         mHandler = new Handler(Looper.myLooper());
+        mainActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mainActivity.getPresenter().setOnSpeakStatusListener(new MainPresenter.OnSpeakStatusListener() {
+                    @Override
+                    public void onSpeakCompleted() {
+                        Log.d("播放完毕", "onSpeakCompleted: 回调");
+                        Log.d("播放完毕", "onSpeakCompleted: 回调" + isMusicSearchAction);
+                        isPresenterSpeakCompleted = true;
+                        if (isNeedPlayMusicAfterTTS) {
+                            musicKuwo.open(true);
+                            musicKuwo.continuePlay();
+                            isNeedPlayMusicAfterTTS = false; // 重置标志位
+                        } else if (isMusicSearchAction) {
+                            mHandler.postDelayed(() -> {
+                                musicKuwo.play(resultListMusiz, 0);
+                            }, 10);
+                            isMusicSearchAction = false;
+                        }
+                    }
+
+                    @Override
+                    public void onSpeakStarted() {
+                        isPresenterSpeakCompleted = false;
+                    }
+                });
+            }
+        });
     }
 
     public SceneAction() {
@@ -285,6 +319,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
             case SceneTypeConst.CONTROL_NAV:
                 NavControlAction(baseChildModel);
                 break;
+            case SceneTypeConst.DATETIME:
+                DateTimeScene();
+                break;
 //            case SceneTypeConst.JOKECLASS:
 //                new Thread(new Runnable() {
 //                    @Override
@@ -374,6 +411,11 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.unknownOpenApp, false, "", false),
                 BotConstResponse.unknownOpenApp);
     }
+    private void DateTimeScene(){
+        DateTime dateTime = new DateTime();
+        mainActivity.addMessageAndTTS(new ChatMessage(dateTime.dateTime(), false, "", false),
+                dateTime.dateTime());
+    }
 
     private void OpenAppAction(String appPkgName) {
         try {
@@ -410,10 +452,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void musicStartAndPlayAction() {
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.hotSongPlay, false, "", false), BotConstResponse.hotSongPlay);
-        mHandler.postDelayed(() -> {
-            musicKuwo.open(true);
-            musicKuwo.continuePlay();
-        }, 5000);
+        isNeedPlayMusicAfterTTS = true; // 标记需要在 TTS 完成后播放音乐
     }
 
     private void stopAction() {
@@ -537,22 +576,9 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.runOnUiThread(() -> {
                     String response = BotConstResponse.playMusic.replace("%s", resultList.get(0).getArtists() + "的" + resultList.get(0).getTitle());
                     mainActivity.addMessageAndTTS(new ChatMessage(response, false, "", false), response);
-                    Log.d("正则表达式之前长度：", "onSuccess: " + response.length());
-                    Log.d("正则表达式之前长度：", "onSuccess: " + response);
-                    // 使用正则表达式替换所有非文字字符（保留字母、汉字等）
-                    String textOnly = response.replaceAll("[^a-zA-Z0-9\u4e00-\u9fa5]", "");
-                    Log.d("正则表达式之后长度：", "onSuccess: "+textOnly);
-                    if (textOnly.length() <= 16) {
-                        delayTime = 4500;
-                        // 如果长度超过16，每多1个字符增加100毫秒
-                    } else if (response.length() > 16) {
-                        int extraLength = response.length() - 16;
-                        delayTime += extraLength * 260;
-                    }
-                    Log.d("延迟时间：", "onSuccess: "+delayTime);
-                    mHandler.postDelayed(() -> {
-                        musicKuwo.play(resultList, 0);
-                    }, delayTime);
+                    Log.d("TAG", "onSuccess: " + resultList);
+                    resultListMusiz = resultList;
+                    isMusicSearchAction = true;
                 });
             }
 

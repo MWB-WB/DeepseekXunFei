@@ -22,6 +22,6 @@ public enum SceneType {
     GOHOMETOWORK, //回家或者公司
     OPENAPP, //打开APP
     CONTROLMUSIC, //媒体控制
-    CONTROLNAV //导航控制
-
+    CONTROLNAV, //导航控制
+    DATETIMETYPE //当前时间
 }

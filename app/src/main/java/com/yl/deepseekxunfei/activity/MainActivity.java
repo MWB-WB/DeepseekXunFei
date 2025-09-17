@@ -147,7 +147,13 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public AnimationDrawable animRead;//序列帧
     public AnimationDrawable animThink;//序列帧
     public TextView texte_microphone;//我在听
-
+    public MainPresenter presenter;
+    public MainPresenter getPresenter() {
+        if (mPresenter == null) {
+            mPresenter = new MainPresenter(); // 懒加载初始化，避免返回 null
+        }
+        return mPresenter;
+    }
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -157,6 +163,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         animFree = (AnimationDrawable) TTSbutton.getBackground();
         animRead = (AnimationDrawable) read_button.getBackground();
         animThink = (AnimationDrawable) think_button.getBackground();
+
         mPresenter.TTS("我是小天，很高兴见到你！");
         JSONReader.insertJsonFileData(this, "result.json");//高德城市编码表中的数据添加到数据库
         animStart();
@@ -192,6 +199,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         registerBroadCast();
         myHandler = new MyHandler(this);
         sceneManager = new SceneManager(this);
+        presenter = new MainPresenter();
         mSceneAction = new SceneAction(this);
         textFig = false;
         mPresenter.setParam();

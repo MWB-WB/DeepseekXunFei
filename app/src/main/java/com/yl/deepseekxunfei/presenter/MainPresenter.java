@@ -107,7 +107,19 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     private PopupInputManager inputManager;
     private OkHttpClient httpClient;
     public boolean done = false;//是否输出完成
-
+    // 播放状态标识（true表示播放完毕，false表示正在播放）
+    private boolean isSpeakCompleted = false;
+    // 播放状态监听器
+    private OnSpeakStatusListener speakStatusListener;
+    // 定义播放状态监听接口
+    public interface OnSpeakStatusListener {
+        void onSpeakCompleted();
+        void onSpeakStarted();
+    }
+    // 设置监听器
+    public void setOnSpeakStatusListener(OnSpeakStatusListener listener) {
+        this.speakStatusListener = listener;
+    }
     @Override
     protected void onItemClick(View v) {
         if (v.getId() == R.id.deep_think_layout) {
@@ -718,7 +730,12 @@ public class MainPresenter extends BasePresenter<MainActivity> {
             if (error == null) {
                 mActivity.get().onSpeakCompleted();
             }
-
+            isSpeakCompleted = true;
+            Log.d(TAG, "onCompleted: 0"+speakStatusListener);
+            if (speakStatusListener != null) {
+                Log.d(TAG, "onCompleted: 播放完毕"+ true);
+                speakStatusListener.onSpeakCompleted();
+            }
         }
 
         //缓冲进度回调
@@ -729,6 +746,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         //开始播放
         public void onSpeakBegin() {
+            isSpeakCompleted = false;
+            if (speakStatusListener != null) {
+                speakStatusListener.onSpeakStarted();
+            }
             mActivity.get().onSpeakBegin();
         }
 
@@ -752,7 +773,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         }
     };
-
+    // 提供获取当前播放状态的方法
+    public boolean isSpeakCompleted() {
+        return isSpeakCompleted;
+    }
     //超时逻辑处理
     public void startTime(int position) {
         Log.d(TAG, "startTime12456888: 超时");
@@ -1030,5 +1054,4 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         }
         return chatMessages.size();
     }
-
 }
