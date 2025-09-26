@@ -128,30 +128,35 @@ public class VoiceManager {
                 //开始播放
                 @Override
                 public void onSpeakBegin() {
-                    Log.d("TAG", "onSpeakBegin: "+mainActivity.isRecognize);
-                    mainActivity.presenter.mIat.stopListening();
-                    mainActivity.presenter.mIat.cancel();
+                    Log.d("TAG", "onSpeakBegin: " + mainActivity.isRecognize);
+                    mainActivity.getPresenter().mIat.stopListening();
+                    mainActivity.getPresenter().mIat.cancel();
                 }
+
                 //缓冲进度
                 @Override
                 public void onBufferProgress(int i, int i1, int i2, String s) {
 
                 }
+
                 //暂停播放
                 @Override
                 public void onSpeakPaused() {
 
                 }
+
                 //恢复播放回调接口
                 @Override
                 public void onSpeakResumed() {
 
                 }
+
                 //播放进度回调
                 @Override
                 public void onSpeakProgress(int i, int i1, int i2) {
 
                 }
+
                 //会话结束回调接口，没有错误时，error为null
                 @Override
                 public void onCompleted(SpeechError error) {

@@ -148,7 +148,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     public AnimationDrawable animRead;//序列帧
     public AnimationDrawable animThink;//序列帧
     public TextView texte_microphone;//我在听
-    public MainPresenter presenter;
     public MainPresenter getPresenter() {
         if (mPresenter == null) {
             mPresenter = new MainPresenter(); // 懒加载初始化，避免返回 null
@@ -200,7 +199,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         registerBroadCast();
         myHandler = new MyHandler(this);
         sceneManager = new SceneManager(this);
-        presenter = new MainPresenter();
         mSceneAction = new SceneAction(this);
         textFig = false;
         mPresenter.setParam();
