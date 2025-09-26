@@ -3,6 +3,8 @@ package com.yl.deepseekxunfei.view;
 import android.app.Dialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -21,6 +23,8 @@ import com.yl.ylcommon.utlis.DeleteDialogHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import okhttp3.internal.http2.Header;
 
 public class HistoryDialog extends Dialog implements View.OnClickListener, HistoryRecyAdapter.onButtonClick {
 
@@ -64,18 +68,26 @@ public class HistoryDialog extends Dialog implements View.OnClickListener, Histo
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.setAdapter(historyRecyAdapter);
     }
-
+    //历史记录确定按钮
     @Override
     public void onClick(View v) {
         if (v.getId() == R.id.custom_dialog_btn) {
-            if (!mData.isEmpty()) {
-                ChatHistoryEntity chatHistoryEntity = mData.get(historyRecyAdapter.getClickPosition());
-                if (onDialogDataBack != null) {
-                    onDialogDataBack.dataBack(chatHistoryEntity);
+            mainActivity.handleSendButtonClick();
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (!mData.isEmpty()) {
+                        ChatHistoryEntity chatHistoryEntity = mData.get(historyRecyAdapter.getClickPosition());
+                        if (onDialogDataBack != null) {
+                            onDialogDataBack.dataBack(chatHistoryEntity);
+                        }
+                    }
+                    dismiss();
+                    mainActivity.getChatMessages().get(mainActivity.getChatMessagesSizeIndex()).setOver(true);
                 }
-            }
-            dismiss();
-            mainActivity.getChatMessages().get(mainActivity.getChatMessagesSizeIndex()).setOver(true);
+            },200);
+
         }
     }
 

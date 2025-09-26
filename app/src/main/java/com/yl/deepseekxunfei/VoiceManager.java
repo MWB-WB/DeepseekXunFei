@@ -37,6 +37,7 @@ public class VoiceManager {
     private static final List<String> SENSITIVE_WORDS = Arrays.asList(
             "DeepSeek", "deepseek", "DEEPSEEK", "Deepseek", "deep seek", "Deep Seek"
     );//敏感词列表
+    private boolean startPlaying = true;//开始播放标志位（用于控制是否打开语音识别）
 
     // 初始化语音引擎
     public void init(Context context) {
@@ -45,7 +46,7 @@ public class VoiceManager {
         mWorkThread.start();
         //初始化动画效果
         String deepseekVoiceSpeed = SystemPropertiesReflection.get("deepseek_voice_speed", "55");
-        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "aisjiuxu");
+        String deepseekVoicespeaker = SystemPropertiesReflection.get("deepseek_voice_speaker", "xiaoyan");
         if (deepseekVoicespeaker.equals("许久")) {
             deepseekVoicespeaker = "aisjiuxu";
         } else if (deepseekVoicespeaker.equals("小萍")) {
@@ -124,31 +125,34 @@ public class VoiceManager {
         // 在主线程执行语音播报
         new Handler(Looper.getMainLooper()).post(() -> {
             mTts.startSpeaking(TTSBiao, new SynthesizerListener() {
+                //开始播放
                 @Override
                 public void onSpeakBegin() {
-
+                    Log.d("TAG", "onSpeakBegin: "+mainActivity.isRecognize);
+                    mainActivity.presenter.mIat.stopListening();
+                    mainActivity.presenter.mIat.cancel();
                 }
-
+                //缓冲进度
                 @Override
                 public void onBufferProgress(int i, int i1, int i2, String s) {
 
                 }
-
+                //暂停播放
                 @Override
                 public void onSpeakPaused() {
 
                 }
-
+                //恢复播放回调接口
                 @Override
                 public void onSpeakResumed() {
 
                 }
-
+                //播放进度回调
                 @Override
                 public void onSpeakProgress(int i, int i1, int i2) {
 
                 }
-
+                //会话结束回调接口，没有错误时，error为null
                 @Override
                 public void onCompleted(SpeechError error) {
                     if (mTextBuffer.toString().trim().length() <= 0) {
@@ -174,7 +178,7 @@ public class VoiceManager {
                     mIsSpeaking = false;
                     Log.d("TAG", "onCompleted: " + error);
                     if (error == null) {
-                        Log.d("停止", "onCompleted: ");
+
                     }
                 }
 

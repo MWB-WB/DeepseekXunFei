@@ -6,6 +6,8 @@ import android.util.Log;
 import com.hankcs.hanlp.HanLP;
 import com.hankcs.hanlp.seg.Segment;
 import com.hankcs.hanlp.seg.common.Term;
+import com.yl.deepseekxunfei.activity.MainActivity;
+import com.yl.deepseekxunfei.scene.actoin.SceneAction;
 import com.yl.deepseekxunfei.scene.utils.DateTime;
 import com.yl.deepseekxunfei.scene.utils.GoHomeOrWorkProcessing;
 import com.yl.deepseekxunfei.model.BaseChildModel;
@@ -47,6 +49,7 @@ public class SceneManager {
     private Context mContext;
     private CountDownLatch countDownLatch;
     private DateTime dateTime;
+    private SceneAction sceneAction;
     // 连接词集合（可扩展）
     private static final Set<String> CONJUNCTIONS = new HashSet<>(Arrays.asList(
             "然后", "之后", "接着", "随后"
@@ -61,6 +64,10 @@ public class SceneManager {
         initChildScene();
     }
 
+    public List<SceneType> getLastSceneTypeList() {
+        return lastSceneTypeList;
+    }
+
     private void initChildScene() {
         weatherScene = new WeatherScene();
         navScene = new NavScene(mContext);
@@ -72,6 +79,7 @@ public class SceneManager {
         musicControlScene = new MusicControlScene();
         navControlScene = new NavControlScene();
         dateTime = new DateTime();
+        sceneAction = new SceneAction();
     }
 
     public List<BaseChildModel> parseToScene(String text) {
@@ -154,7 +162,7 @@ public class SceneManager {
             resultModel.setScene(SceneType.MOVIE);
         } else if (wordNLPModel.getN().contains("视频")) {
             resultModel.setScene(SceneType.VIDEO);
-        }else if (SceneJudgeUtil.getInstance().isTimeQuery(text)){
+        } else if (SceneJudgeUtil.getInstance().isTimeQuery(text)) {
             resultModel.setScene(SceneType.DATETIMETYPE);
         }
 //        else if (wordNLPModel.getN().contains("笑话")) {

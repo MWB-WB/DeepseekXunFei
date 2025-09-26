@@ -125,10 +125,11 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         if (v.getId() == R.id.deep_think_layout) {
             mActivity.get().changeDeepThinkMode();
         } else if (v.getId() == R.id.historyButton) {
-            handleHistoryClick();
+            handleHistoryClick();//历史对话
         } else if (v.getId() == R.id.xjianduihua) {
-            mActivity.get().newChat();
+            mActivity.get().newChat();//新建对话
         } else if (v.getId() == R.id.send_button) {
+            //停止按钮
             mActivity.get().isRecognize = false;
             done = true;
             mActivity.get().handleSendButtonClick();
@@ -147,22 +148,25 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     private void handleHistoryClick() {
-        mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
-        mActivity.get().animFree.start();
-        mActivity.get().animRead.stop();
-        mActivity.get().read_button.setVisibility(View.INVISIBLE);
-        mActivity.get().animThink.stop();
-        mActivity.get().think_button.setVisibility(View.INVISIBLE);
-        mIat.stopListening();//停止
-        mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);
-        mActivity.get().stopButton.setVisibility(View.INVISIBLE);
-        if (mActivity.get() == null) return;
-        mActivity.get().stopSpeaking();
-        mActivity.get().isNeedWakeUp = true;
-        mActivity.get().aiType = BotConstResponse.AIType.FREE;
-        if (mActivity.get().uiHandler != null) {
-            Log.d(TAG, "newChat: 执行");
-            mActivity.get().uiHandler.removeCallbacks(mActivity.get().weatherStreamRunnable);
+        if (done){
+            mActivity.get().TTSbutton.setVisibility(View.VISIBLE);
+            mActivity.get().animFree.start();
+            mActivity.get().animRead.stop();
+            mActivity.get().read_button.setVisibility(View.INVISIBLE);
+            mActivity.get().animThink.stop();
+            mActivity.get().think_button.setVisibility(View.INVISIBLE);
+            mIat.stopListening();//停止
+            mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);
+            mActivity.get().stopButton.setVisibility(View.INVISIBLE);
+            if (mActivity.get() == null) return;
+            mActivity.get().stopSpeaking();
+            mActivity.get().isNeedWakeUp = true;
+            mActivity.get().aiType = BotConstResponse.AIType.FREE;
+            if (mActivity.get().uiHandler != null) {
+                Log.d(TAG, "newChat: 执行");
+                mActivity.get().uiHandler.removeCallbacks(mActivity.get().weatherStreamRunnable);
+            }
+
         }
         AppDatabase.getInstance(mActivity.get()).query(new AppDatabase.QueryCallBack() {
             @Override
@@ -236,7 +240,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         String deepseekVoiceSpeed = SystemPropertiesReflection.get("persist.sys.deepseek_voice_speed", "60");
         String deepseekVoicespeaker = mapSpeakerName(
-                SystemPropertiesReflection.get("persist.sys.deepseek_voice_speaker", "aisjiuxu")
+                SystemPropertiesReflection.get("persist.sys.deepseek_voice_speaker", "xiaoyan")
         );
 
         // 设置语音合成参数
@@ -301,14 +305,16 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         if (mTts != null) {
             mTts.stopSpeaking();
         }
-        if (mActivity.get().texte_microphone != null) {
-            if (mActivity.get().texte_microphone.isAttachedToWindow()) {
-                mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);//隐藏我在听
+        if(mActivity.get()!=null){
+            if (mActivity.get().texte_microphone != null) {
+                if (mActivity.get().texte_microphone.isAttachedToWindow()) {
+                    mActivity.get().texte_microphone.setVisibility(View.INVISIBLE);//隐藏我在听
+                }
             }
-        }
-        if (mActivity.get().stopButton != null) {
-            if (mActivity.get().stopButton.isAttachedToWindow()) {
-                mActivity.get().stopButton.setVisibility(View.INVISIBLE);//隐藏我在听
+            if (mActivity.get().stopButton != null) {
+                if (mActivity.get().stopButton.isAttachedToWindow()) {
+                    mActivity.get().stopButton.setVisibility(View.INVISIBLE);//隐藏我在听
+                }
             }
         }
     }
@@ -352,7 +358,10 @@ public class MainPresenter extends BasePresenter<MainActivity> {
     }
 
     private void stopWeatherThread() {
-        mActivity.get().stopWeatherThread();
+        Log.d(TAG, "stopWeatherThread: "+mActivity.get());
+        if (mActivity.get()!=null){
+            mActivity.get().stopWeatherThread();
+        }
     }
 
     public void voiceManagerStop() {
@@ -755,7 +764,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
 
         //暂停播放
         public void onSpeakPaused() {
-
+            Log.d(TAG, "onSpeakPaused: 暂停播放");
         }
 
         //播放进度回调
@@ -772,6 +781,7 @@ public class MainPresenter extends BasePresenter<MainActivity> {
         public void onEvent(int arg0, int arg1, int arg2, Bundle arg3) {
 
         }
+
     };
     // 提供获取当前播放状态的方法
     public boolean isSpeakCompleted() {

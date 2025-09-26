@@ -78,8 +78,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     GeocodingApi geocodingApi = new GeocodingApi();
     public int delayTime = 5000;//固定延迟时间
     private boolean isPresenterSpeakCompleted; // 记录播放状态
-    private boolean isNeedPlayMusicAfterTTS = false;
-    private boolean isMusicSearchAction = false;
+    public boolean isNeedPlayMusicAfterTTS = false;
+    public boolean isMusicSearchAction = false;
     List<PluginMediaModel> resultListMusiz = new ArrayList<>();
 
     public SceneAction(MainActivity mainActivity) {
@@ -100,8 +100,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
                 mainActivity.getPresenter().setOnSpeakStatusListener(new MainPresenter.OnSpeakStatusListener() {
                     @Override
                     public void onSpeakCompleted() {
-                        Log.d("播放完毕", "onSpeakCompleted: 回调");
-                        Log.d("播放完毕", "onSpeakCompleted: 回调" + isMusicSearchAction);
+                        Log.d("是否跳转", "parseToScene: "+isMusicSearchAction);
+                        Log.d("是否跳转", "parseToScene: "+isNeedPlayMusicAfterTTS);
                         isPresenterSpeakCompleted = true;
                         if (isNeedPlayMusicAfterTTS) {
                             musicKuwo.open(true);
@@ -125,7 +125,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
     }
 
     public SceneAction() {
-
+        isNeedPlayMusicAfterTTS = false;
+        isMusicSearchAction = false;
     }
 
     public void startActionByList(List<BaseChildModel> baseChildModelList) {
@@ -411,7 +412,8 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.unknownOpenApp, false, "", false),
                 BotConstResponse.unknownOpenApp);
     }
-    private void DateTimeScene(){
+
+    private void DateTimeScene() {
         DateTime dateTime = new DateTime();
         mainActivity.addMessageAndTTS(new ChatMessage(dateTime.dateTime(), false, "", false),
                 dateTime.dateTime());
@@ -419,9 +421,6 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void OpenAppAction(String appPkgName) {
         try {
-            // 先让机器人回复固定内容
-            mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.ok, false, "", false),
-                    BotConstResponse.ok);
             mainActivity.isNeedWakeUp = false;
             mHandler.postDelayed(new Runnable() {
                 @Override
@@ -452,6 +451,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
 
     private void musicStartAndPlayAction() {
         mainActivity.addMessageAndTTS(new ChatMessage(BotConstResponse.hotSongPlay, false, "", false), BotConstResponse.hotSongPlay);
+        mainActivity.isNeedWakeUp = false;
         isNeedPlayMusicAfterTTS = true; // 标记需要在 TTS 完成后播放音乐
     }
 
@@ -570,6 +570,7 @@ public class SceneAction implements WeatherAPI.OnWeatherListener, WeatherAPI.OnF
         PluginMediaModel pluginMediaModel = new PluginMediaModel();
         pluginMediaModel.setKeyWords(musicName);
         pluginMediaModel.setArtist(artist);
+        mainActivity.isNeedWakeUp = false;
         musicKuwo.search(pluginMediaModel, new MusicKuwo.MediaSearchCallback() {
             @Override
             public void onSuccess(List<PluginMediaModel> resultList) {

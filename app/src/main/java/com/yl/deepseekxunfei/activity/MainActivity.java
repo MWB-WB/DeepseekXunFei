@@ -90,6 +90,7 @@ import com.yl.gaodeApi.weather.YLLocalWeatherForecastResult;
 import com.yl.gaodeApi.weather.YLLocalWeatherLive;
 import com.yl.tianmao.MovieDetailModel;
 import com.yl.ylcommon.utlis.ToastUtil;
+import com.yl.ylcommon.ylenum.SceneType;
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -241,6 +242,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     public void handleSendButtonClick() {
+        mSceneAction.isNeedPlayMusicAfterTTS =false;//阻止播放音乐指令播报过程中因为手动停止后在下一个指令播报完成后跳转酷我音乐APP
+        mSceneAction.isMusicSearchAction = false;//阻止播放音乐指令播报过程中因为手动停止后在下一个指令播报完成后跳转酷我音乐APP
         mPresenter.mTts.stopSpeaking();
         stopButton.setVisibility(View.INVISIBLE);
         texte_microphone.setVisibility(View.INVISIBLE);
@@ -391,18 +394,22 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private void handleBroadcastIntent(Intent intent) {
         String action = intent.getAction();
         if (action == null) return;
-
+        Log.d(TAG, "handleBroadcastIntent: "+action);
         switch (action) {
             case "com.yl.voice.wakeup":
+                Log.d(TAG, "handleBroadcastIntent: 输出1");
                 handleWakeupBroadcast();
                 break;
             case "com.yl.voice.test.start":
+                Log.d(TAG, "handleBroadcastIntent: 输出2");
                 handleVoiceTestStart(intent);
                 break;
             case "com.yl.voice.test.stop":
+                Log.d(TAG, "handleBroadcastIntent: 输出3");
                 handleVoiceTestStop();
                 break;
             case "com.yl.voice.commit.text":
+                Log.d(TAG, "handleBroadcastIntent: 输出4");
                 handleCommitTextBroadcast(intent);
                 break;
             case "AUTONAVI_STANDARD_BROADCAST_SEND":
@@ -429,7 +436,12 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     private void handleCommitTextBroadcast(Intent intent) {
         if (!isRecognize) {
             String text = intent.getStringExtra("text");
-            prepareForTextCommit(text);
+            //在场景不为空的情况下并且场景不是闲聊才可以在上一个问题还在回答的时候继续提问
+            if ( sceneManager.getLastSceneTypeList()!=null){
+                if (!sceneManager.getLastSceneTypeList().contains(SceneType.CHITCHAT)){
+                    prepareForTextCommit(text);
+                }
+            }
         }
     }
 
@@ -483,6 +495,8 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     }
 
     private void startVoiceRecognize() {
+        mPresenter.done = true;//讲输出状态改为输出完毕，停止模型继续输出
+        handleSendButtonClick();//调用停止按钮的停止方法
         mPresenter.setParam();
         isDuplicate = true;
         mPresenter.setStopRequested(false);
@@ -664,44 +678,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
         return null;
     }
 
-    //添加到对话列表
-    private void sendMessage() {
-        found = false;
-//        input = inputEditText.getText().toString().trim();
-        if (!input.isEmpty()) {
-            // 如果是第一次提问，将问题设置为对话标题
-            if (currentTitle.isEmpty()) {
-                currentTitle = input;
-                titleTextView.setText(currentTitle); // 更新标题
-            }
-            // 添加问题到对话列表
-            mPresenter.getChatMessages().add(new ChatMessage(input, true, "", false));
-            chatAdapter.notifyItemInserted(mPresenter.getChatMessagesSizeIndex());
-            chatRecyclerView.scrollToPosition(mPresenter.getChatMessagesSizeIndex());
-//            inputEditText.setText("");
-            if (backTextToAction != null) {
-                backTextToAction.backUserText(input);
-                backTextToAction = null;
-            } else {
-                if (!isNetWorkConnect()) {
-                    addMessageAndTTS(new ChatMessage(BotConstResponse.searchWeatherError, false, "", false), BotConstResponse.searchWeatherError);
-                } else {
-                    List<BaseChildModel> baseChildModelList = sceneManager.parseToScene(input);
-                    if (baseChildModelList.size() > 1) {
-                        mSceneAction.startActionByList(baseChildModelList);
-                    } else {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                mSceneAction.actionByType(baseChildModelList.get(0));
-                            }
-                        });
-                    }
-                }
-            }
-        }
-    }
-
     private boolean isNetWorkConnect() {
         ConnectivityManager manager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo info = manager
@@ -874,6 +850,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
     protected void onPause() {
         super.onPause();
         isPause = true;
+        isNeedWakeUp = false;
         if (mPresenter != null) {
             mPresenter.stopCurrentActivities();
         }
@@ -889,27 +866,36 @@ public class MainActivity extends BaseActivity<MainPresenter> {
             Log.d(TAG, "newChat: 执行");
             uiHandler.removeCallbacks(weatherStreamRunnable);
         }
-        if (mPresenter.done) {
-            if (recyFragment != null && recyFragment.isVisible()) {
-                replaceFragment(0);
-            }
+        uiHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (mPresenter.done) {
+                    if (recyFragment != null && recyFragment.isVisible()) {
+                        replaceFragment(0);
+                    }
 
-            if (!mPresenter.chatMessages.isEmpty()) {
+                    if (!mPresenter.chatMessages.isEmpty()) {
 
-                resetChatState();
-                saveCurrentChat();
-                initNewChat();//初始化
-            } else {
-                addSystemMessage("还没有聊天记录");
-            }
-        } else {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-
+                        resetChatState();
+                        saveCurrentChat();
+                        initNewChat();//初始化
+                    } else {
+                        addSystemMessage("还没有聊天记录");
+                    }
+                } else {
+                    //如果正在输出
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            resetChatState();
+                            saveCurrentChat();
+                            initNewChat();//初始化
+                        }
+                    });
                 }
-            });
-        }
+            }
+        },500);
+
         animFree.stop();
         TTSbutton.setVisibility(View.INVISIBLE);
         read_button.setVisibility(View.VISIBLE);
@@ -998,7 +984,7 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                     public void run() {
                         TTSbutton.performClick();
                     }
-                }, 1000);
+                }, 500);
 
             }
         }
@@ -1117,7 +1103,6 @@ public class MainActivity extends BaseActivity<MainPresenter> {
                 String currentText = mWeatherResult.substring(0, Math.min(weatherIndex, mWeatherResult.length()));
                 ChatMessage lastMsg = mPresenter.getChatMessages().get(mPresenter.getChatMessagesSizeIndex());
                 lastMsg.setMessage(currentText);
-                lastMsg.setOver(false);
                 chatAdapter.notifyItemChanged(mPresenter.getChatMessagesSizeIndex());
             }
         }
